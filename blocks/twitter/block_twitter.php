@@ -18,14 +18,16 @@
 /**
  * Block to display the latest Twitter status of a specified user.
  *
- * @copyright 2009 Darryl Pogue
+ * @package blocks
+ * @copyright 2010 Darryl Pogue
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class block_twitter extends block_base {
 
     function init() {
-        $this->title = "Twitter";
-        $this->version = 2009112100;
+        $this->blockname = get_class($this);
+        $this->title = get_string('pluginname', $this->blockname);
+        $this->version = 2010041100;
     }
     
     function applicable_formats() {
