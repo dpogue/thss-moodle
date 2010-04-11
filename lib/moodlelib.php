@@ -3158,7 +3158,7 @@ function is_enabled_auth($auth) {
  *
  * @global object
  * @param string $auth name of authentication plugin
- * @return object An instance of the required authentication plugin.
+ * @return auth_plugin_base An instance of the required authentication plugin.
  */
 function get_auth_plugin($auth) {
     global $CFG;
@@ -5647,7 +5647,7 @@ function get_parent_language($lang=null) {
     }
 
     $parentlang = get_string('parentlanguage', 'langconfig');
-    if ($parentlang === 'en' or $parentlang === '[[parentlanguage]]' or strpos($parentlang, '<') !== false) {
+    if ($parentlang === 'en') {
         $parentlang = '';
     }
 
@@ -5712,6 +5712,14 @@ interface string_manager {
      * @param bool $returnall return all or just enabled
      */
     public function get_list_of_languages($returnall = false);
+
+    /**
+     * Load all strings for one component
+     * @param string $component The module the string is associated with
+     * @param string $lang
+     * @return array of all string for given component and lang
+     */
+    public function load_component_strings($component, $lang);
 }
 
 
@@ -5774,7 +5782,7 @@ class amos_string_manager implements string_manager {
      * @param string $lang
      * @return array of all string for given component and lang
      */
-    protected function load_component_strings($component, $lang) {
+    public function load_component_strings($component, $lang) {
         global $CFG;
 
         list($plugintype, $pluginname) = normalize_component($component);
@@ -5905,9 +5913,16 @@ class amos_string_manager implements string_manager {
         $string = $this->load_component_strings($component, $lang);
 
         if (!isset($string[$identifier])) {
-            if ($identifier !== 'parentlanguage' and $component !== 'pix') {
-                debugging("Invalid get_string() identifier: '$identifier' or component '$component'", DEBUG_DEVELOPER);
+            if ($component === 'pix' or $component === 'core_pix') {
+                // this component contains only alt tags for emoticons,
+                // not all of them are supposed to be defined
+                return '';
             }
+            if ($identifier === 'parentlanguage' and ($component === 'langconfig' or $component === 'core_langconfig')) {
+                // parentlanguage is a special string, undefined means use english if not defined
+                return 'en';
+            }
+            debugging("Invalid get_string() identifier: '$identifier' or component '$component'", DEBUG_DEVELOPER);
             return "[[$identifier]]";
         }
 
@@ -6026,6 +6041,16 @@ class install_string_manager implements string_manager {
     public function __construct() {
         global $CFG;
         $this->installroot = "$CFG->dirroot/install/lang";
+    }
+
+    /**
+     * Load all strings for one component
+     * @param string $component The module the string is associated with
+     * @param string $lang
+     * @return array of all string for given component and lang
+     */
+    public function load_component_strings($component, $lang) {
+        return array();
     }
 
     /**

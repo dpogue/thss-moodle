@@ -1628,7 +1628,9 @@ function replace_smilies(&$text) {
         $img[$lang] = array();
         foreach ($emoticons as $emoticon => $image){
             $alttext = get_string($image, 'pix');
-            $alttext = preg_replace('/^\[\[(.*)\]\]$/', '$1', $alttext); /// Clean alttext in case there isn't lang string for it.
+            if ($alttext === '') {
+                $alttext = $image;
+            } 
             $e[$lang][] = $emoticon;
             $img[$lang][] = '<img alt="'. $alttext .'" width="15" height="15" src="'. $OUTPUT->pix_url('s/' . $image) . '" />';
         }
@@ -3428,16 +3430,6 @@ class html_list_progress_trace extends progress_trace {
             $this->currentdepth -= 1;
         }
     }
-}
-
-/**
- * Return the authentication plugin title
- *
- * @param string $authtype plugin type
- * @return string
- */
-function auth_get_plugin_title($authtype) {
-    $authtitle = get_string("auth_{$authtype}title", "auth_{$authtype}");
 }
 
 /**
