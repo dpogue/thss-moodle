@@ -1,0 +1,54 @@
+form#login fieldset {
+    margin-bottom: 10px;
+}
+
+form#login label {
+    display: inline-block;
+    vertical-align: top;
+    font-variant: small-caps;
+    text-transform: lowercase;
+}
+
+form#login label.chroma-hash {
+    background-color: #ffffff;
+}
+
+form#login fieldset ol {
+    margin: 0;
+    padding: 0;
+}
+
+form#login fieldset li {
+    list-style: none;
+    padding: 5px;
+    margin: 0;
+}
+
+form#login input[type="submit"] {
+    margin-right: 2em;
+    appearance: button;
+    border: 1px solid #999;
+	border-radius: 2px;
+	color: buttontext;
+	padding: 0px 8px;
+	font-size: 1.1em;
+	height: 1.85em !important;
+	box-sizing: border-box;
+	box-align: center;
+}
+
+.safari form#login input[type="submit"] {
+	-webkit-appearance: button;
+	background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(white), to(#DDD));
+	-webkit-border-radius: 2px;
+	-webkit-box-align: center;
+	-webkit-box-sizing: border-box;
+}
+
+.gecko19 form#login input[type="submit"] {
+	-moz-appearance: button;
+	background: -moz-linear-gradient(top center, white, #DDD);
+	-moz-border-radius: 2px;
+	-moz-box-align: center;
+	-moz-box-sizing: border-box;
+}
