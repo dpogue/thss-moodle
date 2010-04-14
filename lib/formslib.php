@@ -1352,7 +1352,7 @@ class MoodleQuickForm extends HTML_QuickForm_DHTMLRulesTableless {
             $module   = isset($buttonargs[2]) ? $buttonargs[2] : 'moodle';
             $linktext = isset($buttonargs[3]) ? $buttonargs[3] : false;
 
-            $element->_helpbutton = $OUTPUT->help_icon($page, $text, $module, $linktext);
+            $element->_helpbutton = $OUTPUT->old_help_icon($page, $text, $module, $linktext);
 
         } else if (!$suppresscheck) {
             print_error('nonexistentformelements', 'form', '', $elementname);
@@ -1360,19 +1360,24 @@ class MoodleQuickForm extends HTML_QuickForm_DHTMLRulesTableless {
     }
 
     /**
-     * Add a help button to element,
-     * only one button per element is allowed.
+     * Add a help button to element, only one button per element is allowed.
+     *
+     * There has to be two strings defined:
+     *   1/ get_string($identifier, $component) - the title of the help page
+     *   2/ get_string($identifier.'_hlp', $component) - the actual help page text
      *
      * @param string $elementname name of the element to add the item to
      * @param string $identifier
-     * @param string $title
      * @param string $component
      * @param string $linktext
+     * @param boolean $suppresscheck whether to throw an error if the element doesn't exist.
      * @return void
      */
-    function addHelpButton($elementname, $identifier, $title, $component = 'moodle', $linktext = '') {
+    function addHelpButton($elementname, $identifier, $component = 'moodle', $linktext = '', $suppresscheck = false) {
+        global $OUTPUT;
         if (array_key_exists($elementname, $this->_elementIndex)) {
-            $element->_helpbutton = $OUTPUT->help_icon($identifier, $title, $component, $linktext);
+            $element = $this->_elements[$this->_elementIndex[$elementname]];
+            $element->_helpbutton = $OUTPUT->help_icon($identifier, $component, $linktext);
         } else if (!$suppresscheck) {
             debugging(get_string('nonexistentformelements', 'form', $elementname));
         }
