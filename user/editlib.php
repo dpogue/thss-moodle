@@ -200,7 +200,7 @@ function useredit_shared_definition(&$mform, $editoroptions = null) {
     $mform->addRule('city', $strrequired, 'required', null, 'client');
 
 
-    $choices = get_list_of_countries();
+    $choices = get_string_manager()->get_list_of_countries();
     $choices= array(''=>get_string('selectacountry').'...') + $choices;
     $mform->addElement('select', 'country', get_string('selectacountry'), $choices);
     $mform->addRule('country', $strrequired, 'required', null, 'client');
@@ -217,7 +217,7 @@ function useredit_shared_definition(&$mform, $editoroptions = null) {
         $mform->setDefault('timezone', '99');
     }
 
-    $mform->addElement('select', 'lang', get_string('preferredlanguage'), get_list_of_languages());
+    $mform->addElement('select', 'lang', get_string('preferredlanguage'), get_string_manager()->get_list_of_translations());
     $mform->setDefault('lang', $CFG->lang);
 
     if (!empty($CFG->allowuserthemes)) {

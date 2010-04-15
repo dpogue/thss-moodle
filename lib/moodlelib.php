@@ -755,11 +755,10 @@ function clean_param($param, $type) {
 
         case PARAM_LANG:
             $param = clean_param($param, PARAM_SAFEDIR);
-            $langs = get_list_of_languages(false, true);
-            if (in_array($param, $langs)) {
+            if (get_string_manager()->translation_exists($param)) {
                 return $param;
             } else {
-                return '';  // Specified language is not installed
+                return ''; // Specified language is not installed or param malformed
             }
 
         case PARAM_THEME:
@@ -3296,8 +3295,7 @@ function create_user_record($username, $password, $auth='manual') {
     // fix for MDL-8480
     // user CFG lang for user if $newuser->lang is empty
     // or $user->lang is not an installed language
-    $sitelangs = array_keys(get_list_of_languages());
-    if (empty($newuser->lang) || !in_array($newuser->lang, $sitelangs)) {
+    if (empty($newuser->lang) || !get_string_manager()->translation_exists($newuser->lang)) {
         $newuser->lang = $CFG->lang;
     }
     $newuser->confirmed = 1;
@@ -5691,15 +5689,16 @@ function get_string_manager() {
  */
 interface string_manager {
     /**
-     * Mega Function - Get String returns a requested string
+     * Get String returns a requested string
      *
      * @param string $identifier The identifier of the string to search for
      * @param string $component The module the string is associated with
-     * @param string $a An object, string or number that can be used
+     * @param string|object|array $a An object, string or number that can be used
      *      within translation strings
+     * @param string $lang moodle translation language, NULL means use current
      * @return string The String !
      */
-    public function get_string($identifier, $component = '', $a = NULL);
+    public function get_string($identifier, $component = '', $a = NULL, $lang = NULL);
 
     /**
      * Does the string actually exist?
@@ -5714,18 +5713,48 @@ interface string_manager {
      * @return boot true if exists
      */
     public function string_exists($identifier, $component);
-    
-    /**
-     * Returns a list of country names in the current language
-     * @return array two-letter country code => translated name.
-     */
-    public function get_list_of_countries();
 
     /**
-     * Returns localised list of installed languages
+     * Returns a localised list of all country names, sorted by country keys.
      * @param bool $returnall return all or just enabled
+     * @param string $lang moodle translation language, NULL means use current
+     * @return array two-letter country code => translated name.
      */
-    public function get_list_of_languages($returnall = false);
+    public function get_list_of_countries($returnall = false, $lang = NULL);
+
+    /**
+     * Returns a localised list of languages, sorted by code keys.
+     *
+     * @param string $lang moodle translation language, NULL means use current
+     * @param string $standard language list standard
+     *                     iso6392: three-letter language code (ISO 639-2/T) => translated name.
+     * @return array language code => translated name
+     */
+    public function get_list_of_languages($lang = NULL, $standard = 'iso6392');
+
+    /**
+     * Does the translation exist?
+     *
+     * @param string $lang moodle translation language code
+     * @param bool include also disabled translations?
+     * @return boot true if exists
+     */
+    public function translation_exists($lang, $includeall = true);
+
+    /**
+     * Returns localised list of installed translations
+     * @param bool $returnall return all or just enabled
+     * @return array moodle translation code => localised translation name
+     */
+    public function get_list_of_translations($returnall = false);
+
+    /**
+     * Returns localised list of currencies.
+     *
+     * @param string $lang moodle translation language, NULL means use current
+     * @return array currency code => localised currency name
+     */
+    public function get_list_of_currencies($lang = NULL);
 
     /**
      * Load all strings for one component
@@ -5908,11 +5937,12 @@ class core_string_manager implements string_manager {
      *
      * @param string $identifier The identifier of the string to search for
      * @param string $component The module the string is associated with
-     * @param string $a An object, string or number that can be used
+     * @param string|object|array $a An object, string or number that can be used
      *      within translation strings
+     * @param string $lang moodle translation language, NULL means use current
      * @return string The String !
      */
-    public function get_string($identifier, $component = '', $a = NULL) {
+    public function get_string($identifier, $component = '', $a = NULL, $lang = NULL) {
         // there are very many uses of these time formating strings without the 'langconfig' component,
         // it would not be reasonable to expect that all of them would be converted during 2.0 migration
         static $langconfigstrs = array(
@@ -5938,7 +5968,9 @@ class core_string_manager implements string_manager {
             }
         }
 
-        $lang = current_language();
+        if ($lang === NULL) {
+            $lang = current_language();
+        }
 
         $string = $this->load_component_strings($component, $lang);
 
@@ -5987,19 +6019,91 @@ class core_string_manager implements string_manager {
     }
 
     /**
-     * Returns a list of country names in the current language
+     * Returns a localised list of all country names, sorted by country keys.
+     *
+     * @param bool $returnall return all or just enabled
+     * @param string $lang moodle translation language, NULL means use current
      * @return array two-letter country code => translated name.
      */
-    public function get_list_of_countries() {
-        $lang = current_language();
-        return $this->load_component_strings('countries', $lang);
+    public function get_list_of_countries($returnall = false, $lang = NULL) {
+        global $CFG;
+
+        if ($lang === NULL) {
+            $lang = current_language();
+        }
+
+        $countries = $this->load_component_strings('core_countries', $lang);
+        ksort($countries);
+
+        if (!$returnall and !empty($CFG->allcountrycodes)) {
+            $enabled = explode(',', $CFG->allcountrycodes);
+            $return = array();
+            foreach ($enabled as $c) {
+                if (isset($countries[$c])) {
+                    $return[$c] = $countries[$c];
+                }
+            }
+            return $return;
+        }
+
+        return $countries;
     }
 
     /**
-     * Returns localised list of installed languages
-     * @param bool $returnall return all or just enabled
+     * Returns a localised list of languages, sorted by code keys.
+     *
+     * @param string $lang moodle translation language, NULL means use current
+     * @param string $standard language list standard
+     *    - iso6392: three-letter language code (ISO 639-2/T) => translated name
+     * @return array language code => translated name
      */
-    public function get_list_of_languages($returnall = false) {
+    public function get_list_of_languages($lang = NULL, $standard = 'iso6392') {
+        if ($lang === NULL) {
+            $lang = current_language();
+        }
+        if ($standard === 'iso6392') {
+            $langs = $this->load_component_strings('core_iso6392', $lang);
+            ksort($langs);
+            return $langs;
+        } else {
+            debugging('Unsupported $standard parameter in get_list_of_languages() method: '.$standard);
+        }
+        return array();
+    }
+
+    /**
+     * Does the translation exist?
+     *
+     * @param string $lang moodle translation language code
+     * @param bool include also disabled translations?
+     * @return boot true if exists
+     */
+    public function translation_exists($lang, $includeall = true) {
+        global $CFG;
+
+        if (strpos($lang, '_local') !== false) {
+            // _local packs are not real translations
+            return false;
+        }
+        if (!$includeall and !empty($CFG->langlist)) {
+            $enabled = explode(',', $CFG->langlist);
+            if (!in_array($lang, $enabled)) {
+                return false;
+            }
+        }
+        if ($lang === 'en') {
+            // part of distribution
+            return true;
+        }
+        return file_exists("$this->otherroot/$lang/langconfig.php");
+    }
+
+    /**
+     * Returns localised list of installed translations
+     * @param bool $returnall return all or just enabled
+     * @return array moodle translation code => localised translation name
+     */
+    public function get_list_of_translations($returnall = false) {
         global $CFG;
 
         $languages = array();
@@ -6052,6 +6156,23 @@ class core_string_manager implements string_manager {
         }
 
         return $languages;
+    }
+
+    /**
+     * Returns localised list of currencies.
+     *
+     * @param string $lang moodle translation language, NULL means use current
+     * @return array currency code => localised currency name
+     */
+    public function get_list_of_currencies($lang = NULL) {
+        if ($lang === NULL) {
+            $lang = current_language();
+        }
+
+        $currencies = $this->load_component_strings('core_currencies', $lang);
+        asort($currencies);
+
+        return $currencies;
     }
 }
 
@@ -6111,15 +6232,19 @@ class install_string_manager implements string_manager {
      *
      * @param string $identifier The identifier of the string to search for
      * @param string $component The module the string is associated with
-     * @param string $a An object, string or number that can be used
+     * @param string|object|array $a An object, string or number that can be used
      *      within translation strings
+     * @param string $lang moodle translation language, NULL means use current
      * @return string The String !
      */
-    public function get_string($identifier, $component = '', $a = NULL) {
+    public function get_string($identifier, $component = '', $a = NULL, $lang = NULL) {
         if (!$component) {
             $component = 'moodle';
         }
-        $lang = current_language();
+
+        if ($lang === NULL) {
+            $lang = current_language();
+        }
 
         //get parent lang
         $parent = '';
@@ -6182,18 +6307,47 @@ class install_string_manager implements string_manager {
     }
 
     /**
-     * Returns a list of country names in the current language
+     * Returns a localised list of all country names, sorted by country keys.
+     *
+     * @param bool $returnall return all or just enabled
+     * @param string $lang moodle translation language, NULL means use current
      * @return array two-letter country code => translated name.
      */
-    public function get_list_of_countries() {
+    public function get_list_of_countries($returnall = false, $lang = NULL) {
+        //not used in installer
         return array();
     }
 
     /**
-     * Returns localised list of installed languages
-     * @param bool $returnall return all or just enabled
+     * Returns a localised list of languages, sorted by code keys.
+     *
+     * @param string $lang moodle translation language, NULL means use current
+     * @param string $standard language list standard
+     *                     iso6392: three-letter language code (ISO 639-2/T) => translated name.
+     * @return array language code => translated name
      */
-    public function get_list_of_languages($returnall = false) {
+    public function get_list_of_languages($lang = NULL, $standard = 'iso6392') {
+        //not used in installer
+        return array();
+    }
+
+    /**
+     * Does the translation exist?
+     *
+     * @param string $lang moodle translation language code
+     * @param bool include also disabled translations?
+     * @return boot true if exists
+     */
+    public function translation_exists($lang, $includeall = true) {
+        return file_exists($this->installroot.'/'.$lang.'/langconfig.php');
+    }
+
+    /**
+     * Returns localised list of installed translations
+     * @param bool $returnall return all or just enabled
+     * @return array moodle translation code => localised translation name
+     */
+    public function get_list_of_translations($returnall = false) {
         // return all is ignored here - we need to know all langs in installer
         $languages = array();
         // Get raw list of lang directories
@@ -6211,6 +6365,17 @@ class install_string_manager implements string_manager {
         }
         // Return array
         return $languages;
+    }
+
+    /**
+     * Returns localised list of currencies.
+     *
+     * @param string $lang moodle translation language, NULL means use current
+     * @return array currency code => localised currency name
+     */
+    public function get_list_of_currencies($lang = NULL) {
+        // not used in installer
+        return array();
     }
 }
 
@@ -6265,7 +6430,7 @@ class install_string_manager implements string_manager {
  *      usually expressed as the filename in the language pack without the
  *      .php on the end but can also be written as mod/forum or grade/export/xls.
  *      If none is specified then moodle.php is used.
- * @param mixed $a An object, string or number that can be used
+ * @param string|object|array $a An object, string or number that can be used
  *      within translation strings
  * @return string The localized string.
  */
@@ -6345,24 +6510,6 @@ function print_string($identifier, $component = '', $a = NULL) {
 }
 
 /**
- * Returns a list of language codes and their full names
- * hides the _local files from everyone.
- *
- * @global object
- * @param bool $refreshcache force refreshing of lang cache
- * @param bool $returnall ignore langlist, return all languages available
- * @return array An associative array with contents in the form of LanguageCode => LanguageName
- */
-function get_list_of_languages($refreshcache=false, $returnall=false) {
-
-    if ($refreshcache) {
-        // TODO: reimplement caching?; this may not be necessary if we implement lang pack precompilation in dataroot
-    }
-
-    return get_string_manager()->get_list_of_languages($returnall);
-}
-
-/**
  * Returns a list of charset codes
  *
  * Returns a list of charset codes. It's hardcoded, so they should be added manually
@@ -6384,14 +6531,6 @@ function get_list_of_charsets() {
     asort($charsets);
 
     return $charsets;
-}
-
-/**
- * Returns a list of country names in the current language
- * @return array two-letter country code => translated name.
- */
-function get_list_of_countries() {
-    return get_string_manager()->get_list_of_countries();
 }
 
 /**
@@ -6418,42 +6557,6 @@ function get_list_of_themes() {
     asort($themes);
 
     return $themes;
-}
-
-
-/**
- * Returns a list of picture names in the current or specified language
- *
- * @global object
- * @return array
- */
-function get_list_of_pixnames($lang = '') {
-    global $CFG;
-
-    if (empty($lang)) {
-        $lang = current_language();
-    }
-
-    $string = array();
-
-    $path = $CFG->dirroot .'/lang/en/pix.php'; // always exists
-
-    if (file_exists($CFG->dataroot .'/lang/'. $lang .'_local/pix.php')) {
-        $path = $CFG->dataroot .'/lang/'. $lang .'_local/pix.php';
-
-    } else if (file_exists($CFG->dirroot .'/lang/'. $lang .'/pix.php')) {
-        $path = $CFG->dirroot .'/lang/'. $lang .'/pix.php';
-
-    } else if (file_exists($CFG->dataroot .'/lang/'. $lang .'/pix.php')) {
-        $path = $CFG->dataroot .'/lang/'. $lang .'/pix.php';
-
-    } else if ($parentlang = get_parent_language()) {
-        return get_list_of_pixnames($parentlang); //return pixnames from parent language instead
-    }
-
-    include($path);
-
-    return $string;
 }
 
 /**
@@ -6500,44 +6603,6 @@ function get_list_of_timezones() {
 
     return $timezones;
 }
-
-/**
- * Returns a list of currencies in the current language
- *
- * @global object
- * @global object
- * @return array
- */
-function get_list_of_currencies() {
-    global $CFG, $USER;
-
-    $lang = current_language();
-
-    if (!file_exists($CFG->dataroot .'/lang/'. $lang .'/currencies.php')) {
-        if ($parentlang = get_parent_language()) {
-            if (file_exists($CFG->dataroot .'/lang/'. $parentlang .'/currencies.php')) {
-                $lang = $parentlang;
-            } else {
-                $lang = 'en';  // currencies.php must exist in this pack
-            }
-        } else {
-            $lang = 'en';  // currencies.php must exist in this pack
-        }
-    }
-
-    if (file_exists($CFG->dataroot .'/lang/'. $lang .'/currencies.php')) {
-        include_once($CFG->dataroot .'/lang/'. $lang .'/currencies.php');
-    } else {    //if en is not installed in dataroot
-        include_once($CFG->dirroot .'/lang/'. $lang .'/currencies.php');
-    }
-
-    if (!empty($string)) {
-        asort($string);
-    }
-
-    return $string;
-}
-
 
 /// ENCRYPTION  ////////////////////////////////////////////////
 
@@ -6761,6 +6826,7 @@ function get_core_subsystems() {
             'help'        => NULL,
             'imscc'       => NULL,
             'install'     => NULL,
+            'iso6392'     => NULL,
             'langconfig'  => NULL,
             'license'     => NULL,
             'message'     => 'message',
@@ -9109,15 +9175,10 @@ function setup_lang_from_browser() {
     }
     krsort($langs, SORT_NUMERIC);
 
-    $langlist = get_list_of_languages();
-
 /// Look for such langs under standard locations
     foreach ($langs as $lang) {
         $lang = strtolower(clean_param($lang, PARAM_SAFEDIR)); // clean it properly for include
-        if (!array_key_exists($lang, $langlist)) {
-            continue; // language not allowed, try next one
-        }
-        if (file_exists($CFG->dataroot .'/lang/'. $lang) or file_exists($CFG->dirroot .'/lang/'. $lang)) {
+        if (get_string_manager()->translation_exists($lang, false)) {
             $SESSION->lang = $lang; /// Lang exists, set it in session
             break; /// We have finished. Go out
         }

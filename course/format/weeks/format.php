@@ -23,7 +23,6 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
  * @package
  */
-//TODO (nfreear): Accessibility: evaluation, lang/en/moodle.php: $string['formatweekscss']
 
     require_once($CFG->libdir.'/filelib.php');
 
@@ -83,7 +82,7 @@
     if ($thissection->summary or $thissection->sequence or $PAGE->user_is_editing()) {
 
         // Note, 'right side' is BEFORE content.
-        echo '<li id="section-0" class="section main" >';
+        echo '<li id="section-0" class="section main clearfix" >';
         echo '<div class="left side">&nbsp;</div>';
         echo '<div class="right side" >&nbsp;</div>';
         echo '<div class="content">';
@@ -170,7 +169,7 @@
                 $sectionstyle = '';
             }
 
-            echo '<li id="section-'.$section.'" class="section main'.$sectionstyle.'" >';
+            echo '<li id="section-'.$section.'" class="section main clearfix'.$sectionstyle.'" >';
 
             echo '<div class="left side">&nbsp;'.$currenttext.'</div>';
 

@@ -199,7 +199,7 @@ class admin_uploaduser_form2 extends moodleform {
         $mform->setType('city', PARAM_MULTILANG);
         $mform->setDefault('city', $templateuser->city);
 
-        $mform->addElement('select', 'country', get_string('selectacountry'), get_list_of_countries());
+        $mform->addElement('select', 'country', get_string('selectacountry'), get_string_manager()->get_list_of_countries());
         $mform->setDefault('country', $templateuser->country);
         $mform->setAdvanced('country');
 
@@ -209,7 +209,7 @@ class admin_uploaduser_form2 extends moodleform {
         $mform->setDefault('timezone', $templateuser->timezone);
         $mform->setAdvanced('timezone');
 
-        $mform->addElement('select', 'lang', get_string('preferredlanguage'), get_list_of_languages());
+        $mform->addElement('select', 'lang', get_string('preferredlanguage'), get_string_manager()->get_list_of_translations());
         $mform->setDefault('lang', $templateuser->lang);
         $mform->setAdvanced('lang');
 

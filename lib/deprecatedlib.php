@@ -39,6 +39,41 @@ function auth_get_plugin_title($authtype) {
     return get_string('pluginname', "auth_{$authtype}");
 }
 
+/**
+ * Was returning list of translations, use new string_manager instead
+ *
+ * @deprecated
+ * @param bool $refreshcache force refreshing of lang cache
+ * @param bool $returnall ignore langlist, return all languages available
+ * @return array An associative array with contents in the form of LanguageCode => LanguageName
+ */
+function get_list_of_languages($refreshcache=false, $returnall=false) {
+    debugging('get_list_of_languages() is deprecated, please use get_string_manager()->get_list_of_translations() instead.');
+    if ($refreshcache) {
+        // TODO: reset lang cache
+    }
+    return get_string_manager()->get_list_of_translations($returnall);
+}
+
+/**
+ * Returns a list of currencies in the current language
+ * @deprecated
+ * @return array
+ */
+function get_list_of_currencies() {
+    debugging('get_list_of_currencies() is deprecated, please use get_string_manager()->get_list_of_currencies() instead.');
+    return get_string_manager()->get_list_of_currencies();
+}
+
+/**
+ * Returns a list of all enabled country names in the current translation
+ * @deprecated
+ * @return array two-letter country code => translated name.
+ */
+function get_list_of_countries() {
+    debugging('get_list_of_countries() is deprecated, please use get_string_manager()->get_list_of_countries() instead.');
+    return get_string_manager()->get_list_of_countries(false);
+}
 
 /**
  * @deprecated
