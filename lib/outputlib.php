@@ -159,7 +159,7 @@ class theme_config {
      * @var array
      */
     public $javascripts_footer = array();
-    
+
     /**
      * The names of all the javascript files from parents that should be excluded.
      * true value may be used to specify all parents or all themes from one parent.
@@ -636,7 +636,9 @@ class theme_config {
 
             if (check_browser_version('MSIE', 5)) {
                 // lalala, IE does not allow more than 31 linked CSS files from main document
-                $urls[] = new moodle_url($CFG->httpswwwroot.'/theme/styles_debug.php', array('theme'=>$this->name, 'type'=>'ie'));
+                $urls[] = new moodle_url($CFG->httpswwwroot.'/theme/styles_debug.php', array('theme'=>$this->name, 'type'=>'ie', 'subtype'=>'plugins'));
+                $urls[] = new moodle_url($CFG->httpswwwroot.'/theme/styles_debug.php', array('theme'=>$this->name, 'type'=>'ie', 'subtype'=>'parents'));
+                $urls[] = new moodle_url($CFG->httpswwwroot.'/theme/styles_debug.php', array('theme'=>$this->name, 'type'=>'ie', 'subtype'=>'theme'));
 
             } else {
                 foreach ($css['plugins'] as $plugin=>$unused) {
@@ -1068,14 +1070,21 @@ class theme_config {
 
         $layoutinfo = $this->layout_info_for_page($pagelayout);
         $layoutfile = $layoutinfo['file'];
-        $theme = $layoutinfo['theme'];
 
-        if ($dir = $this->find_theme_location($theme)) {
-            $path = "$dir/layout/$layoutfile";
+        if (array_key_exists('theme', $layoutinfo)) {
+            $themes = array($layoutinfo['theme']);
+        } else {
+            $themes = array_merge(array($this->name),$this->parents);
+        }
 
-            // Check the template exists, return general base theme template if not.
-            if (is_readable($path)) {
-                return $path;
+        foreach ($themes as $theme) {
+            if ($dir = $this->find_theme_location($theme)) {
+                $path = "$dir/layout/$layoutfile";
+
+                // Check the template exists, return general base theme template if not.
+                if (is_readable($path)) {
+                    return $path;
+                }
             }
         }
 
