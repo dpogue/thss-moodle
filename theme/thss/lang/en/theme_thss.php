@@ -15,4 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-$plugin->version = 2010041901;
+/**
+ * Strings for component 'theme_thss', language 'en', branch 'MOODLE_20_STABLE'
+ *
+ * @package   theme_thss
+ * @copyright 2010 onwards Darryl Pogue
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+$string['pluginname'] = 'thss';
+$string['region-side-post'] = 'Right';
+$string['region-side-pre'] = 'Left';
+$string['region-centre-top'] = 'Centre Top';

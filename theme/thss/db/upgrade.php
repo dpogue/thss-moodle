@@ -24,4 +24,6 @@ function xmldb_theme_thss_upgrade($oldversion) {
     /// thss savepoint reached
         upgrade_plugin_savepoint($result, 2010011601, 'theme', 'thss');
     }
+
+    upgrade_plugin_savepoint($result, 2010041901, 'theme', 'thss');
 }
