@@ -71,6 +71,10 @@ class block_twitter extends block_base {
         if (empty($this->instance)) {
             return null;
         }
+
+        if(empty($this->config->account)) {
+            return null;
+        }
         
         $this->content = new stdClass;
         $this->content->text = '';
