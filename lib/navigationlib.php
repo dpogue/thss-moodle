@@ -190,15 +190,6 @@ class navigation_node implements renderable {
         }
         // Default the title to the text
         $this->title = $this->text;
-        $textlib = textlib_get_instance();
-        if (strlen($this->text)>50) {
-            // Truncate the text to 50 characters
-            $this->text = $textlib->substr($this->text, 0, 50).'...';
-        }
-        if (is_string($this->shorttext) && strlen($this->shorttext)>25) {
-            // Truncate the shorttext
-            $this->shorttext = $textlib->substr($this->shorttext, 0, 25).'...';
-        }
         // Instantiate a new navigation node collection for this nodes children
         $this->children = new navigation_node_collection();
     }
@@ -521,13 +512,22 @@ class navigation_node implements renderable {
             return;
         }
         foreach ($this->children as &$child) {
-            if ($child->nodetype == self::NODETYPE_BRANCH && $child->children->count()==0) {
+            if ($child->nodetype == self::NODETYPE_BRANCH && $child->children->count()==0 && $child->display) {
                 $child->id = 'expandable_branch_'.(count($expandable)+1);
                 $this->add_class('canexpand');
                 $expandable[] = array('id'=>$child->id,'branchid'=>$child->key,'type'=>$child->type);
             }
             $child->find_expandable($expandable);
         }
+    }
+
+    public function find_all_of_type($type) {
+        $nodes = $this->children->type($type);
+        foreach ($this->children as &$node) {
+            $childnodes = $node->find_all_of_type($type);
+            $nodes = array_merge($nodes, $childnodes);
+        }
+        return $nodes;
     }
 }
 
@@ -753,6 +753,9 @@ class global_navigation extends navigation_node {
     protected $cache;
     /** @var array */
     protected $addedcourses = array();
+    /** @var int */
+    protected $expansionlimit = 0;
+
     /**
      * Constructs a new global navigation
      *
@@ -1039,12 +1042,14 @@ class global_navigation extends navigation_node {
      * @param string $activeparam The url used to identify the active section
      * @return array An array of course section nodes
      */
-    public function load_generic_course_sections(stdClass $course, navigation_node $coursenode, $name, $activeparam) {
+    public function load_generic_course_sections(stdClass $course, navigation_node $coursenode, $name, $activeparam, $section0name=null) {
         $modinfo = get_fast_modinfo($course);
         $sections = array_slice(get_all_sections($course->id), 0, $course->numsections+1, true);
         $viewhiddensections = has_capability('moodle/course:viewhiddensections', $this->page->context);
 
-        $strgeneral = get_string('general');
+        if ($section0name === null) {
+            $section0name = get_string('general');
+        }
         foreach ($sections as &$section) {
             if ($course->id == SITEID) {
                 $this->load_section_activities($coursenode, $section->section, $modinfo);
@@ -1053,7 +1058,7 @@ class global_navigation extends navigation_node {
                     continue;
                 }
                 if ($section->section == 0) {
-                    $sectionname = $strgeneral;
+                    $sectionname = $section0name;
                 } else {
                     $sectionname = $name.' '.$section->section;
                 }
@@ -1101,7 +1106,7 @@ class global_navigation extends navigation_node {
             $activitynode->title(get_string('modulename', $cm->modname));
             $activitynode->hidden = (!$cm->visible);
             if ($this->module_extends_navigation($cm->modname)) {
-                $child->nodetype = navigation_node::NODETYPE_BRANCH;
+                $activitynode->nodetype = navigation_node::NODETYPE_BRANCH;
             }
             $activities[$cmid] = $activitynode;
         }
@@ -1489,6 +1494,16 @@ class global_navigation extends navigation_node {
      */
     public function clear_cache() {
         $this->cache->clear();
+    }
+
+    public function set_expansion_limit($type) {
+        $nodes = $this->find_all_of_type($type);
+        foreach ($nodes as &$node) {
+            foreach ($node->children as &$child) {
+                $child->display = false;
+            }
+        }
+        return true;
     }
 }
 
@@ -2733,30 +2748,35 @@ class settings_navigation extends navigation_node {
     protected function load_category_settings() {
         global $CFG;
 
-        $blocknode = $this->add(print_context_name($this->context));
-        $blocknode->force_open();
+        $categorynode = $this->add(print_context_name($this->context));
+        $categorynode->force_open();
 
         if ($this->page->user_is_editing() && has_capability('moodle/category:manage', $this->context)) {
-            $blocknode->add(get_string('editcategorythis'), new moodle_url('/course/editcategory.php', array('id' => $this->context->instanceid)));
-            $blocknode->add(get_string('addsubcategory'), new moodle_url('/course/editcategory.php', array('parent' => $this->context->instanceid)));
+            $categorynode->add(get_string('editcategorythis'), new moodle_url('/course/editcategory.php', array('id' => $this->context->instanceid)));
+            $categorynode->add(get_string('addsubcategory'), new moodle_url('/course/editcategory.php', array('parent' => $this->context->instanceid)));
         }
 
         // Assign local roles
         $assignurl = new moodle_url('/'.$CFG->admin.'/roles/assign.php', array('contextid'=>$this->context->id));
-        $blocknode->add(get_string('assignroles', 'role'), $assignurl, self::TYPE_SETTING);
+        $categorynode->add(get_string('assignroles', 'role'), $assignurl, self::TYPE_SETTING);
 
         // Override roles
         if (has_capability('moodle/role:review', $this->context) or count(get_overridable_roles($this->context))>0) {
             $url = new moodle_url('/'.$CFG->admin.'/roles/permissions.php', array('contextid'=>$this->context->id));
-            $blocknode->add(get_string('permissions', 'role'), $url, self::TYPE_SETTING);
+            $categorynode->add(get_string('permissions', 'role'), $url, self::TYPE_SETTING);
         }
         // Check role permissions
         if (has_any_capability(array('moodle/role:assign', 'moodle/role:safeoverride','moodle/role:override', 'moodle/role:assign'), $this->context)) {
             $url = new moodle_url('/'.$CFG->admin.'/roles/check.php', array('contextid'=>$this->context->id));
-            $blocknode->add(get_string('checkpermissions', 'role'), $url, self::TYPE_SETTING);
+            $categorynode->add(get_string('checkpermissions', 'role'), $url, self::TYPE_SETTING);
+        }
+        // Manage filters
+        if (has_capability('moodle/filter:manage', $this->context) && count(filter_get_available_in_context($this->context))>0) {
+            $url = new moodle_url('/filter/manage.php', array('contextid'=>$this->context->id));
+            $categorynode->add(get_string('filters', 'admin'), $url, self::TYPE_SETTING);
         }
 
-        return $blocknode;
+        return $categorynode;
     }
 
     /**

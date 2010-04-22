@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * MSSQL specific temptables store. Needed because temporary tables
+ * MYSQL specific temptables store. Needed because temporary tables
  * are named diferently than normal tables. Also used to be able to retrieve
  * temp table names included in the get_tables() method od the DB.
  *
