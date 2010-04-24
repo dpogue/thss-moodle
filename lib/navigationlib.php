@@ -122,6 +122,8 @@ class navigation_node implements renderable {
     public $forcetitle = false;
     /** @var navigation_node A reference to the node parent */
     public $parent = null;
+    /** @var bool Override to not display the icon even if one is provided **/
+    public $hideicon = false;
     /** @var array */
     protected $namedtypes = array(0=>'system',10=>'category',20=>'course',30=>'structure',40=>'activity',50=>'resource',60=>'custom',70=>'setting', 80=>'user');
     /** @var moodle_url */
@@ -1029,10 +1031,10 @@ class global_navigation extends navigation_node {
             if (function_exists($structurefunc)) {
                 return $structurefunc($this, $course, $coursenode);
             } else {
-                return $this->load_generic_course_sections($course, $coursenode, get_string('topic'), 'topic');
+                return $this->load_generic_course_sections($course, $coursenode);
             }
         } else {
-            return $this->load_generic_course_sections($course, $coursenode, get_string('topic'), 'topic');
+            return $this->load_generic_course_sections($course, $coursenode);
         }
     }
 
@@ -1045,14 +1047,29 @@ class global_navigation extends navigation_node {
      * @param string $activeparam The url used to identify the active section
      * @return array An array of course section nodes
      */
-    public function load_generic_course_sections(stdClass $course, navigation_node $coursenode, $name, $activeparam, $section0name=null) {
+    public function load_generic_course_sections(stdClass $course, navigation_node $coursenode, $courseformat='unknown') {
+        global $DB, $USER;
+        
         $modinfo = get_fast_modinfo($course);
         $sections = array_slice(get_all_sections($course->id), 0, $course->numsections+1, true);
         $viewhiddensections = has_capability('moodle/course:viewhiddensections', $this->page->context);
 
-        if ($section0name === null) {
-            $section0name = get_string('general');
+        if (isloggedin() && !isguestuser()) {
+            $activesection = $DB->get_field("course_display", "display", array("userid"=>$USER->id, "course"=>$course->id));
+        } else {
+            $activesection = null;
         }
+
+        $namingfunction = 'callback_'.$courseformat.'_get_section_name';
+        $namingfunctionexists = (function_exists($namingfunction));
+        
+        $activeparamfunction = 'callback_'.$courseformat.'_request_key';
+        if (function_exists($activeparamfunction)) {
+            $activeparam = $activeparamfunction();
+        } else {
+            $activeparam = 'section';
+        }
+
         foreach ($sections as &$section) {
             if ($course->id == SITEID) {
                 $this->load_section_activities($coursenode, $section->section, $modinfo);
@@ -1060,16 +1077,17 @@ class global_navigation extends navigation_node {
                 if ((!$viewhiddensections && !$section->visible) || (!$this->showemptysections && !array_key_exists($section->section, $modinfo->sections))) {
                     continue;
                 }
-                if ($section->section == 0) {
-                    $sectionname = $section0name;
+                if ($namingfunctionexists) {
+                    $sectionname = $namingfunction($course, $section, $sections);
                 } else {
-                    $sectionname = $name.' '.$section->section;
+                    $sectionname = get_string('section').' '.$section->section;
                 }
                 $url = new moodle_url('/course/view.php', array('id'=>$course->id, $activeparam=>$section->section));
                 $sectionnode = $coursenode->add($sectionname, $url, navigation_node::TYPE_SECTION, null, $section->id);
                 $sectionnode->nodetype = navigation_node::NODETYPE_BRANCH;
                 $sectionnode->hidden = (!$section->visible);
-                if ($sectionnode->isactive) {
+                if ($sectionnode->isactive || ($activesection != null && $section->section == $activesection)) {
+                    $sectionnode->force_open();
                     $this->load_section_activities($sectionnode, $section->section, $modinfo);
                 }
                 $section->sectionnode = $sectionnode;
@@ -1234,6 +1252,19 @@ class global_navigation extends navigation_node {
             }
             if ($canviewdiscussions) {
                 $forumtab->add(get_string('discussions', 'forum'), new moodle_url('/mod/forum/user.php', array_merge($baseargs, array('mode'=>'discussions'))));
+            }
+        }
+
+        // Add blog nodes
+        if (!empty($CFG->bloglevel)) {
+            require_once($CFG->dirroot.'/blog/lib.php');
+            // Get all options for the user
+            $options = blog_get_options_for_user($user);
+            if (count($options) > 0) {
+                $blogs = $usernode->add(get_string('blogs', 'blog'), null, navigation_node::TYPE_CONTAINER);
+                foreach ($options as $option) {
+                    $blogs->add($option['string'], $option['link']);
+                }
             }
         }
 

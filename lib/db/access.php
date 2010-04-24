@@ -470,6 +470,39 @@ $capabilities = array(
         'clonepermissionsfrom' => 'moodle/category:visibility'
     ),
 
+    // create, delete, move cohorts in system and course categories,
+    // (cohorts with component !== null can be only moved)
+    'moodle/cohort:manage' => array(
+
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSECAT,
+        'legacy' => array(
+            'manager' => CAP_ALLOW
+        )
+    ),
+
+    // add and remove cohort members (only for cohorts where component !== null)
+    'moodle/cohort:assign' => array(
+
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSECAT,
+        'legacy' => array(
+            'manager' => CAP_ALLOW
+        )
+    ),
+
+    // view members of a cohort, this can be used in course context too,
+    // this also controls the ability to actually use cohort
+    'moodle/cohort:view' => array(
+
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+        'legacy' => array(
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        )
+    ),
+
     'moodle/course:create' => array(
 
         'riskbitmask' => RISK_XSS,
@@ -1473,12 +1506,23 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         )
     ),
-    'moodle/rating:viewall' => array(
-
+    'moodle/rating:viewany' => array(
         'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',
         'contextlevel' => CONTEXT_SYSTEM,
         'legacy' => array(
+            'student' => CAP_ALLOW,
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        )
+    ),
+    'moodle/rating:viewall' => array(
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'legacy' => array(
+            'student' => CAP_ALLOW,
             'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW
@@ -1488,6 +1532,7 @@ $capabilities = array(
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
         'legacy' => array(
+            'student' => CAP_ALLOW,
             'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW

@@ -8,40 +8,77 @@ define('FEEDBACK_MULTICHOICE_ADJUST_SEP', '<<<<<');
 
 class feedback_item_multichoice extends feedback_item_base {
     var $type = "multichoice";
+    var $commonparams;
+    var $item_form;
+    var $item;
+    
     function init() {
 
     }
 
-    function show_edit($item, $commonparams, $positionlist, $position) {
-        global $CFG;
-
+    function build_editform($item, $feedback, $cm) {
+        global $DB, $CFG;
         require_once('multichoice_form.php');
 
-        $item_form = new feedback_multichoice_form('edit_item.php', array('item'=>$item, 'common'=>$commonparams, 'positionlist'=>$positionlist, 'position'=>$position));
-
+        //get the lastposition number of the feedback_items
+        $position = $item->position;
+        $lastposition = $DB->count_records('feedback_item', array('feedback'=>$feedback->id));
+        if($position == -1){
+            $i_formselect_last = $lastposition + 1;
+            $i_formselect_value = $lastposition + 1;
+            $item->position = $lastposition + 1;
+        }else {
+            $i_formselect_last = $lastposition;
+            $i_formselect_value = $item->position;
+        }
+        //the elements for position dropdownlist
+        $positionlist = array_slice(range(0,$i_formselect_last),1,$i_formselect_last,true);
+        
         $item->presentation = empty($item->presentation) ? '' : $item->presentation;
-        $item->name = empty($item->name) ? '' : $item->name;
-        $item->label = empty($item->label) ? '' : $item->label;
-
         $info = $this->get_info($item);
 
-        $item->required = isset($item->required) ? $item->required : 0;
-        if($item->required) {
-            $item_form->requiredcheck->setValue(true);
-        }
+        $commonparams = array('cmid'=>$cm->id,
+                             'id'=>isset($item->id) ? $item->id : NULL,
+                             'typ'=>$item->typ,
+                             'feedback'=>$feedback->id);
 
-        $item_form->itemname->setValue($item->name);
-        $item_form->itemlabel->setValue($item->label);
-
-        $item_form->selectadjust->setValue($info->horizontal);
-
-        $item_form->selecttype->setValue($info->subtype);
-
-        $itemvalues = str_replace(FEEDBACK_MULTICHOICE_LINE_SEP, "\n", $info->presentation);
-        $itemvalues = str_replace("\n\n", "\n", $itemvalues);
-        $item_form->values->setValue($itemvalues);
-        return $item_form;
+        //build the form
+        $this->item_form = new feedback_multichoice_form('edit_item.php', array('item'=>$item, 'common'=>$commonparams, 'positionlist'=>$positionlist, 'position'=>$position, 'info'=>$info));
     }
+
+    //this function only can used after the call of build_editform()
+    function show_editform() {
+        $this->item_form->display();
+    }
+    
+    function is_cancelled() {
+        return $this->item_form->is_cancelled();
+    }
+
+    function get_data() {
+        if($this->item = $this->item_form->get_data()) {
+            return true;
+        }
+        return false;
+    }
+
+    function save_item() {
+        global $DB;
+        
+        if(!$item = $this->item_form->get_data()) {
+            return false;
+        }
+        
+        $item->hasvalue = $this->get_hasvalue();
+        if(!$item->id) {
+            $item->id = $DB->insert_record('feedback_item', $item);
+        }else {
+            $DB->update_record('feedback_item', $item);
+        }
+        
+        return $DB->get_record('feedback_item', array('id'=>$item->id));
+    }
+
 
     //liefert ein eindimensionales Array mit drei Werten(typ, name, XXX)
     //XXX ist ein eindimensionales Array (anzahl der Antworten bei Typ Radio) Jedes Element ist eine Struktur (answertext, answercount)
