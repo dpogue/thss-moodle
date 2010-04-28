@@ -1164,11 +1164,7 @@ class block_manager {
             redirect($this->page->url);
 
         } else {
-            $strheading = get_string('editinga', $block->name());
-            if (strpos($strheading, '[[') === 0) {
-                $strheading = get_string('blockconfiga', 'moodle', $block->get_title());
-            }
-
+            $strheading = get_string('blockconfiga', 'moodle', $block->get_title());
             $editpage->set_title($strheading);
             $editpage->set_heading($strheading);
             $editpage->navbar->add($strheading);
@@ -1400,7 +1396,7 @@ function matching_page_type_patterns($pagetype) {
         $patterns[] = implode('-', $bits) . '-*';
         array_pop($bits);
     }
-     $patterns[] = '*';
+    $patterns[] = '*';
     return $patterns;
 }
 

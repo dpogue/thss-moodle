@@ -305,7 +305,6 @@ if ($hassiteconfig || has_capability('moodle/question:config', $systemcontext)) 
     }
 }
 
-
 $ADMIN->add('reports', new admin_externalpage('comments', get_string('comments'), $CFG->wwwroot.'/comment/', 'moodle/site:viewreports'));
 /// Now add reports
 

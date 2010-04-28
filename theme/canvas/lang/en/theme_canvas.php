@@ -16,13 +16,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'repository_draft', language 'en', branch 'MOODLE_20_STABLE'
+ * Strings for component 'theme_formfactor', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package   repository_draft
+ * @package   theme_boxxie
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['draft:view'] = 'View draft files in file picker';
-$string['repositorydesc'] = 'A plug-in for browsing current draft files';
-$string['repositoryname'] = 'Current files';
+$string['pluginname'] = 'Frameworked';
+$string['region-side-post'] = 'Right';
+$string['region-side-pre'] = 'Left';
+$string['choosereadme'] = 'Frameworked, a Moodle 2.0 theme by Patrick Malley (<a href="http://newschoollearning.com/">newschoollearning.com</a>)';

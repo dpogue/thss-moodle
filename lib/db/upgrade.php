@@ -3642,8 +3642,7 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
 
         // Main savepoint reached
         upgrade_main_savepoint($result, 2010042303);
-      }
-
+    }
 
     return $result;
 }

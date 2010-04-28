@@ -291,7 +291,6 @@ class assignment_upload extends assignment_base {
                 $mimetype = $file->get_mimetype();
                 $path = file_encode_url($CFG->wwwroot.'/pluginfile.php', '/'.$this->context->id.'/assignment_submission/'.$userid.'/'.$filename);
                 $output .= '<a href="'.$path.'" ><img class="icon" src="'.$OUTPUT->pix_url(file_mimetype_icon($mimetype)).'" alt="'.$mimetype.'" />'.s($filename).'</a>&nbsp;';
-
             }
 
         }
@@ -1126,7 +1125,6 @@ class assignment_upload extends assignment_base {
     public function download_submissions() {
         global $CFG,$DB;
         require_once($CFG->libdir.'/filelib.php');
-
         $submissions = $this->get_submissions('','');
         if (empty($submissions)) {
             error("there are no submissions to download");

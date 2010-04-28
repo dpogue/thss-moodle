@@ -470,6 +470,7 @@ class assignment_base {
         if (! $DB->delete_records('assignment', array('id'=>$assignment->id))) {
             $result = false;
         }
+        $mod = $DB->get_field('modules','id',array('name'=>'assignment'));
 
         assignment_grade_item_delete($assignment);
 
@@ -1080,7 +1081,6 @@ class assignment_base {
         /* first we check to see if the form has just been submitted
          * to request user_preference updates
          */
-
         if (isset($_POST['updatepref'])){
             $perpage = optional_param('perpage', 10, PARAM_INT);
             $perpage = ($perpage <= 0) ? 10 : $perpage ;
@@ -1801,7 +1801,6 @@ class assignment_base {
                     $button->set_format_by_file($file);
                     $output .= $button->to_html(PORTFOLIO_ADD_ICON_LINK);
                 }
-                $output .= '<br />';
             }
             if (count($files) > 1  && $this->portfolio_exportable() && has_capability('mod/assignment:exportownsubmission', $this->context)) {
                 $button->set_callback_options('assignment_portfolio_caller', array('id' => $this->cm->id), '/mod/assignment/locallib.php');
@@ -3423,4 +3422,49 @@ function assignment_create_temp_dir($dir, $prefix='', $mode=0700) {
     } while (!mkdir($path, $mode));
 
     return $path;
+}
+/**
+ * Lists all file areas current user may browse
+ *
+ * @param object $course
+ * @param object $cm
+ * @param object $context
+ * @return array
+ */
+function assignment_get_file_areas($course, $cm, $context) {
+    $areas = array();
+    if (has_capability('moodle/course:managefiles', $context)) {
+        $areas['assignment_submission'] = get_string('assignmentsubmission', 'assignment');
+    }
+    return $areas;
+}
+/**
+ * File browsing support for assignment module content area.
+ * @param object $browser
+ * @param object $areas
+ * @param object $course
+ * @param object $cm
+ * @param object $context
+ * @param string $filearea
+ * @param int $itemid
+ * @param string $filepath
+ * @param string $filename
+ * @return object file_info instance or null if not found
+ */
+function assignment_get_file_info($browser, $areas, $course, $cm, $context, $filearea, $itemid, $filepath, $filename) {
+     global $CFG, $DB;
+
+    if (!has_capability('moodle/course:managefiles', $context)) {
+        // no peaking here, sorry
+        return null;
+    }
+
+    if ($filearea !== 'assignment_submission') {
+        return null;
+    }
+    //TODO: handle itemid as group id here.
+
+    $fs = get_file_storage();
+    $files = $fs->get_area_files($context->id, $filearea);
+    return $files;
 }
