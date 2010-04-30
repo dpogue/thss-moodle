@@ -99,7 +99,7 @@
                     $PAGE->set_title($course->shortname .': '. $strlogs);
                     $PAGE->set_heading($course->fullname);
                     $PAGE->navbar->add($strreports, new moodle_url('/course/report.php', array('id'=>$course->id)));
-                    $PAGE->navbar->add($strlogs, new moodle_url('/course/index.php', array('id'=>$course->id)));
+                    $PAGE->navbar->add($strlogs, new moodle_url('/course/report/log/index.php', array('id'=>$course->id)));
                     $PAGE->navbar->add("$userinfo, $dateinfo");
                     echo $OUTPUT->header();
                 }
@@ -146,12 +146,20 @@
         } else {
             $PAGE->set_title($course->shortname .': '. $strlogs);
             $PAGE->set_heading($course->fullname);
+            $PAGE->navbar->add($strreports, new moodle_url('/course/report.php', array('id'=>$course->id)));
+            $PAGE->navbar->add($strlogs);
             echo $OUTPUT->header();
         }
 
         echo $OUTPUT->heading(get_string('chooselogs') .':');
 
         print_log_selector_form($course, $user, $date, $modname, $modid, $modaction, $group, $showcourses, $showusers, $logformat);
+
+        $livelogs = get_string('livelogs');
+        $url = new moodle_url('/course/report/log/live.php', array('id'=>$course->id));
+        $link = new action_link($url, $livelogs, new popup_action('click', $url, 'livelog', array('height' => 500, 'width' => 800)));
+
+        echo $OUTPUT->render($link);
     }
 
     echo $OUTPUT->footer();

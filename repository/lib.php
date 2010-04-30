@@ -1833,8 +1833,8 @@ function repository_setup_default_plugins() {
     $local_plugin_id = $local_plugin->create(true);
     $upload_plugin = new repository_type('upload', array(), true);
     $upload_plugin_id = $upload_plugin->create(true);
-    if (is_int($local_plugin_id) or is_int($upload_plugin_id)) {
-        echo $OUTPUT->box(get_string('setupdefaultplugins', 'repository'));
-    }
+    $recent_plugin = new repository_type('recent', array(), true);
+    $recent_plugin_id = $upload_plugin->create(true);
+    echo $OUTPUT->box(get_string('setupdefaultplugins', 'repository'));
     return true;
 }

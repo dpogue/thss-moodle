@@ -254,28 +254,31 @@ function xmldb_data_upgrade($oldversion) {
         upgrade_mod_savepoint($result, 2010031602, 'data');
     }
 
-    if($result && $oldversion < 2010042300) {
+    if($result && $oldversion < 2010042800) {
         //migrate data ratings to the central rating table
         require_once($CFG->dirroot . '/lib/db/upgradelib.php');
+        $table = new xmldb_table('data_ratings');
+        if ($dbman->table_exists($table)) {
+            //data ratings didnt store time created and modified so Im using the times from the record the rating was attached to
+            $sql = "INSERT INTO {rating} (contextid, scaleid, itemid, rating, userid, timecreated, timemodified)
+    SELECT cxt.id, d.scale, r.recordid AS itemid, r.rating, r.userid, re.timecreated AS timecreated, re.timemodified AS timemodified
+    FROM {data_ratings} r
+    JOIN {data_records} re ON r.recordid=re.id
+    JOIN {data} d ON d.id=re.dataid
+    JOIN {course_modules} cm ON cm.instance=d.id
+    JOIN {context} cxt ON cxt.instanceid=cm.id
+    JOIN {modules} m ON m.id=cm.module
+    WHERE m.name = :modname AND cxt.contextlevel = :contextlevel";
+            $params['modname'] = 'data';
+            $params['contextlevel'] = CONTEXT_MODULE;
 
-        //data ratings didnt store time created and modified so Im using the times from the record the rating was attached to
-        $sql = "INSERT INTO {rating} (contextid, scaleid, itemid, rating, userid, timecreated, timemodified)
-SELECT cxt.id, d.scale, r.recordid AS itemid, r.rating, r.userid, re.timecreated AS timecreated, re.timemodified AS timemodified
-FROM {data_ratings} r
-JOIN {data_records} re ON r.recordid=re.id
-JOIN {data} d ON d.id=re.dataid
-JOIN {course_modules} cm ON cm.instance=d.id
-JOIN {context} cxt ON cxt.instanceid=cm.id
-JOIN {modules} m ON m.id=cm.module
-WHERE m.name = :modname AND cxt.contextlevel = :contextlevel";
-        $params['modname'] = 'data';
-        $params['contextlevel'] = CONTEXT_MODULE;
+            $DB->execute($sql, $params);
 
-        $DB->execute($sql, $params);
+            //now drop data_ratings
+            $dbman->drop_table($table);
+        }
 
-        //todo andrew drop data_ratings
-
-        upgrade_mod_savepoint($result, 2010042300, 'data');
+        upgrade_mod_savepoint($result, 2010042800, 'data');
     }
 
     return $result;

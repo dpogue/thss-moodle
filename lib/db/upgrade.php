@@ -3537,47 +3537,6 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         upgrade_main_savepoint($result, 2010042100);
     }
 
-    if ($result && $oldversion < 2010042200) {
-        //drop the previously created ratings table
-        $table = new xmldb_table('ratings');
-        if ($dbman->table_exists($table)) {
-            $dbman->drop_table($table);
-        }
-
-        //create the rating table (replaces module specific rating implementations)
-        $table = new xmldb_table('rating');
-        if ($dbman->table_exists($table)) {
-            $dbman->drop_table($table);
-        }
-
-    /// Adding fields to table rating
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('contextid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-
-        $table->add_field('itemid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('scaleid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('rating', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-
-        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
-
-    /// Adding keys to table rating
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->add_key('contextid', XMLDB_KEY_FOREIGN, array('contextid'), 'context', array('id'));
-        $table->add_key('userid', XMLDB_KEY_FOREIGN, array('userid'), 'user', array('id'));
-
-    /// Adding indexes to table rating
-        $table->add_index('itemid', XMLDB_INDEX_NOTUNIQUE, array('itemid'));
-
-    /// Create table for ratings
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
-
-        upgrade_main_savepoint($result, 2010042200);
-    }
-
     if ($result && $oldversion < 2010042301) {
 
         $table = new xmldb_table('course_sections');
@@ -3642,6 +3601,99 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
 
         // Main savepoint reached
         upgrade_main_savepoint($result, 2010042303);
+    }
+
+    if ($result && $oldversion < 2010042800) {
+        //drop the previously created ratings table
+        $table = new xmldb_table('ratings');
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+        //create the rating table (replaces module specific rating implementations)
+        $table = new xmldb_table('rating');
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+    /// Adding fields to table rating
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('contextid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
+
+        $table->add_field('itemid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
+        $table->add_field('scaleid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('rating', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
+
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
+
+    /// Adding keys to table rating
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('contextid', XMLDB_KEY_FOREIGN, array('contextid'), 'context', array('id'));
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, array('userid'), 'user', array('id'));
+
+    /// Adding indexes to table rating
+        $table->add_index('itemid', XMLDB_INDEX_NOTUNIQUE, array('itemid'));
+
+    /// Create table for ratings
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_main_savepoint($result, 2010042800);
+    }
+
+    if ($result && $oldversion < 2010042801) {
+        // migrating old comments block content
+        $DB->execute("
+UPDATE {comments} SET contextid = (
+    SELECT parentcontextid FROM {block_instances}
+    WHERE id = {comments}.itemid AND blockname = 'comments'
+    ),
+    commentarea = 'page_comments',
+    itemid = 0
+WHERE commentarea = 'block_comments'
+AND itemid != 0
+AND EXISTS (SELECT 'x'
+      FROM {block_instances}
+      WHERE id = {comments}.itemid
+      AND blockname = 'comments')");
+
+        // remove all orphaned record
+        $DB->delete_records('comments', array('commentarea'=>'block_comments'));
+        upgrade_main_savepoint($result, 2010042801);
+    }
+
+    if ($result && $oldversion < 2010042802) { // Change backup_controllers->type to varchar10 (recreate dep. index)
+
+    /// Define index typeitem_ix (not unique) to be dropped form backup_controllers
+        $table = new xmldb_table('backup_controllers');
+        $index = new xmldb_index('typeitem_ix', XMLDB_INDEX_NOTUNIQUE, array('type', 'itemid'));
+
+    /// Conditionally launch drop index typeitem_ix
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+    /// Changing precision of field type on table backup_controllers to (10)
+        $table = new xmldb_table('backup_controllers');
+        $field = new xmldb_field('type', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, null, 'backupid');
+
+    /// Launch change of precision for field type
+        $dbman->change_field_precision($table, $field);
+
+    /// Define index typeitem_ix (not unique) to be added to backup_controllers
+        $table = new xmldb_table('backup_controllers');
+        $index = new xmldb_index('typeitem_ix', XMLDB_INDEX_NOTUNIQUE, array('type', 'itemid'));
+
+    /// Conditionally launch add index typeitem_ix
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+    /// Main savepoint reached
+        upgrade_main_savepoint($result, 2010042802);
     }
 
     return $result;

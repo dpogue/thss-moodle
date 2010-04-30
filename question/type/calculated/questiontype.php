@@ -42,13 +42,6 @@ class question_calculated_qtype extends default_questiontype {
             $question->options->incorrectfeedback = '';
 
         }
-    //    echo "<p> questionoptions <pre>";print_r($question);echo "</pre></p>";
-         /* $question->options->unitgradingtype = 0;
-          $question->options->unitpenalty = 0;
-          $question->options->showunits = 0 ;
-          $question->options->unitsleft = 0 ;
-          $question->options->instructions = '' ;*/
-   //     echo "<p> questionoptions <pre>";print_r($question);echo "</pre></p>";
 
         if (!$question->options->answers = $DB->get_records_sql(
                                 "SELECT a.*, c.tolerance, c.tolerancetype, c.correctanswerlength, c.correctanswerformat " .
@@ -62,8 +55,8 @@ class question_calculated_qtype extends default_questiontype {
         }
 
         if ( $this->get_virtual_qtype() ==  $QTYPES['numerical']){
-            $QTYPES['numerical']->get_numerical_options($question);
             $QTYPES['numerical']->get_numerical_units($question);
+            $QTYPES['numerical']->get_numerical_options($question);
         }
 
         if( isset($question->export_process)&&$question->export_process){
@@ -902,17 +895,17 @@ class question_calculated_qtype extends default_questiontype {
     function custom_generator_tools_part(&$mform, $idx, $j){
 
         $minmaxgrp = array();
-        $minmaxgrp[] =& $mform->createElement('text', "calcmin[$idx]", get_string('calcmin', 'qtype_datasetdependent'));
-        $minmaxgrp[] =& $mform->createElement('text', "calcmax[$idx]", get_string('calcmax', 'qtype_datasetdependent'));
-        $mform->addGroup($minmaxgrp, 'minmaxgrp', get_string('minmax', 'qtype_datasetdependent'), ' - ', false);
+        $minmaxgrp[] =& $mform->createElement('text', "calcmin[$idx]", get_string('calcmin', 'qtype_calculated'));
+        $minmaxgrp[] =& $mform->createElement('text', "calcmax[$idx]", get_string('calcmax', 'qtype_calculated'));
+        $mform->addGroup($minmaxgrp, 'minmaxgrp', get_string('minmax', 'qtype_calculated'), ' - ', false);
         $mform->setType("calcmin[$idx]", PARAM_NUMBER);
         $mform->setType("calcmax[$idx]", PARAM_NUMBER);
 
         $precisionoptions = range(0, 10);
-        $mform->addElement('select', "calclength[$idx]", get_string('calclength', 'qtype_datasetdependent'), $precisionoptions);
+        $mform->addElement('select', "calclength[$idx]", get_string('calclength', 'qtype_calculated'), $precisionoptions);
 
-        $distriboptions = array('uniform' => get_string('uniform', 'qtype_datasetdependent'), 'loguniform' => get_string('loguniform', 'qtype_datasetdependent'));
-        $mform->addElement('select', "calcdistribution[$idx]", get_string('calcdistribution', 'qtype_datasetdependent'), $distriboptions);
+        $distriboptions = array('uniform' => get_string('uniform', 'qtype_calculated'), 'loguniform' => get_string('loguniform', 'qtype_calculated'));
+        $mform->addElement('select', "calcdistribution[$idx]", get_string('calcdistribution', 'qtype_calculated'), $distriboptions);
 
 
     }
@@ -1763,9 +1756,7 @@ class question_calculated_qtype extends default_questiontype {
                     FROM {question_datasets} d,
                          {question_dataset_definitions} i
                   WHERE i.id = d.datasetdefinition
-                    AND i.category = ?
-                    ;
-                   ";
+                    AND i.category = ?";
              if ($records = $DB->get_records_sql($sql, array($form->category))) {
                    foreach ($records as $r) {
                        if ( !isset ($datasetdefs["$r->name"])) $datasetdefs["$r->name"] = $r->itemcount;
@@ -1790,9 +1781,9 @@ class question_calculated_qtype extends default_questiontype {
         $namestr =get_string('name', 'quiz');
         $minstr=get_string('min', 'quiz');
         $maxstr=get_string('max', 'quiz');
-        $rangeofvaluestr=get_string('minmax','qtype_datasetdependent');
+        $rangeofvaluestr=get_string('minmax','qtype_calculated');
         $questionusingstr = get_string('usedinquestion','qtype_calculated');
-        $itemscountstr = get_string('itemscount','qtype_datasetdependent');
+        $itemscountstr = get_string('itemscount','qtype_calculated');
        $text ='';
         if (!empty($form->category)) {
             list($category) = explode(',', $form->category);
@@ -1800,14 +1791,12 @@ class question_calculated_qtype extends default_questiontype {
                     FROM {question_datasets} d,
                          {question_dataset_definitions} i
                     WHERE i.id = d.datasetdefinition
-                    AND i.category = ?;
-                    " ;
+                    AND i.category = ?";
             if ($records = $DB->get_records_sql($sql, array($category))) {
                 foreach ($records as $r) {
                     $sql1 = "SELECT q.*
                         FROM  {question} q
-                             WHERE q.id = ?
-                    ";
+                             WHERE q.id = ?";
                     if ( !isset ($datasetdefs["$r->type-$r->category-$r->name"])){
                         $datasetdefs["$r->type-$r->category-$r->name"]= $r;
                     }
@@ -1857,9 +1846,9 @@ class question_calculated_qtype extends default_questiontype {
         $namestr =get_string('name', 'quiz');
         $minstr=get_string('min', 'quiz');
         $maxstr=get_string('max', 'quiz');
-        $rangeofvaluestr=get_string('minmax','qtype_datasetdependent');
+        $rangeofvaluestr=get_string('minmax','qtype_calculated');
         $questionusingstr = get_string('usedinquestion','qtype_calculated');
-        $itemscountstr = get_string('itemscount','qtype_datasetdependent');
+        $itemscountstr = get_string('itemscount','qtype_calculated');
        $text ='';
         if (!empty($question->category)) {
             list($category) = explode(',', $question->category);
@@ -1867,14 +1856,12 @@ class question_calculated_qtype extends default_questiontype {
                     FROM {question_datasets} d,
                          {question_dataset_definitions} i
                     WHERE i.id = d.datasetdefinition
-                    AND i.category = ?;
-                    " ;
+                    AND i.category = ?";
             if ($records = $DB->get_records_sql($sql, array($category))) {
                 foreach ($records as $r) {
                     $sql1 = "SELECT q.*
                         FROM  {question} q
-                             WHERE q.id = ?
-                    ";
+                             WHERE q.id = ?";
                     if ( !isset ($datasetdefs["$r->type-$r->category-$r->name"])){
                         $datasetdefs["$r->type-$r->category-$r->name"]= $r;
                     }
@@ -2010,7 +1997,6 @@ class question_calculated_qtype extends default_questiontype {
                     $status = fwrite ($bf,start_tag("CALCULATED_OPTIONS",$level,true));
                     //Print calculated_option contents
                     fwrite ($bf,full_tag("SYNCHRONIZE",$level+1,false,$calculated_option->synchronize));
-                    fwrite ($bf,full_tag("MULTIPLECHOICE",$level+1,false,$calculated_option->multiplechoice));
                     fwrite ($bf,full_tag("SINGLE",$level+1,false,$calculated_option->single));
                     fwrite ($bf,full_tag("SHUFFLEANSWERS",$level+1,false,$calculated_option->shuffleanswers));
                     fwrite ($bf,full_tag("CORRECTFEEDBACK",$level+1,false,$calculated_option->correctfeedback));

@@ -362,9 +362,11 @@ function scorm_insert_track($userid,$scormid,$scoid,$attempt,$element,$value,$fo
     }
 
     if ($track = $DB->get_record('scorm_scoes_track',array('userid'=>$userid, 'scormid'=>$scormid, 'scoid'=>$scoid, 'attempt'=>$attempt, 'element'=>$element))) {
-        $track->value = addslashes_js($value);
-        $track->timemodified = time();
-        $id = $DB->update_record('scorm_scoes_track',$track);
+        if ($element != 'x.start.time' ) { //don't update x.start.time - keep the original value.
+            $track->value = addslashes_js($value);
+            $track->timemodified = time();
+            $id = $DB->update_record('scorm_scoes_track',$track);
+        }
     } else {
         $track->userid = $userid;
         $track->scormid = $scormid;
@@ -574,7 +576,7 @@ function scorm_grade_user($scorm, $userid, $time=false) {
             return scorm_grade_user_attempt($scorm, $userid, 1, $time);
         break;
         case LASTATTEMPT:
-            return scorm_grade_user_attempt($scorm, $userid, scorm_get_last_attempt($scorm->id, $userid), $time);
+            return scorm_grade_user_attempt($scorm, $userid, scorm_get_last_completed_attempt($scorm->id, $userid), $time);
         break;
         case HIGHESTATTEMPT:
             $maxscore = 0;
@@ -647,6 +649,21 @@ function scorm_get_last_attempt($scormid, $userid) {
 
 /// Find the last attempt number for the given user id and scorm id
     if ($lastattempt = $DB->get_record('scorm_scoes_track', array('userid'=>$userid, 'scormid'=>$scormid), 'max(attempt) as a')) {
+        if (empty($lastattempt->a)) {
+            return '1';
+        } else {
+            return $lastattempt->a;
+        }
+    } else {
+        return false;
+    }
+}
+
+function scorm_get_last_completed_attempt($scormid, $userid) {
+    global $DB;
+
+/// Find the last attempt number for the given user id and scorm id
+    if ($lastattempt = $DB->get_record('scorm_scoes_track', array('userid'=>$userid, 'scormid'=>$scormid, 'value'=> 'completed'), 'max(attempt) as a')) {
         if (empty($lastattempt->a)) {
             return '1';
         } else {

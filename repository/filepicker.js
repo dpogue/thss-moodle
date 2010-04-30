@@ -84,6 +84,7 @@ M.core_filepicker.init = function(Y, options) {
         },
 
         request: function(args, redraw) {
+            var client_id = args.client_id;
             var api = this.api + '?action='+args.action;
             var params = {};
             var scope = this;
@@ -110,6 +111,7 @@ M.core_filepicker.init = function(Y, options) {
                 method: 'POST',
                 on: {
                     complete: function(id,o,p) {
+                        var panel_id = '#panel-'+client_id;
                         if (!o) {
                             alert('IO FATAL');
                             return;
@@ -118,11 +120,11 @@ M.core_filepicker.init = function(Y, options) {
                         try {
                             data = Y.JSON.parse(o.responseText);
                         } catch(e) {
-                            alert(M.str.repository.invalidjson+' - |'+source+'| -'+stripHTML(o.responseText));
+                            Y.one(panel_id).set('innerHTML', 'ERROR: '+M.str.repository.invalidjson);
+                            return;
                         }
                         // error checking
-                        if (data.e) {
-                            var panel_id = '#panel-'+data.client_id;
+                        if (data && data.e) {
                             Y.one(panel_id).set('innerHTML', 'ERROR: '+data.e);
                             return;
                         } else {
@@ -151,6 +153,7 @@ M.core_filepicker.init = function(Y, options) {
 
         build_tree: function(node, level) {
             var client_id = this.options.client_id;
+            var dynload = this.active_repo.dynload;
             if(node.children) {
                 node.title = '<i><u>'+node.title+'</u></i>';
             }
@@ -173,6 +176,9 @@ M.core_filepicker.init = function(Y, options) {
             if(node.children) {
                 if(node.expanded) {
                     tmpNode.expand();
+                }
+                if (dynload) {
+                    tmpNode.scope = this;
                 }
                 tmpNode.isLeaf = false;
                 tmpNode.client_id = client_id;
@@ -198,8 +204,33 @@ M.core_filepicker.init = function(Y, options) {
                 this.view_as_icons();
             }
         },
+        treeview_dynload: function(node, cb) {
+            var scope = node.scope;
+            var client_id = scope.options.client_id;
+            var repository_id = scope.active_repo.id;
+            scope.request({
+                action:'list',
+                client_id: client_id,
+                repository_id: repository_id,
+                path:node.path?node.path:'',
+                page:node.page?args.page:'',
+                callback: function(id, obj, args) {
+                    obj.issearchresult = false;
+                    var list = obj.list;
+                    scope.viewbar.set('disabled', false);
+                    scope.parse_repository_options(obj);
+                    console.info(node);
+                    for(k in list) {
+                        scope.build_tree(list[k], node);
+                    }
+                    cb();
+                }
+            }, false);
+        },
         view_as_list: function() {
+            var scope = this;
             var client_id = this.options.client_id;
+            var dynload = this.active_repo.dynload;
             var list = this.filelist;
             var panel_id = '#panel-'+client_id;
             this.viewmode = 2;
@@ -209,6 +240,9 @@ M.core_filepicker.init = function(Y, options) {
             var tree = Y.Node.create('<div id="treeview-'+client_id+'"></div>');
             Y.one(panel_id).appendChild(tree);
             this.treeview = new YAHOO.widget.TreeView('treeview-'+client_id);
+            if (dynload) {
+                this.treeview.setDynamicLoad(this.treeview_dynload, 1);
+            }
 
             for(k in list) {
                 this.build_tree(list[k], this.treeview.getRoot());
@@ -1160,13 +1194,12 @@ M.core_filepicker.init = function(Y, options) {
                     link.href = "###";
                     link.innerHTML = p[i].name;
                     link.id = 'path-node-'+client_id+'-'+i;
-                    //link.id = 'path-'+client_id+'-'+repo_id;
                     var sep = Y.Node.create('<span>/</span>');
                     path.appendChild(link);
                     path.appendChild(sep);
-                    Y.one('#'+link.id).on('click', function(){
-                            this.list({'path':link_path});
-                            }, this)
+                    Y.one('#'+link.id).on('click', function(Y, path){
+                        this.list({'path':path});
+                        }, this, link_path)
                 }
             }
         },

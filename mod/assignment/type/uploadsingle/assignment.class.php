@@ -136,16 +136,16 @@ class assignment_uploadsingle extends assignment_base {
     }
 
     function setup_elements(&$mform) {
-        global $CFG, $COURSE, $DB;
+        global $CFG, $COURSE;
 
         $ynoptions = array( 0 => get_string('no'), 1 => get_string('yes'));
 
-        $mform->addElement('select', 'resubmit', get_string("allowresubmit", "assignment"), $ynoptions);
-        $mform->setHelpButton('resubmit', array('resubmit', get_string('allowresubmit', 'assignment'), 'assignment'));
+        $mform->addElement('select', 'resubmit', get_string('allowresubmit', 'assignment'), $ynoptions);
+        $mform->addHelpButton('resubmit', 'allowresubmit', 'assignment');
         $mform->setDefault('resubmit', 0);
 
-        $mform->addElement('select', 'emailteachers', get_string("emailteachers", "assignment"), $ynoptions);
-        $mform->setHelpButton('emailteachers', array('emailteachers', get_string('emailteachers', 'assignment'), 'assignment'));
+        $mform->addElement('select', 'emailteachers', get_string('emailteachers', 'assignment'), $ynoptions);
+        $mform->addHelpButton('emailteachers', 'emailteachers', 'assignment');
         $mform->setDefault('emailteachers', 0);
 
         $choices = get_max_upload_sizes($CFG->maxbytes, $COURSE->maxbytes);
@@ -153,7 +153,6 @@ class assignment_uploadsingle extends assignment_base {
         $mform->addElement('select', 'maxbytes', get_string('maximumsize', 'assignment'), $choices);
         $mform->setDefault('maxbytes', $CFG->assignment_maxbytes);
 
-        $course_context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
     }
 
     function portfolio_exportable() {
