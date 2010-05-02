@@ -63,11 +63,14 @@ class portfolio_plugin_mahara extends portfolio_plugin_pull_base {
     }
 
     public static function get_allowed_config() {
-        return array('mnethostid');
+        return array('mnethostid', 'enableleap2a');
     }
 
-    public static function supported_formats() {
-        return array(PORTFOLIO_FORMAT_FILE, PORTFOLIO_FORMAT_LEAP2A);
+    public function supported_formats() {
+        if ($this->get_config('enableleap2a')) {
+            return array(PORTFOLIO_FORMAT_FILE, PORTFOLIO_FORMAT_LEAP2A);
+        }
+        return array(PORTFOLIO_FORMAT_FILE);
     }
 
     public function expected_time($callertime) {
@@ -89,6 +92,7 @@ class portfolio_plugin_mahara extends portfolio_plugin_pull_base {
         }
         $mform->addElement('select', 'mnethostid', get_string('mnethost', 'portfolio_mahara'), $hosts);
         $mform->addRule('mnethostid', $strrequired, 'required', null, 'client');
+        $mform->addElement('selectyesno', 'enableleap2a', get_string('enableleap2a', 'portfolio_mahara'));
     }
 
     public function instance_sanity_check() {
@@ -330,30 +334,30 @@ class portfolio_plugin_mahara extends portfolio_plugin_pull_base {
         $remoteclient = get_mnet_remote_client();
         try {
             if (!$transferid = $DB->get_field('portfolio_mahara_queue', 'transferid', array('token' => $token))) {
-                throw new mnet_server_exception(8009, get_string('mnet_notoken', 'portfolio_mahara'));
+                throw new mnet_server_exception(8009, 'mnet_notoken', 'portfolio_mahara');
             }
             $exporter = portfolio_exporter::rewaken_object($transferid);
         } catch (portfolio_exception $e) {
-            throw new mnet_server_exception(8010, get_string('mnet_noid', 'portfolio_mahara'));
+            throw new mnet_server_exception(8010, 'mnet_noid', 'portfolio_mahara');
         }
         if ($exporter->get('instance')->get_config('mnethostid') != $remoteclient->id) {
-            throw new mnet_server_exception(8011, get_string('mnet_wronghost', 'portfolio_mahara'));
+            throw new mnet_server_exception(8011, 'mnet_wronghost', 'portfolio_mahara');
         }
         global $CFG;
         try {
             $i = $exporter->get('instance');
             $f = $i->get('file');
             if (empty($f) || !($f instanceof stored_file)) {
-                throw new mnet_server_exception(8012, get_string('mnet_nofile', 'portfolio_mahara'));
+                throw new mnet_server_exception(8012, 'mnet_nofile', 'portfolio_mahara');
             }
             try {
                 $c = $f->get_content();
             } catch (file_exception $e) {
-                throw new mnet_server_exception(8013, get_string('mnet_nofilecontents', 'portfolio_mahara', $e->getMessage()));
+                throw new mnet_server_exception(8013, 'mnet_nofilecontents', 'portfolio_mahara', $e->getMessage());
             }
             $contents = base64_encode($c);
         } catch (Exception $e) {
-            throw new mnet_server_exception(8013, get_string('mnet_nofile', 'portfolio_mahara'));
+            throw new mnet_server_exception(8013, 'mnet_nofile', 'portfolio_mahara');
         }
         $exporter->log_transfer();
         $exporter->process_stage_cleanup(true);

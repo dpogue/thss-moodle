@@ -23,13 +23,14 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['enableleap2a'] = 'Enable Leap2a Portfolio support (requires Mahara 1.3)';
 $string['err_invalidhost'] = 'This plugin is misconfigured to point to an invalid (or deleted) mnet host.  This plugin relies on Moodle Networking peers with SSO IDP published, SSO_SP subscribed, and portfolio subscribed <b>and</b> published.';
 $string['err_networkingoff'] = 'Moodle Networking is off entirely. Please enable it before trying to configure this pugin.  Any instances of this plugin have been set to not visible until this is fixed - you will need to set them to visible again manully.  They cannot be used until this happens';
 $string['err_nomnetauth'] = 'The mnet authentication plugin is disabled, but is required for this service';
 $string['err_nomnethosts'] = 'This plugin relies on Moodle Networking peers with SSO IDP published, SSO SP subscribed, Portfolio services published <b>and</b> subscribed as well as the mnet authentication plugin.  Any instances of this plugin has been set to not visible until this is fixed - you will need to set them to visible again manually. They cannot be used before this happens.';
 $string['failedtojump'] = 'Failed to start communication with remote server';
 $string['failedtoping'] = 'Failed to start communication with remote server: {$a}';
-$string['mnethost'] = 'Moodle Networking Host';
+$string['mnethost'] = 'MNet Host';
 $string['mnet_nofile'] = 'Could not find file in transfer object - weird error';
 $string['mnet_nofilecontents'] = 'Found file in transfer object, but could not get contents - weird error: {$a}';
 $string['mnet_noid'] = 'Could not find the matching transfer record for this token';

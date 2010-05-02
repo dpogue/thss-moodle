@@ -1492,7 +1492,6 @@ class global_navigation extends navigation_node {
 
         //Participants
         if (has_capability('moodle/course:viewparticipants', $this->page->context)) {
-            require_once($CFG->dirroot.'/blog/lib.php');
             $coursenode->add(get_string('participants'), new moodle_url('/user/index.php?id='.$course->id), self::TYPE_CUSTOM, get_string('participants'), 'participants');
         }
         
@@ -1505,14 +1504,23 @@ class global_navigation extends navigation_node {
             $filterselect = $currentgroup;
         }
         $filterselect = clean_param($filterselect, PARAM_INT);
-        if ($CFG->bloglevel >= 3) {
-            $blogsurls = new moodle_url('/blog/index.php', array('courseid' => $filterselect));
-            $coursenode->add(get_string('blogs','blog'), $blogsurls->out());
+
+        // Blogs
+        if (has_capability('moodle/blog:view', $this->page->context)) {
+            require_once($CFG->dirroot.'/blog/lib.php');
+            if (blog_is_enabled_for_user()) {
+                $blogsurls = new moodle_url('/blog/index.php', array('courseid' => $filterselect));
+                $coursenode->add(get_string('blogs','blog'), $blogsurls->out());
+            }
         }
+
+        // Notes
         if (!empty($CFG->enablenotes) && (has_capability('moodle/notes:manage', $this->page->context) || has_capability('moodle/notes:view', $this->page->context))) {
             $coursenode->add(get_string('notes','notes'), new moodle_url('/notes/index.php', array('filtertype'=>'course', 'filterselect'=>$filterselect)));
         }
-        if (!empty($CFG->usetags)) {
+
+        // Tags
+        if (!empty($CFG->usetags) && isloggedin()) {
             $coursenode->add(get_string('tags', 'tag'), new moodle_url('/tag/search.php'));
         }
 
@@ -2291,6 +2299,12 @@ class settings_navigation extends navigation_node {
             // Add the course settings link
             $url = new moodle_url('/course/edit.php', array('id'=>$course->id));
             $coursenode->add(get_string('settings'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/settings', ''));
+
+            // Add the course completion settings link
+            if ($CFG->enablecompletion && $course->enablecompletion) {
+                $url = new moodle_url('/course/completion.php', array('id'=>$course->id));
+                $coursenode->add(get_string('completion', 'completion'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/settings', ''));
+            }
         }
 
         if (has_capability('moodle/role:assign', $coursecontext)) {
@@ -2375,6 +2389,12 @@ class settings_navigation extends navigation_node {
         if (has_capability('moodle/restore:restoretargetimport', $coursecontext)) {
             $url = new moodle_url('/course/import.php', array('id'=>$course->id));
             $coursenode->add(get_string('import'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/restore', ''));
+        }
+
+        // Publish course on a hub
+        if (has_capability('moodle/course:publish', $coursecontext)) {
+            $url = new moodle_url('/course/publish/index.php', array('id'=>$course->id));
+            $coursenode->add(get_string('publish'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/publish', ''));
         }
 
         // Reset this course

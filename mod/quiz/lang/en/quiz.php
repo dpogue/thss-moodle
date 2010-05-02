@@ -57,6 +57,7 @@ $string['addquestionstoquiz'] = 'Add questions to current quiz';
 $string['addrandom'] = 'Add {$a} random questions';
 $string['addrandomfromcategory'] = 'Add random questions from category:';
 $string['addrandomquestion'] = 'Add random question';
+$string['addarandomquestion_help'] = 'When a random question is added, it results in a randomly-chosen question from the category being inserted into the quiz. This means that different students are likely to get a different selection of questions, and when a quiz allows multiple attempts then each attempt is likely to contain a new selection of questions.';
 $string['addrandomquestiontoquiz'] = 'Add a random question to quiz {$a}';
 $string['addrandom1'] = '<< Add';
 $string['addrandom2'] = 'random questions';
@@ -117,6 +118,10 @@ $string['blackboard_six'] = 'Blackboard V6+';
 $string['bothattempts'] = 'Show students with and without attempts';
 $string['braceerror'] = 'Could not find {...} around answers';
 $string['browsersecurity'] = 'Browser security';
+$string['browsersecurity_help'] = 'If "Full screen pop-up with some JavaScript security" is selected, 
+* The quiz will only start if the student has a JavaScript-enabled web-browser
+* The quiz appears in a full screen popup window that covers all the other windows and has no navigation controls
+* Students are prevented, as far as is possible, from using facilities like copy and paste';
 $string['calculated'] = 'Calculated';
 $string['calculatedquestion'] = 'Calculated Question not supported at line {$a}. The question will be ignored';
 $string['cannotcreatepath'] = 'Path cannot be created ({$a})';
@@ -227,8 +232,10 @@ $string['default'] = 'Default';
 $string['defaultgrade'] = 'Default question grade';
 $string['defaultinfo'] = 'The default category for questions.';
 $string['delaylater'] = 'Enforced delay between later attempts';
+$string['delaylater_help'] = 'If enabled, a student must wait for the specified time to elapse before attempting the quiz a third time and any subsequent times.';
 $string['delay1'] = 'Time delay between first and second attempt';
 $string['delay1st2nd'] = 'Enforced delay between 1st and 2nd attempts';
+$string['delay1st2nd_help'] = 'If enabled, a student must wait for the specified time to elapse before being able to attempt the quiz a second time.';
 $string['delay2'] = 'Time delay between later attempts';
 $string['deleteattemptcheck'] = 'Are you absolutely sure you want to completely delete these attempts?';
 $string['deletequestioncheck'] = 'Are you absolutely sure you want to delete \'{$a}\'?';
@@ -257,6 +264,10 @@ $string['editingmultichoice'] = 'Editing a Multiple Choice question';
 $string['editingnumerical'] = 'Editing a Numerical question';
 $string['editingquestion'] = 'Editing a question';
 $string['editingquiz'] = 'Editing quiz';
+$string['editingquiz_help'] = 'When creating a quiz, the main concepts are:
+* The quiz, containing questions over one or more pages
+* The question bank, which stores copies of all questions organised into categories
+* Random questions -  A student gets different questions each time they attempt the quiz and different students can get different questions';
 $string['editingrandom'] = 'Editing a Random Question';
 $string['editingrandomsamatch'] = 'Editing a Random Short-Answer Matching question';
 $string['editingrqp'] = '{$a}: editing a question';
@@ -530,6 +541,7 @@ $string['outof'] = '{$a->grade} out of a maximum of {$a->maxgrade}';
 $string['outofpercent'] = '{$a->grade} out of a maximum of {$a->maxgrade} ({$a->percent}%)';
 $string['outofshort'] = '{$a->grade}/{$a->maxgrade}';
 $string['overallfeedback'] = 'Overall feedback';
+$string['overallfeedback_help'] = 'Overall feedback is text that is shown after a quiz has been attempted. By specifying additional grade boundaries (as a percentage or as a number), the text shown can depend on the grade obtained.';
 $string['overdue'] = 'Overdue';
 $string['override'] = 'Override';
 $string['overridedeletegroupsure'] = 'Are you sure you want to delete the override for group {$a}?';
@@ -678,6 +690,7 @@ $string['requirepassword_help'] = 'If a password is specified, a student must en
 $string['requirepasswordmessage'] = 'To attempt this quiz you need to know the quiz password';
 $string['requiresafeexambrowser'] = 'Require the use of Safe Exam Browser';
 $string['requiresubnet'] = 'Require network address';
+$string['requiresubnet_help'] = 'Quiz access may be restricted to particular subnets on the LAN or Internet by specifying a comma-separated list of partial or full IP address numbers. This can be useful for an invigilated (proctored) quiz, to ensure that only people in a certain location can access the quiz.';
 $string['response'] = 'Response';
 $string['responses'] = 'Responses';
 $string['results'] = 'Results';

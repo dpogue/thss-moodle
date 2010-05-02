@@ -59,6 +59,7 @@ function feedback_supports($feature) {
         case FEATURE_COMPLETION_TRACKS_VIEWS: return true;
         case FEATURE_GRADE_HAS_GRADE:         return false;
         case FEATURE_GRADE_OUTCOMES:          return false;
+        case FEATURE_BACKUP_MOODLE2:          return true;
 
         default: return null;
     }
@@ -716,7 +717,7 @@ function feedback_get_complete_users($cm, $group = false) {
             print_error('badcontext');
     }
 
-    $params = array($cm->instance);
+    $params = array(FEEDBACK_ANONYMOUS_NO, $cm->instance);
 
     $fromgroup = '';
     $wheregroup = '';
@@ -726,7 +727,7 @@ function feedback_get_complete_users($cm, $group = false) {
         $params[] = $group;
     }
     $sql = 'SELECT DISTINCT u.* FROM {user} u, {feedback_completed} c'.$fromgroup.'
-              WHERE u.id = c.userid AND c.feedback = ?
+              WHERE anonymous_response = ? AND u.id = c.userid AND c.feedback = ?
               '.$wheregroup.'
               ORDER BY u.lastname';
     return $DB->get_records_sql($sql, $params);
@@ -909,8 +910,8 @@ function feedback_items_from_template($feedback, $templateid, $deleteold = false
             $DB->delete_records('feedback_tracking', array('feedback'=>$feedback->id));
             $DB->delete_records('feedback_completed', array('feedback'=>$feedback->id));
             $DB->delete_records('feedback_completedtmp', array('feedback'=>$feedback->id));
-            $positionoffset = 0;
         }
+        $positionoffset = 0;
     } else {
         //if the old items are kept the new items will be appended
         //therefor the new position has an offset
