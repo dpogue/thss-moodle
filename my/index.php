@@ -1,98 +1,142 @@
 <?php
 
-    // this is the 'my moodle' page
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-    require_once(dirname(__FILE__) . '/../config.php');
-    require_once($CFG->dirroot.'/course/lib.php');
+/**
+ * My Moodle -- a user's personal dashboard
+ *
+ * - each user can currently have their own page (cloned from system and then customised)
+ * - only the user can see their own dashboard
+ * - users can add any blocks they want
+ * - the administrators can define a default site dashboard for users who have
+ *   not created their own dashboard
+ *
+ * This script implements the user's view of the dashboard, and allows editing
+ * of the dashboard.
+ *
+ * @package    moodlecore
+ * @subpackage my
+ * @copyright  2010 Remote-Learner.net
+ * @author     Hubert Chathi <hubert@remote-learner.net>
+ * @author     Olav Jordan <olav.jordan@remote-learner.net>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
-    require_login();
+require_once(dirname(__FILE__) . '/../config.php');
+require_once($CFG->dirroot . '/my/lib.php');
 
-    $strmymoodle = get_string('mymoodle','my');
+redirect_if_major_upgrade_required();
 
-    if (isguestuser()) {
-        $PAGE->set_title($strmymoodle);
-        echo $OUTPUT->header();
-        echo $OUTPUT->confirm(get_string('noguest', 'my') . '<br /><br />' . get_string('liketologin'), get_login_url(), $CFG->wwwroot);
-        echo $OUTPUT->footer();
-        die;
-    }
+// TODO Add sesskey check to edit
+$edit   = optional_param('edit', null, PARAM_BOOL);    // Turn editing on and off
 
-    $edit = optional_param('edit', -1, PARAM_BOOL);
-    $blockaction = optional_param('blockaction', '', PARAM_ALPHA);
+require_login();
 
-    $PAGE->set_context(get_context_instance(CONTEXT_USER, $USER->id));
-    $PAGE->set_url('/my/index.php');
-    $PAGE->set_pagelayout('mydashboard');
+$strmymoodle = get_string('myhome');
+
+if (isguestuser()) {  // Force them to see system default, no editing allowed
+    $userid = NULL; 
+    $USER->editing = $edit = 0;  // Just in case
+    $context = get_context_instance(CONTEXT_SYSTEM);
+    $PAGE->set_blocks_editing_capability('moodle/my:configsyspages');  // unlikely :)
+    $header = "$SITE->shortname: $strmymoodle (GUEST)";
+
+} else {        // We are trying to view or edit our own My Moodle page
+    $userid = $USER->id;  // Owner of the page
+    $context = get_context_instance(CONTEXT_USER, $USER->id);
     $PAGE->set_blocks_editing_capability('moodle/my:manageblocks');
+    $header = "$SITE->shortname: $strmymoodle";
+}
 
-    if (($edit != -1) and $PAGE->user_allowed_editing()) {
-        $USER->editing = $edit;
-    }
+// Get the My Moodle page info.  Should always return something unless the database is broken.
+if (!$currentpage = my_get_page($userid, MY_PAGE_PRIVATE)) {
+    print_error('mymoodlesetup');
+}
 
-    if (!empty($USER->editing)) {
-        $string = get_string('updatemymoodleoff');
-        $edit = '0';
-    } else {
-        $string = get_string('updatemymoodleon');
-        $edit = '1';
-    }
+if (!$currentpage->userid) {
+    $context = get_context_instance(CONTEXT_SYSTEM);  // So we even see non-sticky blocks
+}
 
-    $url = new moodle_url("$CFG->wwwroot/my/index.php", array('edit' => $edit));
-    $button = $OUTPUT->single_button($url, $string);
+// Start setting up the page
+$params = array();
+$PAGE->set_context($context);
+$PAGE->set_url('/my/index.php', $params);
+$PAGE->set_pagelayout('mydashboard');
+$PAGE->set_pagetype('my-index');
+$PAGE->blocks->add_region('content');
+$PAGE->set_subpage($currentpage->id);
+$PAGE->set_title($header);
+$PAGE->set_heading($header);
 
-    $header = $SITE->shortname . ': ' . $strmymoodle;
-
-    $PAGE->set_title($strmymoodle);
-    $PAGE->set_heading($header);
-    $PAGE->set_button($button);
-    echo $OUTPUT->header();
-
-/// The main overview in the middle of the page
-
-    // limits the number of courses showing up
-    $courses_limit = 21;
-    if (isset($CFG->mycoursesperpage)) {
-        $courses_limit = $CFG->mycoursesperpage;
-    }
-
-    $morecourses = false;
-    if ($courses_limit > 0) {
-        $courses_limit = $courses_limit + 1;
-    }
-
-    $courses = get_my_courses($USER->id, 'visible DESC,sortorder ASC', '*', false, $courses_limit);
-    $site = get_site();
-    $course = $site; //just in case we need the old global $course hack
-
-    if (($courses_limit > 0) && (count($courses) >= $courses_limit)) {
-        //remove the 'marker' course that we retrieve just to see if we have more than $courses_limit
-        array_pop($courses);
-        $morecourses = true;
-    }
-
-
-    if (array_key_exists($site->id,$courses)) {
-        unset($courses[$site->id]);
-    }
-
-    foreach ($courses as $c) {
-        if (isset($USER->lastcourseaccess[$c->id])) {
-            $courses[$c->id]->lastaccess = $USER->lastcourseaccess[$c->id];
-        } else {
-            $courses[$c->id]->lastaccess = 0;
+// Toggle the editing state and switches
+if ($PAGE->user_allowed_editing()) {
+    if ($edit !== null) {             // Editing state was specified
+        $USER->editing = $edit;       // Change editing state
+        if (!$currentpage->userid && $edit) {
+            // If we are viewing a system page as ordinary user, and the user turns
+            // editing on, copy the system pages as new user pages, and get the
+            // new page record
+            if (!$currentpage = my_copy_page($USER->id, MY_PAGE_PRIVATE)) {
+                print_error('mymoodlesetup');
+            }
+            $context = get_context_instance(CONTEXT_USER, $USER->id);
+            $PAGE->set_context($context);
+            $PAGE->set_subpage($currentpage->id);
+        }
+    } else {                          // Editing state is in session
+        if ($currentpage->userid) {   // It's a page we can edit, so load from session
+            if (!empty($USER->editing)) {
+                $edit = 1;
+            } else {
+                $edit = 0;
+            }
+        } else {                      // It's a system page and they are not allowed to edit system pages
+            $USER->editing = $edit = 0;          // Disable editing completely, just to be safe
         }
     }
 
-    if (empty($courses)) {
-        echo $OUTPUT->box(get_string('nocourses','my'));
+    // Add button for editing page
+    $params = array('edit' => !$edit);
+
+    if (!$currentpage->userid) {
+        // viewing a system page -- let the user customise it
+        $editstring = get_string('updatemymoodleon');
+        $params['edit'] = 1;
+    } else if (empty($edit)) {
+        $editstring = get_string('updatemymoodleon');
     } else {
-        print_overview($courses);
+        $editstring = get_string('updatemymoodleoff');
     }
 
-    // if more than 20 courses
-    if ($morecourses) {
-        echo '<br />...';
-    }
+    $url = new moodle_url("$CFG->wwwroot/my/index.php", $params);
+    $button = $OUTPUT->single_button($url, $editstring);
+    $PAGE->set_button($button);
 
-    echo $OUTPUT->footer();
+} else {
+    $USER->editing = $edit = 0;
+}
 
+// HACK WARNING!  This loads up all this page's blocks in the system context
+if ($currentpage->userid == 0) {
+    $CFG->blockmanagerclass = 'my_syspage_block_manager';
+}
+
+
+echo $OUTPUT->header();
+
+echo $OUTPUT->blocks_for_region('content');
+
+echo $OUTPUT->footer();

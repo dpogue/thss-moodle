@@ -2802,7 +2802,7 @@ function role_unassign($roleid=0, $userid=0, $groupid_ignored=0, $contextid=0, $
     global $USER, $CFG, $DB;
     require_once($CFG->dirroot.'/group/lib.php');
 
-    $args = array('roleid', 'userid', 'groupid', 'contextid');
+    $args = array('roleid', 'userid', 'contextid');
     $select = array();
     $params = array();
 
@@ -3710,9 +3710,10 @@ function get_context_url($context) {
 
     switch ($context->contextlevel) {
         case CONTEXT_USER:
-            $url = new moodle_url('/user/view.php', array('id'=>$context->instanceid));
-            if ($COURSE->id != SITEID) {
-                $url->param('courseid', $COURSE->id);
+            if ($COURSE->id == SITEID) {
+                $url = new moodle_url('/user/profile.php', array('id'=>$context->instanceid));
+            } else {
+                $url = new moodle_url('/user/view.php', array('id'=>$context->instanceid, 'courseid'=>$COURSE->id));
             }
             return $url;;
 

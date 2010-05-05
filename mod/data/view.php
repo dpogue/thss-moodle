@@ -266,7 +266,7 @@
 /// RSS and CSS and JS meta
     $meta = '';
     if (!empty($CFG->enablerssfeeds) && !empty($CFG->data_enablerssfeeds) && $data->rssarticles > 0) {
-        $rsspath = rss_get_url($course->id, $USER->id, 'data', $data->id);
+        $rsspath = rss_get_url($context->id, $USER->id, 'data', $data->id);
         $PAGE->add_alternate_version(format_string($course->shortname) . ': %fullname%',
                 $rsspath, 'application/rss+xml');
     }
@@ -317,7 +317,7 @@
     // Do we need to show a link to the RSS feed for the records?
     if (!empty($CFG->enablerssfeeds) && !empty($CFG->data_enablerssfeeds) && $data->rssarticles > 0) {
         echo '<div style="float:right;">';
-        rss_print_link($course->id, $USER->id, 'data', $data->id, get_string('rsstype'));
+        rss_print_link($context->id, $USER->id, 'data', $data->id, get_string('rsstype'));
         echo '</div>';
         echo '<div style="clear:both;"></div>';
     }
@@ -642,20 +642,22 @@
                 //data_print_template() only adds ratings for singletemplate which is why we're attaching them here
                 //attach ratings to data records
                 require_once($CFG->dirroot.'/rating/lib.php');
-                $ratingoptions = new stdclass();
-                $ratingoptions->context = $cm->context;
-                $ratingoptions->items = $records;
-                $ratingoptions->aggregate = $data->assessed;//the aggregation method
-                $ratingoptions->scaleid = $data->scale;
-                $ratingoptions->userid = $USER->id;
-                $ratingoptions->returnurl = $CFG->wwwroot.'/mod/data/'.$baseurl;
-                $ratingoptions->assesstimestart = $data->assesstimestart;
-                $ratingoptions->assesstimefinish = $data->assesstimefinish;
-                $ratingoptions->plugintype = 'mod';
-                $ratingoptions->pluginname = 'data';
+                if ($data->assessed!=RATING_AGGREGATE_NONE) {
+                    $ratingoptions = new stdclass();
+                    $ratingoptions->context = $cm->context;
+                    $ratingoptions->items = $records;
+                    $ratingoptions->aggregate = $data->assessed;//the aggregation method
+                    $ratingoptions->scaleid = $data->scale;
+                    $ratingoptions->userid = $USER->id;
+                    $ratingoptions->returnurl = $CFG->wwwroot.'/mod/data/'.$baseurl;
+                    $ratingoptions->assesstimestart = $data->assesstimestart;
+                    $ratingoptions->assesstimefinish = $data->assesstimefinish;
+                    $ratingoptions->plugintype = 'mod';
+                    $ratingoptions->pluginname = 'data';
 
-                $rm = new rating_manager();
-                $records = $rm->get_ratings($ratingoptions);
+                    $rm = new rating_manager();
+                    $records = $rm->get_ratings($ratingoptions);
+                }
 
                 data_print_template('singletemplate', $records, $data, $search, $page);
 
@@ -690,6 +692,16 @@
     $search = trim($search);
     if (empty($records)) {
         $records = array();
+    }
+
+    if ($mode == '' && $CFG->enableportfolios) {
+        require_once($CFG->libdir . '/portfoliolib.php');
+        $button = new portfolio_add_button();
+        $button->set_callback_options('data_portfolio_caller', array('id' => $cm->id), '/mod/data/locallib.php');
+        if (data_portfolio_caller::has_files($data)) {
+            $button->set_formats(array(PORTFOLIO_FORMAT_RICHHTML, PORTFOLIO_FORMAT_LEAP2A)); // no plain html for us
+        }
+        echo $button->to_html(PORTFOLIO_ADD_FULL_FORM);
     }
 
     //Advanced search form doesn't make sense for single (redirects list view)

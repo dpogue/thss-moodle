@@ -394,6 +394,7 @@ define('EXTERNAL_TOKEN_PERMANENT', 0);
  */
 define('EXTERNAL_TOKEN_EMBEDDED', 1);
 
+
 /// PARAMETER HANDLING ////////////////////////////////////////////////////
 
 /**
@@ -5065,7 +5066,11 @@ function email_welcome_message_to_user($course, $user=NULL) {
     } else {
         $a = new object();
         $a->coursename = $course->fullname;
-        $a->profileurl = "$CFG->wwwroot/user/view.php?id=$user->id&course=$course->id";
+        if ($course->id == SITEID) {
+            $a->profileurl = "$CFG->wwwroot/user/profile.php?id=$user->id";
+        } else {
+            $a->profileurl = "$CFG->wwwroot/user/view.php?id=$user->id&course=$course->id";
+        }
         $message = get_string("welcometocoursetext", "", $a);
     }
 

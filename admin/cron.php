@@ -418,8 +418,8 @@
 
     } // End of occasional clean-up tasks
 
-
-    if (empty($CFG->disablescheduledbackups)) {   // Defined in config.php
+    // Disabled until implemented. MDL-21432, MDL-22184
+    if (1 == 2 && empty($CFG->disablescheduledbackups)) {   // Defined in config.php
         //Execute backup's cron
         //Perhaps a long time and memory could help in large sites
         @set_time_limit(0);
@@ -444,17 +444,6 @@
             } else {
                 mtrace("Backup tasks finished.");
             }
-        }
-    }
-
-    if (!empty($CFG->enablerssfeeds)) {  //Defined in admin/variables page
-        include_once("$CFG->libdir/rsslib.php");
-        mtrace("Running rssfeeds if required...");
-
-        if ( ! cron_rss_feeds()) {
-            mtrace("Something went wrong while generating rssfeeds!!!");
-        } else {
-            mtrace("Rssfeeds finished");
         }
     }
 
@@ -579,8 +568,9 @@
     //cleanup old session linked tokens
     //deletes the session linked tokens that are over a day old.
     mtrace("Deleting session linked tokens more than one day old...", '');
-    $DB->delete_records_select('external_tokens', 'lastaccess < {onedayago} AND tokentype = {tokentype}', 
+    $DB->delete_records_select('external_tokens', 'lastaccess < :onedayago AND tokentype = :tokentype', 
                     array('onedayago' => time() - DAYSECS, 'tokentype' => EXTERNAL_TOKEN_EMBEDDED));
+    mtrace('done.');
     
     // run any customized cronjobs, if any
     if ($locals = get_plugin_list('local')) {

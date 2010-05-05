@@ -110,21 +110,29 @@ abstract class backup_moodleform extends moodleform {
      * @return bool
      */
     function add_setting(backup_setting $setting, backup_task $task=null) {
-        $mform = $this->_form;
-        if ($setting->get_visibility() != backup_setting::VISIBLE) {
-            return false;
+
+        // Check if the setting is locked first up
+        if ($setting->get_status() !== base_setting::NOT_LOCKED) {
+            // If it has no dependencies on other settings we can add it as a
+            // fixed setting instead
+            if (!$setting->has_dependencies_on_settings()) {
+                // Fixed setting it is!
+                return $this->add_fixed_setting($setting);
+            }
+            // Hmm possible to unlock it in the UI so disable instead.
+            $setting->get_ui()->disable();
         }
-        if ($setting->get_status() == backup_setting::NOT_LOCKED) {
-            // First add the formatting for this setting
-            $this->add_html_formatting($setting);
-            // The call the add method with the get_element_properties array
-            call_user_method_array('addElement', $mform, $setting->get_ui()->get_element_properties($task));
-            $mform->setDefault($setting->get_ui_name(), $setting->get_value());
-            $this->_form->addElement('html', html_writer::end_tag('div'));
-        } else {
-            // Add as a fixed unchangeable setting
-            $this->add_fixed_setting($setting);
+
+        // First add the formatting for this setting
+        $this->add_html_formatting($setting);
+        // The call the add method with the get_element_properties array
+        call_user_method_array('addElement', $this->_form, $setting->get_ui()->get_element_properties($task));
+        $this->_form->setDefault($setting->get_ui_name(), $setting->get_value());
+        if ($setting->has_help()) {
+            list($identifier, $component) = $setting->get_help();
+            $this->_form->addHelpButton($setting->get_ui_name(), $identifier, $component);
         }
+        $this->_form->addElement('html', html_writer::end_tag('div'));
         return true;
     }
     /**
@@ -196,45 +204,29 @@ abstract class backup_moodleform extends moodleform {
      * @param backup_setting $setting
      */
     function add_fixed_setting(backup_setting $setting) {
-        $this->add_html_formatting($setting);
-
-        $mform = $this->_form;
+        global $OUTPUT;
         $settingui = $setting->get_ui();
-        if ($setting->get_status() != backup_setting::NOT_LOCKED) {
-            $mform->addElement('static', 'static_'.$settingui->get_name(), $settingui->get_label(), get_string('settingislocked','backup',$settingui->get_static_value()));
-        } else {
-            $mform->addElement('static','static_'. $settingui->get_name(), $settingui->get_label(), $settingui->get_static_value());
+        if ($setting->get_visibility() == backup_setting::VISIBLE) {
+            $this->add_html_formatting($setting);
+            if ($setting->get_status() != backup_setting::NOT_LOCKED) {
+                $this->_form->addElement('static', 'static_'.$settingui->get_name(), $settingui->get_label(),$settingui->get_static_value().' '.$OUTPUT->pix_icon('i/unlock', get_string('locked', 'backup'), 'moodle', array('class'=>'smallicon lockedicon')));
+            } else {
+                $this->_form->addElement('static','static_'. $settingui->get_name(), $settingui->get_label(), $settingui->get_static_value());
+            }
+            $this->_form->addElement('html', html_writer::end_tag('div'));
         }
-        $mform->addElement('hidden', $settingui->get_name(), $settingui->get_value());
-
-        $this->_form->addElement('html', html_writer::end_tag('div'));
+        $this->_form->addElement('hidden', $settingui->get_name(), $settingui->get_value());
     }
     /**
      * Adds dependencies to the form recursively
      * 
      * @param backup_setting $setting
-     * @param backup_setting $basesetting
      */
-    function add_dependencies(backup_setting $setting, $basesetting=null) {
+    function add_dependencies(backup_setting $setting) {
         $mform = $this->_form;
-        if ($basesetting == null) {
-            $basesetting = $setting;
-        }
-        foreach ($setting->get_dependencies() as $dependency) {
-            $dependency = $dependency->get_dependant_setting();
-            switch ($basesetting->get_ui_type()) {
-                case backup_setting::UI_HTML_CHECKBOX :
-                    $mform->disabledIf($dependency->get_ui_name(), $basesetting->get_ui_name(), 'notchecked');
-                    $this->add_dependencies($dependency, $basesetting);
-                    break;
-                case backup_setting::UI_HTML_DROPDOWN :
-                    $mform->disabledIf($dependency->get_ui_name(), $basesetting->get_ui_name(), 'eq', 0);
-                    $this->add_dependencies($dependency, $basesetting);
-                    break;
-                default:
-                    debugging('Unknown backup setting type', DEBUG_DEVELOPER);
-                    break;
-            }
+        // Apply all dependencies for backup
+        foreach ($setting->get_my_dependency_properties() as $key=>$dependency) {
+            call_user_method_array('disabledIf', $this->_form, $dependency);
         }
     }
     /**

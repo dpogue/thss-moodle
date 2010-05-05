@@ -38,6 +38,7 @@ $string['aggregatetype'] = 'Aggregate type';
 $string['aggregatetype_help'] = 'Forum aggregation defines how all the ratings given to posts in a forum are combined to form the final grade (for each post and for the whole forum activity).
 
 There are 5 aggregate types:
+
 * Average - The mean of all the ratings given to posts in the forum (useful with peer grading when there are a lot of ratings being made)
 * Count - The number of rated posts becomes the final grade (useful when the number of posts is important). Note that the total cannot exceed the maximum grade for the forum.
 * Max - The highest rating is returned as the final grade (useful for emphasising the best post)
@@ -94,13 +95,13 @@ $string['cannotunsubscribe'] = 'Could not unsubscribe you from that forum';
 $string['cannotupdatepost'] = 'You can not update this post';
 $string['cannotviewpostyet'] = 'You cannot read other students questions in this discussion yet because you haven\'t posted';
 $string['cleanreadtime'] = 'Mark old posts as read hour';
-$string['completiondiscussions'] = 'User must create discussions:';
+$string['completiondiscussions'] = 'Student must create discussions:';
 $string['completiondiscussionsgroup'] = 'Require discussions';
 $string['completiondiscussionshelp'] = 'requiring discussions to complete';
-$string['completionposts'] = 'User must post discussions or replies:';
+$string['completionposts'] = 'Student must post discussions or replies:';
 $string['completionpostsgroup'] = 'Require posts';
 $string['completionpostshelp'] = 'requiring discussions or replies to complete';
-$string['completionreplies'] = 'User must post replies:';
+$string['completionreplies'] = 'Student must post replies:';
 $string['completionrepliesgroup'] = 'Require replies';
 $string['completionreplieshelp'] = 'requiring replies to complete';
 $string['configajaxrating'] = 'AJAX rating is a forum rating usability improvement. If enabled, users can rate forum posts almost instantly without needing to scroll to the bottom of the page and click the \'Send in my latest ratings\' button. This setting also requires AJAX to be enabled for the site and in user profiles.';
@@ -191,6 +192,7 @@ $string['forumtracked'] = 'Unread posts are being tracked';
 $string['forumtrackednot'] = 'Unread posts are not being tracked';
 $string['forumtype'] = 'Forum type';
 $string['forumtype_help'] = 'There are 5 forum types:
+
 * A single simple discussion - A single discussion topic which everyone can reply to
 * Each person posts one discussion - Each student can post exactly one new discussion topic, which everyone can then reply to
 * Q and A forum - Students must first post their perspectives before viewing other students\' posts
@@ -244,6 +246,7 @@ $string['modenested'] = 'Display replies in nested form';
 $string['modethreaded'] = 'Display replies in threaded form';
 $string['modulename'] = 'Forum';
 $string['modulename_help'] = 'The forum module enables participants to have asynchronous discussions.';
+$string['modulename_link'] = 'forum';
 $string['modulenameplural'] = 'Forums';
 $string['more'] = 'more';
 $string['movedmarker'] = '(Moved)';
@@ -387,6 +390,7 @@ $string['subscriptionmode'] = 'Subscription mode';
 $string['subscriptionmode_help'] = 'When a participant is subscribed to a forum it means they will receive email copies of forum posts.
 
 There are 4 subscription mode options:
+
 * Optional subscription - Participants can choose whether to be subscribed
 * Forced subscription - Everyone is subscribed and cannot unsubscribe
 * Auto subscription - Everyone is subscribed initially but can choose to unsubscribe at any time
@@ -405,9 +409,10 @@ $string['trackingoff'] = 'Off';
 $string['trackingon'] = 'On';
 $string['trackingoptional'] = 'Optional';
 $string['trackingtype'] = 'Read tracking for this forum?';
-$string['trackingtype_help'] = 'If enabled, participants can track read and unread messages in the forum and in discussions. 
+$string['trackingtype_help'] = 'If enabled, participants can track read and unread messages in the forum and in discussions.
 
 There are three options:
+
 * Optional - Participants can choose whether to turn tracking on or off
 * On - Tracking is always on
 * Off - Tracking is always off';

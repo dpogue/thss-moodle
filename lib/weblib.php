@@ -2754,7 +2754,9 @@ function print_filemanager($options, $return = false) {
     $PAGE->requires->string_for_js('confirmdeletefile', 'repository');
     $PAGE->requires->string_for_js('nopathselected', 'repository');
     $PAGE->requires->string_for_js('popupblockeddownload', 'repository');
+    $PAGE->requires->string_for_js('draftareanofiles', 'repository');
     $PAGE->requires->string_for_js('path', 'moodle');
+    $PAGE->requires->string_for_js('setmainfile', 'repository');
     // language strings
     $straddfile  = get_string('add', 'repository') . '...';
     $strmakedir  = get_string('makeafolder', 'moodle');
@@ -2765,6 +2767,11 @@ function print_filemanager($options, $return = false) {
     $filearea = !empty($options->filearea) ? $options->filearea : 'user_draft';
 
     $html = '';
+    if ($options->filecount == 0 || empty($options->filecount)) {
+        $extra = ' style="display:none"';
+    } else {
+        $extra = '';
+    }
 
     $html .= <<<FMHTML
 <div id="filemanager-wrapper-{$client_id}" style="display:none">
@@ -2772,7 +2779,7 @@ function print_filemanager($options, $return = false) {
     <div class="filemanager-toolbar">
         <button id="btnadd-{$client_id}" onclick="return false">{$straddfile}</button>
         <button id="btncrt-{$client_id}" onclick="return false">{$strmakedir}</button>
-        <button id="btndwn-{$client_id}" onclick="return false">{$strdownload}</button>
+        <button id="btndwn-{$client_id}" onclick="return false" {$extra}>{$strdownload}</button>
     </div>
     <div class="filemanager-container" id="filemanager-{$client_id}">
         <ul id="draftfiles-{$client_id}">

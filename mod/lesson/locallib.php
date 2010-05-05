@@ -454,8 +454,6 @@ function lesson_mediafile_block_contents($cmid, $lesson) {
     $action = new popup_action('click', $link, 'lessonmediafile', $options);
     $content = $OUTPUT->action_link($link, get_string('mediafilepopup', 'lesson'), $action, array('title'=>get_string('mediafilepopup', 'lesson')));
 
-    $content .= $OUTPUT->old_help_icon("mediafilestudent", get_string("mediafile", "lesson"), "lesson");
-
     $bc = new block_contents();
     $bc->title = get_string('linkedmedia', 'lesson');
     $bc->attributes['class'] = 'mediafile';
@@ -491,7 +489,7 @@ function lesson_clock_block_contents($cmid, $lesson, $timer, $page) {
 
     $bc = new block_contents();
     $bc->title = get_string('timeremaining', 'lesson');
-    $bc->attributes['class'] = 'clock';
+    $bc->attributes['class'] = 'clock sideblock';
     $bc->content = $content;
 
     return $bc;
@@ -545,7 +543,7 @@ function lesson_menu_block_contents($cmid, $lesson) {
 
     $bc = new block_contents();
     $bc->title = get_string('lessonmenu', 'lesson');
-    $bc->attributes['class'] = 'menu';
+    $bc->attributes['class'] = 'menu sideblock';
     $bc->content = $content;
 
     return $bc;

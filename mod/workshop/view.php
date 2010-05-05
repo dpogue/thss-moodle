@@ -62,8 +62,7 @@ $wsoutput = $PAGE->get_renderer('mod_workshop');
 /// Output starts here
 
 echo $OUTPUT->header();
-include(dirname(__FILE__) . '/tabs.php');
-echo $OUTPUT->heading(format_string($workshop->name), 2);
+echo $OUTPUT->heading_with_help(format_string($workshop->name), 'userplan', 'workshop');
 echo $wsoutput->user_plan($workshop->prepare_user_plan($USER->id, $PAGE->context));
 
 switch ($workshop->phase) {

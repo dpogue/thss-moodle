@@ -48,7 +48,7 @@ $maxbytes  = optional_param('maxbytes', 0, PARAM_INT);
 $req_path  = optional_param('p', '', PARAM_RAW);                // path
 $saveas_filearea = optional_param('filearea', 'user_draft', PARAM_TEXT);
 $saveas_filename = optional_param('title', '', PARAM_FILE);           // new file name
-$saveas_path   = optional_param('saveaspath', '/', PARAM_PATH);
+$saveas_path   = optional_param('savepath', '/', PARAM_PATH);
 $search_text   = optional_param('s', '', PARAM_CLEANHTML);
 $linkexternal  = optional_param('linkexternal', '', PARAM_ALPHA);
 
@@ -223,8 +223,9 @@ switch ($action) {
         try {
             // we have two special repoisitory type need to deal with
             if ($repo->options['type'] == 'local' || $repo->options['type'] == 'recent' ) {
+                // saveas_filearea
                 try {
-                    $fileinfo = $repo->copy_to_draft($source, $saveas_filename, $itemid, $saveas_path);
+                    $fileinfo = $repo->copy_to_area($source, $saveas_filearea, $itemid, $saveas_path, $saveas_filename);
                 } catch (Exception $e) {
                     throw $e;
                 }

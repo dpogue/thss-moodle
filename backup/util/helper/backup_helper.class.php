@@ -183,11 +183,19 @@ abstract class backup_helper {
         // Extract useful information to decide
         $hasusers  = (bool)$sinfo['users']->value;     // Backup has users
         $isannon   = (bool)$sinfo['anonymize']->value; // Backup is annonymzed
+        $filename  = $sinfo['filename']->value;        // Backup filename
         $backupmode= $dinfo[0]->mode;                  // Backup mode backup::MODE_GENERAL/IMPORT/HUB
         $backuptype= $dinfo[0]->type;                  // Backup type backup::TYPE_1ACTIVITY/SECTION/COURSE
         $userid    = $dinfo[0]->userid;                // User->id executing the backup
         $id        = $dinfo[0]->id;                    // Id of activity/section/course (depends of type)
         $courseid  = $dinfo[0]->courseid;              // Id of the course
+
+        // Quick hack. If for any reason, filename is blank, fix it here.
+        // This hack will be out once MDL-22142 - P26 gets fixed
+        if (empty($filename)) {
+            $filename = backup_plan_dbops::get_default_backup_filename('moodle2', $backuptype, $id, $hasusers, $isannon);
+        }
+
 
         // Backups of type IMPORT aren't stored ever
         if ($backupmode == backup::MODE_IMPORT) {
@@ -225,10 +233,11 @@ abstract class backup_helper {
             $itemid   = 0;
         }
 
-        // Backups without user info are sent to user's "user_backup"
+        // Backups without user info or withe the anoymise functionality
+        // enabled are sent to user's "user_backup"
         // file area. Maintenance of such area is responsibility of
         // the user via corresponding file manager frontend
-        if ($backupmode == backup::MODE_GENERAL && !$hasusers) {
+        if ($backupmode == backup::MODE_GENERAL && (!$hasusers || $isannon)) {
             $ctxid = get_context_instance(CONTEXT_USER, $userid)->id;
             $filearea = 'user_backup';
             $itemid   = 0;
@@ -241,7 +250,7 @@ abstract class backup_helper {
             'filearea'    => $filearea,
             'itemid'      => $itemid,
             'filepath'    => '/',
-            'filename'    => basename($filepath),
+            'filename'    => $filename,
             'userid'      => $userid,
             'timecreated' => time(),
             'timemodified'=> time());

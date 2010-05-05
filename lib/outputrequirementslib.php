@@ -249,8 +249,7 @@ class page_requirements_manager {
         $this->string_for_js('confirmation', 'admin');
         $this->string_for_js('cancel', 'moodle');
         $this->string_for_js('yes', 'moodle');
-        $this->js_init_call('M.util.init_help_icons');
-
+        
         if ($page->pagelayout === 'frametop') {
             $this->js_init_call('M.util.init_frametop');
         }
@@ -715,8 +714,8 @@ class page_requirements_manager {
      * @param string $function The name of the function to call
      * @param array  $arguments An optional array of argument parameters to pass to the function
      * @return void
-     */
-    public function event_handler($selector, $event, $function, array $arguments = null) {
+     */    
+    public function event_handler($selector, $event, $function, array $arguments = null) {        
         $this->eventhandlers[] = array('selector'=>$selector, 'event'=>$event, 'function'=>$function, 'arguments'=>$arguments);
     }
 

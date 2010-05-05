@@ -484,6 +484,21 @@ function file_get_draft_area_info($draftitemid) {
     return $results;
 }
 
+function file_get_user_area_info($draftitemid, $filearea = 'user_draft') {
+    global $CFG, $USER;
+
+    $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+    $fs = get_file_storage();
+
+    $results = array();
+
+    // The number of files
+    $draftfiles = $fs->get_area_files($usercontext->id, $filearea, $draftitemid, 'id', false);
+    $results['filecount'] = count($draftfiles);
+
+    return $results;
+}
+
 
 /**
  * Convert any string to a valid filepath
@@ -1275,7 +1290,7 @@ function mimeinfo_from_type($element, $mimetype) {
  *
  * @param string $element Desired information (usually 'icon')
  * @param string $icon Icon file path.
- * @param boolean $all return all matching entries (defaults to false - last match)
+ * @param boolean $all return all matching entries (defaults to false - best (by ext)/last match)
  * @return string Requested piece of information from array
  */
 function mimeinfo_from_icon($element, $icon, $all=false) {
@@ -1284,11 +1299,16 @@ function mimeinfo_from_icon($element, $icon, $all=false) {
     if (preg_match("/\/(.*)/", $icon, $matches)) {
         $icon = $matches[1];
     }
+    // Try to get the extension
+    $extension = '';
+    if (($cutat = strrpos($icon, '.')) !== false && $cutat < strlen($icon)-1) {
+        $extension = substr($icon, $cutat + 1);
+    }
     $info = array($mimeinfo['xxx'][$element]); // Default
-    foreach($mimeinfo as $values) {
+    foreach($mimeinfo as $key => $values) {
         if($values['icon']==$icon) {
             if(isset($values[$element])) {
-                $info[] = $values[$element];
+                $info[$key] = $values[$element];
             }
             //No break, for example for 'excel.gif' we don't want 'csv'!
         }
@@ -1297,8 +1317,14 @@ function mimeinfo_from_icon($element, $icon, $all=false) {
         if (count($info) > 1) {
             array_shift($info); // take off document/unknown if we have better options
         }
-        return $info;
+        return array_values($info); // Keep keys out when requesting all
     }
+
+    // Requested only one, try to get the best by extension coincidence, else return the last
+    if ($extension && isset($info[$extension])) {
+        return $info[$extension];
+    }
+
     return array_pop($info); // Return last match (mimicking behaviour/comment inside foreach loop)
 }
 
@@ -1368,11 +1394,10 @@ function file_extension_icon($filename, $size=null) {
  * @return string Text description
  */
 function get_mimetype_description($mimetype,$capitalise=false) {
-    $result=get_string($mimetype,'mimetypes');
-    // Surrounded by square brackets indicates that there isn't a string for that
-    // (maybe there is a better way to find this out?)
-    if(strpos($result,'[')===0) {
-        $result=get_string('document/unknown','mimetypes');
+    if (get_string_manager()->string_exists($mimetype, 'mimetypes')) {
+        $result = get_string($mimetype, 'mimetypes');
+    } else {
+        $result = get_string('document/unknown','mimetypes');
     }
     if($capitalise) {
         $result=ucfirst($result);

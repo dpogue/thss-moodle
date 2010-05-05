@@ -3881,6 +3881,131 @@ AND EXISTS (SELECT 'x'
         upgrade_main_savepoint($result, 2010043001);
     }
 
+    if ($result && $oldversion < 2010050200) {
+
+    /// Define table backup_logs to be created
+        $table = new xmldb_table('backup_logs');
+
+    /// Adding fields to table backup_logs
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('backupid', XMLDB_TYPE_CHAR, '32', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('loglevel', XMLDB_TYPE_INTEGER, '4', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
+        $table->add_field('message', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
+
+    /// Adding keys to table backup_logs
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('backupid', XMLDB_KEY_FOREIGN, array('backupid'), 'backup_controllers', array('backupid'));
+
+    /// Adding indexes to table backup_logs
+        $table->add_index('backupid-id', XMLDB_INDEX_UNIQUE, array('backupid', 'id'));
+
+    /// Conditionally launch create table for backup_logs
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+    /// Drop some old backup tables, not used anymore
+
+    /// Define table backup_files to be dropped
+        $table = new xmldb_table('backup_files');
+
+    /// Conditionally launch drop table for backup_files
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+    /// Define table backup_ids to be dropped
+        $table = new xmldb_table('backup_ids');
+
+    /// Conditionally launch drop table for backup_ids
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+    /// Main savepoint reached
+        upgrade_main_savepoint($result, 2010050200);
+    }
+
+
+    if ($result && $oldversion < 2010050403) {  // my_pages for My Moodle and Public Profile pages
+
+    /// Define table my_pages to be created
+        $table = new xmldb_table('my_pages');
+
+    /// Adding fields to table my_pages
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, 0);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '200', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('private', XMLDB_TYPE_INTEGER, '1', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, 0);
+        $table->add_field('sortorder', XMLDB_TYPE_INTEGER, '6', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0');
+
+
+    /// Adding keys to table my_pages
+        $table->add_key('id', XMLDB_KEY_PRIMARY, array('id'));
+
+    /// Adding indexes to table my_pages
+        $table->add_index('useridprivate', XMLDB_INDEX_NOTUNIQUE, array('userid', 'private'));
+
+    /// Conditionally launch create table for my_pages
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+    /// Add two lines of data into this new table.  These are the default pages.
+        $mypage = new object();
+        $mypage->userid = NULL;
+        $mypage->name = '__default';
+        $mypage->private = 0;
+        $mypage->sortorder  = 0;
+        if (!$DB->record_exists('my_pages', array('userid'=>NULL, 'private'=>0))) {
+            $result = $result && $DB->insert_record('my_pages', $mypage);
+        }
+        $mypage->private = 1;
+        if (!$DB->record_exists('my_pages', array('userid'=>NULL, 'private'=>1))) {
+            $result = $result && $DB->insert_record('my_pages', $mypage);
+        }
+    
+    /// This bit is a "illegal" hack, unfortunately, but there is not a better way to install default
+    /// blocks right now, since the upgrade function need to be called after core AND plugins upgrade, 
+    /// and there is no such hook yet.  Sigh.
+
+        if ($mypage = $DB->get_record('my_pages', array('userid'=>NULL, 'private'=>1))) {
+            if (!$DB->record_exists('block_instances', array('pagetypepattern'=>'my-index', 'parentcontextid'=>SITEID, 'subpagepattern'=>$mypage->id))) {   
+            
+                // No default exist there yet, let's put a few into My Moodle so it's useful.
+
+                $blockinstance = new stdClass;
+                $blockinstance->parentcontextid = SITEID;
+                $blockinstance->showinsubcontexts = 0;
+                $blockinstance->pagetypepattern = 'my-index';
+                $blockinstance->subpagepattern = $mypage->id;
+                $blockinstance->configdata = '';
+
+                $blockinstance->blockname = 'private_files';
+                $blockinstance->defaultregion = 'side-post';
+                $blockinstance->defaultweight = 0;
+                $blockinstanceid = $DB->insert_record('block_instances', $blockinstance);
+                get_context_instance(CONTEXT_BLOCK, $blockinstanceid);
+
+                $blockinstance->blockname = 'online_users';
+                $blockinstance->defaultregion = 'side-post';
+                $blockinstance->defaultweight = 1;
+                $blockinstanceid = $DB->insert_record('block_instances', $blockinstance);
+                get_context_instance(CONTEXT_BLOCK, $blockinstanceid);
+
+                $blockinstance->blockname = 'course_overview';
+                $blockinstance->defaultregion = 'content';
+                $blockinstance->defaultweight = 0;
+                $blockinstanceid = $DB->insert_record('block_instances', $blockinstance);
+                get_context_instance(CONTEXT_BLOCK, $blockinstanceid);
+            }
+        }
+
+    /// Main savepoint reached
+        upgrade_main_savepoint($result, 2010050403);
+    }
+
 
     return $result;
 }

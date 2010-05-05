@@ -69,19 +69,21 @@ abstract class base_setting {
     protected $visibility; // visibility of the setting (setting_base::VISIBLE/setting_base::HIDDEN)
     protected $status; // setting_base::NOT_LOCKED/setting_base::LOCKED_BY_PERMISSION...
 
-    protected $dependencies; // array of dependent (observer) objects (usually setting_base ones)
+    protected $dependencies = array(); // array of dependent (observer) objects (usually setting_base ones)
+    protected $dependenton = array();
 
     /**
-     *
+     * The user interface for this setting
      * @var backup_setting_ui|backup_setting_ui_checkbox|backup_setting_ui_radio|backup_setting_ui_select|backup_setting_ui_text
      */
     protected $uisetting;
 
-    // Note: all the UI stuff could go to independent classes in the future...
-    protected $ui_type;   // setting_base::UI_HTML_CHECKBOX/setting_base::UI_HTML_RADIOBUTTON...
-    protected $ui_label;  // UI label of the setting
-    protected $ui_values; // array of value => ui value of the setting
-    protected $ui_options;// array of custom ui options
+    /**
+     * An array that contains the identifier and component of a help string if one
+     * has been set
+     * @var array
+     */
+    protected $help = array();
 
     public function __construct($name, $vtype, $value = null, $visibility = self::VISIBLE, $status = self::NOT_LOCKED) {
         // Check vtype
@@ -104,7 +106,6 @@ abstract class base_setting {
         $this->value       = $value;
         $this->visibility  = $visibility;
         $this->status      = $status;
-        $this->dependencies= array();
 
         // Generate a default ui
         $this->uisetting = new backup_setting_ui_checkbox($this, $name);
@@ -147,6 +148,18 @@ abstract class base_setting {
 
     public function set_visibility($visibility) {
         $visibility = $this->validate_visibility($visibility);
+
+        // If this setting is dependent on other settings first check that all
+        // of those settings are visible
+        if (count($this->dependenton) > 0 && $visibility == base_setting::VISIBLE) {
+            foreach ($this->dependenton as $dependency) {
+                if ($dependency->get_setting()->get_visibility() != base_setting::VISIBLE) {
+                    $visibility = base_setting::HIDDEN;
+                    break;
+                }
+            }
+        }
+
         $oldvisibility = $this->visibility;
         $this->visibility = $visibility;
         if ($visibility !== $oldvisibility) { // Visibility has changed, let's inform dependencies
@@ -156,6 +169,18 @@ abstract class base_setting {
 
     public function set_status($status) {
         $status = $this->validate_status($status);
+
+        // If this setting is dependent on other settings first check that all
+        // of those settings are not locked
+        if (count($this->dependenton) > 0 && $status == base_setting::NOT_LOCKED) {
+            foreach ($this->dependenton as $dependency) {
+                if ($dependency->get_setting()->get_status() != base_setting::NOT_LOCKED) {
+                    $status = base_setting::LOCKED_BY_HIERARCHY;
+                    break;
+                }
+            }
+        }
+
         $oldstatus = $this->status;
         $this->status = $status;
         if ($status !== $oldstatus) { // Status has changed, let's inform dependencies
@@ -163,10 +188,69 @@ abstract class base_setting {
         }
     }
 
+    /**
+     * Gets an array of properties for all of the dependencies that will affect
+     * this setting.
+     *
+     * This method returns and array rather than the dependencies in order to
+     * minimise the memory footprint of for the potentially huge recursive
+     * dependency structure that we may be dealing with.
+     *
+     * This method also ensures that all dependencies are transmuted to affect
+     * the setting in question and that we don't provide any duplicates.
+     *
+     * @param string|null $settingname
+     * @return array
+     */
+    public function get_my_dependency_properties($settingname=null) {
+        if ($settingname ==  null) {
+            $settingname = $this->get_ui_name();
+        }
+        $dependencies = array();
+        foreach ($this->dependenton as $dependenton) {
+            $properties = $dependenton->get_moodleform_properties();
+            $properties['setting'] = $settingname;
+            $dependencies[$properties['setting'].'-'.$properties['dependenton']] = $properties;
+            $dependencies = array_merge($dependencies, $dependenton->get_setting()->get_my_dependency_properties($settingname));
+        }
+        return $dependencies;
+    }
+
+    /**
+     * Checks if there are other settings that are dependent on this setting
+     *
+     * @return bool True if there are other settings that are dependent on this setting
+     */
+    public function has_dependent_settings() {
+        return (count($this->dependencies)>0);
+    }
+
+    /**
+     * Checks if this setting is dependent on any other settings
+     *
+     * @return bool True if this setting is dependent on any other settings
+     */
+    public function has_dependencies_on_settings() {
+        return (count($this->dependenton)>0);
+    }
+
+    /**
+     * Sets the user interface for this setting
+     *
+     * @param backup_setting_ui $ui
+     */
     public function set_ui(backup_setting_ui $ui) {
         $this->uisetting = $ui;
     }
 
+    /**
+     * Creates and sets a user interface for this setting given appropriate arguments
+     *
+     * @param int $type
+     * @param string $label
+     * @param array $attributes
+     * @param array $options 
+     */
     public function make_ui($type, $label, array $attributes = null, array $options = null) {
         $type = $this->validate_ui_type($type);
         $label = $this->validate_ui_label($label);
@@ -195,10 +279,50 @@ abstract class base_setting {
         }
     }
 
+    /**
+     * Gets the user interface for this setting
+     *
+     * @return backup_setting_ui
+     */
     public function get_ui() {
         return $this->uisetting;
     }
 
+    /**
+     * Adds a dependency where another setting depends on this setting.
+     * @param setting_dependency $dependency
+     */
+    public function register_dependency(setting_dependency $dependency) {
+        if ($this->is_circular_reference($dependency->get_dependent_setting())) {
+            $a = new stdclass();
+            $a->alreadydependent = $this->name;
+            $a->main = $dependentsetting->get_name();
+            throw new base_setting_exception('setting_circular_reference', $a);
+        }
+        $this->dependencies[$dependency->get_dependent_setting()->get_name()] = $dependency;
+        $dependency->get_dependent_setting()->register_dependent_dependency($dependency);
+    }
+    /**
+     * Adds a dependency where this setting is dependent on another.
+     *
+     * This should only be called internally once we are sure it is not cicrular.
+     *
+     * @param setting_dependency $dependency
+     */
+    protected function register_dependent_dependency(setting_dependency $dependency) {
+        $this->dependenton[$dependency->get_setting()->get_name()] = $dependency;
+    }
+
+    /**
+     * Quick method to add a dependency to this setting.
+     *
+     * The dependency created is done so by inspecting this setting and the
+     * setting that is passed in as the dependent setting.
+     *
+     * @param base_setting $dependentsetting
+     * @param int $type One of setting_dependency::*
+     * @param array $options
+     */
     public function add_dependency(base_setting $dependentsetting, $type=null, $options=array()) {
         if ($this->is_circular_reference($dependentsetting)) {
             $a = new stdclass();
@@ -220,10 +344,18 @@ abstract class base_setting {
         if ($type == null) {
             switch ($this->vtype) {
                 case self::IS_BOOLEAN :
-                    if ($this->value) {
-                        $type = setting_dependency::DISABLED_FALSE;
+                    if ($this->get_ui_type() == self::UI_HTML_CHECKBOX) {
+                        if ($this->value) {
+                            $type = setting_dependency::DISABLED_NOT_CHECKED;
+                        } else {
+                            $type = setting_dependency::DISABLED_CHECKED;
+                        }
                     } else {
-                        $type = setting_dependency::DISABLED_TRUE;
+                        if ($this->value) {
+                            $type = setting_dependency::DISABLED_FALSE;
+                        } else {
+                            $type = setting_dependency::DISABLED_TRUE;
+                        }
                     }
                     break;
                 case self::IS_FILENAME :
@@ -243,15 +375,20 @@ abstract class base_setting {
                 $dependency = new setting_dependency_disabledif_equals($this, $dependentsetting, $options['value'], $options['defaultvalue']);
                 break;
             case setting_dependency::DISABLED_TRUE :
-            case setting_dependency::DISABLED_CHECKED :
                 $dependency = new setting_dependency_disabledif_equals($this, $dependentsetting, true, $options['defaultvalue']);
                 break;
             case setting_dependency::DISABLED_FALSE :
-            case setting_dependency::DISABLED_NOT_CHECKED :
                 $dependency = new setting_dependency_disabledif_equals($this, $dependentsetting, false, $options['defaultvalue']);
+                break;
+            case setting_dependency::DISABLED_CHECKED :
+                $dependency = new setting_dependency_disabledif_checked($this, $dependentsetting, $options['defaultvalue']);
+                break;
+            case setting_dependency::DISABLED_NOT_CHECKED :
+                $dependency = new setting_dependency_disabledif_not_checked($this, $dependentsetting, $options['defaultvalue']);
                 break;
         }
         $this->dependencies[$dependentsetting->get_name()] = $dependency;
+        $dependency->get_dependent_setting()->register_dependent_dependency($dependency);
     }
 
 // Protected API starts here
@@ -338,18 +475,46 @@ abstract class base_setting {
         return false;
     }
 
-    protected function get_dependencies() {
-        $dependencies = array();
-        foreach ($this->dependencies as $dependency) {
-            $dependencies[$dependency->get_dependant_setting()->get_name()] = $dependency->get_dependant_setting();
-            $dependencies = array_merge($dependencies, $dependency->get_dependencies());
-        }
-        return $dependencies;
+    public function get_dependencies() {
+        return $this->dependencies;
     }
 
-// Implementable API starts here
+    public function get_ui_name() {
+        return $this->uisetting->get_name();
+    }
 
-    abstract public function process_change($setting, $ctype, $oldv);
+    public function get_ui_type() {
+        return $this->uisetting->get_type();
+    }
+
+    /**
+     * Sets a help string for this setting
+     *
+     * @param string $identifier
+     * @param string $component
+     */
+    public function set_help($identifier, $component='moodle') {
+        $this->help = array($identifier, $component);
+    }
+
+    /**
+     * Gets the help string params for this setting if it has been set
+     * @return array|false An array (identifier, component) or false if not set
+     */
+    public function get_help() {
+        if ($this->has_help()) {
+            return $this->help;
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if help has been set for this setting
+     * @return cool
+     */
+    public function has_help() {
+        return (!empty($this->help));
+    }
 }
 
 /*

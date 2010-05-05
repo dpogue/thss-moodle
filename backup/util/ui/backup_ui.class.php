@@ -76,6 +76,8 @@ class backup_ui {
         $this->controller = $controller;
         $this->progress = self::PROGRESS_INTIAL;
         $this->stage = $this->initialise_stage();
+        // Process UI event before to be safe
+        $this->controller->process_ui_event();
     }
     /**
      * Intialises what ever stage is requested. If none are requested we check
@@ -165,7 +167,11 @@ class backup_ui {
             throw new backup_ui_exception('backupuialreadyprocessed');
         }
         $this->progress = self::PROGRESS_PROCESSED;
-        return $this->stage->process();
+        // Process the stage
+        $processoutcome = $this->stage->process();
+        // Process UI event after to check changes are valid
+        $this->controller->process_ui_event();
+        return $processoutcome;
     }
     /**
      * Saves the backup controller.
@@ -181,6 +187,8 @@ class backup_ui {
         $this->progress = self::PROGRESS_SAVED;
         // First enforce dependencies
         $this->enforce_dependencies();
+        // Process UI event after to check any changes are valid
+        $this->controller->process_ui_event();
         // Save the controller
         $this->controller->save_controller();
         return true;
@@ -285,9 +293,8 @@ class backup_ui {
      * Loads the backup controller if we are tracking one
      * @return backup_controller|false
      */
-    final public static function load_controller() {
+    final public static function load_controller($backupid=false) {
         // Get the backup id optional param
-        $backupid = optional_param('backup', false, PARAM_ALPHANUM);
         if ($backupid) {
             try {
                 // Try to load the controller with it.
@@ -337,6 +344,41 @@ class backup_ui {
             $stage = floor($stage/2);
         }
         return $items;
+    }
+    /**
+     * Gets the format for the backup
+     * @return int
+     */
+    public function get_backup_format() {
+        return $this->controller->get_format();
+    }
+    /**
+     * Gets the type of the backup
+     * @return int
+     */
+    public function get_backup_type() {
+        return $this->controller->get_type();
+    }
+    /**
+     * Gets the ID used in creating the controller. Relates to course/section/cm
+     * @return int
+     */
+    public function get_controller_id() {
+        return $this->controller->get_id();
+    }
+    /**
+     * Gets the value for the requested setting
+     *
+     * @param string $name
+     * @return mixed
+     */
+    public function get_setting_value($name, $default = false) {
+        try {
+            return $this->controller->get_plan()->get_setting($name)->get_value();
+        } catch (Exception $e) {
+            debugging('Failed to find the setting: '.$name, DEBUG_DEVELOPER);
+            return $default;
+        }
     }
 }
 

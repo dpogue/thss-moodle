@@ -84,6 +84,9 @@ class file_info_course extends file_info {
         if ($child = $this->browser->get_file_info($this->context, 'course_section')) {
             $children[] = $child;
         }
+        if ($child = $this->browser->get_file_info($this->context, 'section_backup')) {
+            $children[] = $child;
+        }
 
         if ($child = $this->browser->get_file_info($this->context, 'course_backup', 0)) {
             $children[] = $child;

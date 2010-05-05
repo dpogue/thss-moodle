@@ -21,6 +21,7 @@ abbr {cursor: help;}
 .mdl-align {text-align: center;}
 a.dimmed,
 a.dimmed_text,
+.dimmed_text,
 .dimmed_text a {color:#AAAAAA;}
 
 .unlist,
@@ -332,7 +333,7 @@ table.mod_index {width:100%;}
 .comment-content div {margin:0;padding:0;}
 .comment-content p {padding:0;margin:0 18px 0 0;}
 .comment-delete {float:right;text-align:right;}
-.comment-delete-confirm {background: #89B31F; padding: 2px;}
+.comment-delete-confirm {background: #FFE390; padding: 2px; width: 5em;text-align:center;}
 .comment-container {float:left;width: 305px;margin: 4px;}
 .comment-report-selectall{display:none}
 .jsenabled .comment-report-selectall{display:inline}
@@ -461,8 +462,6 @@ body.tag .managelink {padding: 5px;}
 .file-picker .ygtvlabel:hover {margin-left:2px;text-decoration: none;}
 .file-picker {font-size:12px;}
 .file-picker strong {background:#FFFFCC;}
-.file-picker a {color: #336699;}
-.file-picker a:hover {background:#003366;color:white;}
 .file-picker .fp-panel {padding:0;margin:0;text-align:left;}
 .file-picker .fp-login-form {text-align:center;}
 .file-picker .fp-searchbar {float:right;}
@@ -534,3 +533,13 @@ body.tag .managelink {padding: 5px;}
  * Web Service
  */
 #webservice-doc-generator td {text-align: left;border: 0px solid black;}
+
+
+/**
+ * Help Content (pop-up)
+ */
+ .helppopup {background-color: #FFE691; border: 1px solid #848484;}
+ .helppopup .yui3-widget-hd {float:right;margin:3px 3px 0 0;}
+ .helppopup .yui3-widget-bd {margin:0 1em 1em 1em;border-top:1px solid #FFE691;}
+ .helppopup .helpheading {font-size: 1em;}
+ .helppopup .spinner {margin:1em;}

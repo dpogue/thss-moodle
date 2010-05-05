@@ -37,6 +37,7 @@ $string['allowcomments'] = 'Allow comments on entries';
 $string['allowcomments_help'] = 'If enabled, all participants with permission to create comments will be able to add comments to glossary entries.';
 $string['allowduplicatedentries'] = 'Duplicate entries allowed';
 $string['allowduplicatedentries_help'] = 'If enabled, multiple entries can have the same concept name.';
+$string['allowprintview'] = 'Allow print view';
 $string['allowprintview_help'] = 'If enabled, students are provided with a link to a printer-friendly version of the glossary. The link is always available to teachers.';
 $string['allowratings'] = 'Allow entries to be rated?';
 $string['answer'] = 'Answer';
@@ -103,6 +104,7 @@ $string['destination'] = 'Destination of imported entries';
 $string['destination_help'] = 'Entries can either be imported and added to the current glossary or to a new glossary, in which case a new glossary will be created based on information in the XML file.';
 $string['displayformat'] = 'Display format';
 $string['displayformat_help'] = 'There are 7 display formats:
+
 * Simple, dictionary style - No authors are displayed and attachments are shown as links
 * Continuous without author - Entries are displayed one after another without any separation apart from the editing icons
 * Full with author - A forum-like display format showing the author\'s data and with attachments shown as links
@@ -162,7 +164,6 @@ $string['fillfields'] = 'Concept and definition are mandatory fields.';
 $string['filtername'] = 'Glossary Auto-linking';
 $string['fullmatch'] = 'Match whole words only';
 $string['fullmatch_help'] = 'This setting specifies whether only whole words will be linked, for example, a glossary entry named "construct" will not create a link inside the word "constructivism".';
-$string['globalglossary'] = 'Global glossary';
 $string['glossaryadministration'] = 'Glossary Administration';
 $string['glossary:approve'] = 'Approve unapproved entries';
 $string['glossary:comment'] = 'Create comments';

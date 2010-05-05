@@ -23,6 +23,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['backupcourse'] = 'Backup course: {$a}';
+$string['backupsection'] = 'Backup course section: {$a}';
+$string['backupactivity'] = 'Backup activity: {$a}';
 $string['coursesettings'] = 'Course settings';
 $string['currentstage1'] = 'Initial settings';
 $string['currentstage2'] = 'Schema settings';
@@ -35,10 +38,10 @@ $string['filename'] = 'Filename';
 $string['includesection'] = 'Include section {$a}';
 $string['includeother'] = 'Include {$a}';
 $string['includeuserinfo'] = 'Include user information';
-$string['onstage1action'] = 'Save settings and proceed';
-$string['onstage2action'] = 'Save settings and proceed';
-$string['onstage4action'] = 'Preform backup';
+$string['locked'] = 'Locked';
+$string['onstage1action'] = 'Next';
+$string['onstage2action'] = 'Next';
+$string['onstage4action'] = 'Perform backup';
 $string['onstage8action'] = 'Continue';
 $string['onstage16action'] = 'Continue';
 $string['rootsettings'] = 'Backup settings';
-$string['settingislocked'] = '{$a} [Locked]';

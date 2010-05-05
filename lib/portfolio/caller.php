@@ -46,7 +46,7 @@ abstract class portfolio_caller_base {
     * named array of export config
     * use{@link  set_export_config} and {@link get_export_config} to access
     */
-    protected $exportconfig;
+    protected $exportconfig = array();
 
     /**
     * stdclass object
@@ -84,7 +84,7 @@ abstract class portfolio_caller_base {
         foreach ($expected as $key => $required) {
             if (!array_key_exists($key, $callbackargs)) {
                 if ($required) {
-                    $a = (object)array('key' => $key, 'class' => get_class($this));
+                    $a = (object)array('arg' => $key, 'class' => get_class($this));
                     throw new portfolio_caller_exception('missingcallbackarg', 'portfolio', null, $a);
                 }
                 continue;
@@ -355,6 +355,8 @@ abstract class portfolio_caller_base {
     /**
     * return a string to put at the header summarising this export
     * by default, just the display name (usually just 'assignment' or something unhelpful
+    *
+    * @return string
     */
     public function heading_summary() {
         return get_string('exportingcontentfrom', 'portfolio', $this->display_name());

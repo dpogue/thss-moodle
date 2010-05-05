@@ -232,6 +232,7 @@ if ($user->id == -1 or ($user->id != $USER->id)) {
     if ($user->id == -1) {
         echo $OUTPUT->header();
     } else {
+        $PAGE->set_heading($SITE->fullname);
         echo $OUTPUT->header();
         $userfullname = fullname($user, true);
         echo $OUTPUT->heading($userfullname);
@@ -258,10 +259,7 @@ if ($user->id == -1 or ($user->id != $USER->id)) {
     $PAGE->set_heading($course->fullname);
 
     echo $OUTPUT->header();
-    /// Print tabs at the top
-    $showroles = 1;
-    $currenttab = 'editprofile';
-    require('tabs.php');
+    echo $OUTPUT->heading($userfullname);
 }
 
 /// Finally display THE form

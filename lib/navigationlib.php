@@ -153,14 +153,15 @@ class navigation_node implements renderable {
             if (array_key_exists('shorttext', $properties)) {
                 $this->shorttext = $properties['shorttext'];
             }
-            if (array_key_exists('icon', $properties)) {
-                $this->icon = $properties['icon'];
-                if ($this->icon instanceof pix_icon) {
-                    if (empty($this->icon->attributes['class'])) {
-                        $this->icon->attributes['class'] = 'navicon';
-                    } else {
-                        $this->icon->attributes['class'] .= ' navicon';
-                    }
+            if (!array_key_exists('icon', $properties)) {
+                $properties['icon'] = new pix_icon('i/navigationitem', 'moodle');
+            }
+            $this->icon = $properties['icon'];
+            if ($this->icon instanceof pix_icon) {
+                if (empty($this->icon->attributes['class'])) {
+                    $this->icon->attributes['class'] = 'navicon';
+                } else {
+                    $this->icon->attributes['class'] .= ' navicon';
                 }
             }
             if (array_key_exists('type', $properties)) {
@@ -1251,7 +1252,11 @@ class global_navigation extends navigation_node {
         // If the user is the current user or has permission to view the details of the requested
         // user than add a view profile link.
         if ($iscurrentuser || has_capability('moodle/user:viewdetails', $coursecontext) || has_capability('moodle/user:viewdetails', $usercontext)) {
-            $usernode->add(get_string('viewprofile'), new moodle_url('/user/view.php',$baseargs));
+            if ($issitecourse) {
+                $usernode->add(get_string('viewprofile'), new moodle_url('/user/profile.php',$baseargs));
+            } else {
+                $usernode->add(get_string('viewprofile'), new moodle_url('/user/view.php',$baseargs));
+            }
         }
 
         // Add nodes for forum posts and discussions if the user can view either or both
@@ -1263,7 +1268,7 @@ class global_navigation extends navigation_node {
                 $forumtab->add(get_string('posts', 'forum'), new moodle_url('/mod/forum/user.php', $baseargs));
             }
             if ($canviewdiscussions) {
-                $forumtab->add(get_string('discussions', 'forum'), new moodle_url('/mod/forum/user.php', array_merge($baseargs, array('mode'=>'discussions'))));
+                $forumtab->add(get_string('discussions', 'forum'), new moodle_url('/mod/forum/user.php', array_merge($baseargs, array('mode'=>'discussions', 'course'=>$course->id))));
             }
         }
 
@@ -1290,59 +1295,62 @@ class global_navigation extends navigation_node {
         }
 
         // Add a reports tab and then add reports the the user has permission to see.
-        $reporttab = $usernode->add(get_string('activityreports'));
         $anyreport  = has_capability('moodle/user:viewuseractivitiesreport', $usercontext);
         $viewreports = ($anyreport || ($course->showreports && $iscurrentuser));
-        $reportargs = array('user'=>$user->id);
-        if (!empty($course->id)) {
-            $reportargs['id'] = $course->id;
-        } else {
-            $reportargs['id'] = SITEID;
-        }
-        if ($viewreports || has_capability('coursereport/outline:view', $coursecontext)) {
-            $reporttab->add(get_string('outlinereport'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'outline'))));
-            $reporttab->add(get_string('completereport'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'complete'))));
-        }
+        if ($viewreports) {
+            $reporttab = $usernode->add(get_string('activityreports'));
+            $reportargs = array('user'=>$user->id);
+            if (!empty($course->id)) {
+                $reportargs['id'] = $course->id;
+            } else {
+                $reportargs['id'] = SITEID;
+            }
+            if ($viewreports || has_capability('coursereport/outline:view', $coursecontext)) {
+                $reporttab->add(get_string('outlinereport'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'outline'))));
+                $reporttab->add(get_string('completereport'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'complete'))));
+            }
 
-        if ($viewreports || has_capability('coursereport/log:viewtoday', $coursecontext)) {
-            $reporttab->add(get_string('todaylogs'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'todaylogs'))));
-        }
+            if ($viewreports || has_capability('coursereport/log:viewtoday', $coursecontext)) {
+                $reporttab->add(get_string('todaylogs'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'todaylogs'))));
+            }
 
-        if ($viewreports || has_capability('coursereport/log:view', $coursecontext)) {
-            $reporttab->add(get_string('alllogs'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'alllogs'))));
-        }
+            if ($viewreports || has_capability('coursereport/log:view', $coursecontext)) {
+                $reporttab->add(get_string('alllogs'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'alllogs'))));
+            }
 
-        if (!empty($CFG->enablestats)) {
-            if ($viewreports || has_capability('coursereport/stats:view', $coursecontext)) {
-                $reporttab->add(get_string('stats'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'stats'))));
+            if (!empty($CFG->enablestats)) {
+                if ($viewreports || has_capability('coursereport/stats:view', $coursecontext)) {
+                    $reporttab->add(get_string('stats'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'stats'))));
+                }
+            }
+
+            $gradeaccess = false;
+            if (has_capability('moodle/grade:viewall', $coursecontext)) {
+                //ok - can view all course grades
+                $gradeaccess = true;
+            } else if ($course->showgrades) {
+                if ($iscurrentuser && has_capability('moodle/grade:view', $coursecontext)) {
+                    //ok - can view own grades
+                    $gradeaccess = true;
+                } else if (has_capability('moodle/grade:viewall', $usercontext)) {
+                    // ok - can view grades of this user - parent most probably
+                    $gradeaccess = true;
+                } else if ($anyreport) {
+                    // ok - can view grades of this user - parent most probably
+                    $gradeaccess = true;
+                }
+            }
+            if ($gradeaccess) {
+                $reporttab->add(get_string('grade'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'grade'))));
+            }
+
+            // Check the number of nodes in the report node... if there are none remove
+            // the node
+            if (count($reporttab->children)===0) {
+                $usernode->remove_child($reporttab);
             }
         }
 
-        $gradeaccess = false;
-        if (has_capability('moodle/grade:viewall', $coursecontext)) {
-            //ok - can view all course grades
-            $gradeaccess = true;
-        } else if ($course->showgrades) {
-            if ($iscurrentuser && has_capability('moodle/grade:view', $coursecontext)) {
-                //ok - can view own grades
-                $gradeaccess = true;
-            } else if (has_capability('moodle/grade:viewall', $usercontext)) {
-                // ok - can view grades of this user - parent most probably
-                $gradeaccess = true;
-            } else if ($anyreport) {
-                // ok - can view grades of this user - parent most probably
-                $gradeaccess = true;
-            }
-        }
-        if ($gradeaccess) {
-            $reporttab->add(get_string('grade'), new moodle_url('/course/user.php', array_merge($reportargs, array('mode'=>'grade'))));
-        }
-
-        // Check the number of nodes in the report node... if there are none remove
-        // the node
-        if (count($reporttab->children)===0) {
-            $usernode->remove_child($reporttab);
-        }
 
         // If the user is the current user add the repositories for the current user
         if ($iscurrentuser) {
@@ -1353,6 +1361,23 @@ class global_navigation extends navigation_node {
             }
         }
         return true;
+    }
+
+    private function add_my_pages($node, $subpages, $baseurl, $defaultname, $baseargs = array()) {
+        global $CFG;
+
+        foreach($subpages as $page) {
+            $name = $page->name;
+            $params = $baseargs;
+            if ($page->name == '__default') {
+                $name = $defaultname;
+            } else {
+                $params['pageid'] = $page->id;
+            }
+            $url = new moodle_url($baseurl, $params);
+
+            $node->add($name, $url, null, null, null, null, false);
+        }
     }
 
     /**
@@ -1415,7 +1440,7 @@ class global_navigation extends navigation_node {
             $parent = $this->rootnodes['courses'];
             $url = new moodle_url('/course/view.php', array('id'=>$course->id));
         }
-        $coursenode = $parent->add($course->fullname, $url, self::TYPE_COURSE, $course->shortname, $course->id);
+        $coursenode = $parent->add($course->shortname, $url, self::TYPE_COURSE, $course->shortname, $course->id);
         $coursenode->nodetype = self::NODETYPE_BRANCH;
         $coursenode->hidden = (!$course->visible);
         $this->addedcourses[$course->id] = &$coursenode;
@@ -1688,6 +1713,8 @@ class navbar extends navigation_node {
     protected $items;
     /** @var array */
     public $children = array();
+    /** @var bool */
+    public $includesettingsbase = false;
     /**
      * The almighty constructor
      *
@@ -1778,8 +1805,10 @@ class navbar extends navigation_node {
                     }
                     $settingsactivenode = $settingsactivenode->parent;
                 }
-                // Removes the first node from the settings (root node) from the list
-                array_pop($items);
+                if (!$this->includesettingsbase) {
+                    // Removes the first node from the settings (root node) from the list
+                    array_pop($items);
+                }
                 while ($navigationactivenode && $navigationactivenode->parent !== null) {
                     if (!$navigationactivenode->mainnavonly) {
                         $items[] = $navigationactivenode;
@@ -2014,7 +2043,8 @@ class settings_navigation extends navigation_node {
      */
     public function prepend($text, $url=null, $type=null, $shorttext=null, $key=null, pix_icon $icon=null) {
         $children = $this->children;
-        $this->children = new get_class($children);
+        $childrenclass = get_class($children);
+        $this->children = new $childrenclass;
         $node = $this->add($text, $url, $type, $shorttext, $key, $icon);
         foreach ($children as $child) {
             $this->children->add($child);
@@ -2063,6 +2093,8 @@ class settings_navigation extends navigation_node {
                 if ($currentnode) {
                     $currentnode->make_active();
                 }
+            } else {
+                $this->scan_for_active_node($referencebranch);
             }
             return $referencebranch;
         } else if ($adminbranch->check_access()) {
@@ -2099,6 +2131,19 @@ class settings_navigation extends navigation_node {
                 }
             } else {
                 $reference->icon = new pix_icon('i/settings', '');
+            }
+        }
+    }
+
+    /**
+     * This function recursivily scans nodes until it finds the active node or there
+     * are no more nodes.
+     * @param navigation_node $node
+     */
+    protected function scan_for_active_node(navigation_node $node) {
+        if (!$node->check_if_active() && $node->children->count()>0) {
+            foreach ($node->children as &$child) {
+                $this->scan_for_active_node($child);
             }
         }
     }
@@ -2347,7 +2392,7 @@ class settings_navigation extends navigation_node {
         }
         if ($reportavailable) {
             $url = new moodle_url('/grade/report/index.php', array('id'=>$course->id));
-            $coursenode->add(get_string('grades'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/grades', ''));
+            $gradenode = $coursenode->add(get_string('grades'), $url, self::TYPE_SETTING, null, 'grades', new pix_icon('i/grades', ''));
         }
 
         //  Add outcome if permitted
@@ -2382,12 +2427,14 @@ class settings_navigation extends navigation_node {
         // Restore to this course
         if (has_capability('moodle/restore:restorecourse', $coursecontext)) {
             $url = new moodle_url('/files/index.php', array('id'=>$course->id, 'wdir'=>'/backupdata'));
+            $url = null; // Disabled until restore is implemented. MDL-21432
             $coursenode->add(get_string('restore'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/restore', ''));
         }
 
         // Import data from other courses
         if (has_capability('moodle/restore:restoretargetimport', $coursecontext)) {
             $url = new moodle_url('/course/import.php', array('id'=>$course->id));
+            $url = null; // Disabled until restore is implemented. MDL-21432
             $coursenode->add(get_string('import'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/restore', ''));
         }
 
@@ -2548,6 +2595,13 @@ class settings_navigation extends navigation_node {
             $modulenode->add(get_string('filters', 'admin'), $url, self::TYPE_SETTING);
         }
 
+        // Add a backup link
+        $featuresfunc = $this->page->activityname.'_supports';
+        if ($featuresfunc(FEATURE_BACKUP_MOODLE2) && has_capability('moodle/backup:backupactivity', $this->page->cm->context)) {
+            $url = new moodle_url('/backup/backup.php', array('id'=>$this->page->cm->course, 'cm'=>$this->page->cm->id));
+            $modulenode->add(get_string('backup'), $url, self::TYPE_SETTING);
+        }
+
         $file = $CFG->dirroot.'/mod/'.$this->page->activityname.'/lib.php';
         $function = $this->page->activityname.'_extend_settings_navigation';
 
@@ -2666,7 +2720,7 @@ class settings_navigation extends navigation_node {
         $fullname = fullname($user, has_capability('moodle/site:viewfullnames', $this->page->context));
 
         // Add a user setting branch
-        $usersetting = $this->add(get_string($gstitle, 'moodle', $fullname));
+        $usersetting = $this->add(get_string($gstitle, 'moodle', $fullname), null, self::TYPE_CONTAINER, null, $gstitle);
         $usersetting->id = 'usersettings';
 
         // Check if the user has been deleted
@@ -2676,7 +2730,11 @@ class settings_navigation extends navigation_node {
                 $usersetting->add(get_string('userdeleted'), null, self::TYPE_SETTING);
             } else {
                 // We can edit the user so show the user deleted message and link it to the profile
-                $profileurl = new moodle_url('/user/view.php', array('id'=>$user->id, 'course'=>$course->id));
+                if ($course->id == SITEID) {
+                    $profileurl = new moodle_url('/user/profile.php', array('id'=>$user->id));
+                } else {
+                    $profileurl = new moodle_url('/user/view.php', array('id'=>$user->id, 'course'=>$course->id));
+                }
                 $usersetting->add(get_string('userdeleted'), $profileurl, self::TYPE_SETTING);
             }
             return true;
@@ -2769,9 +2827,16 @@ class settings_navigation extends navigation_node {
         }
 
         // Messaging
+        // TODO this is adding itself to the messaging settings for other people based on one's own setting
         if (has_capability('moodle/user:editownmessageprofile', $systemcontext)) {
             $url = new moodle_url('/message/edit.php', array('id'=>$user->id, 'course'=>$course->id));
             $usersetting->add(get_string('editmymessage', 'message'), $url, self::TYPE_SETTING);
+        }
+
+        // Login as ...
+        if (!$user->deleted and !$currentuser && !session_is_loggedinas() && has_capability('moodle/user:loginas', $coursecontext) && !is_siteadmin($user->id)) {
+            $url = new moodle_url('/course/loginas.php', array('id'=>$course->id, 'user'=>$user->id, 'sesskey'=>sesskey()));
+            $usersetting->add(get_string('loginas'), $url, self::TYPE_SETTING);
         }
 
         return $usersetting;
@@ -2942,6 +3007,7 @@ class settings_navigation extends navigation_node {
         // Restore to this course
         if (has_capability('moodle/restore:restorecourse', $coursecontext)) {
             $url = new moodle_url('/files/index.php', array('id'=>$course->id, 'wdir'=>'/backupdata'));
+            $url = null; // Disabled until restore is implemented. MDL-21432
             $frontpage->add(get_string('restore'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/restore', ''));
         }
 

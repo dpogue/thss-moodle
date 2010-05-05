@@ -96,6 +96,9 @@ class confirm_action extends component_action {
  * @since     Moodle 2.0
  */
 class popup_action extends component_action {
+
+    public $jsfunction = 'openpopup';
+
     /**
      * @var array $params An array of parameters that will be passed to the openpopup JS function
      */
@@ -143,7 +146,9 @@ class popup_action extends component_action {
                 $this->params[$var] = $params[$var];
             }
         }
-        parent::__construct($event, 'openpopup', array('url' => $url->out(false), 'name' => $name, 'options' => $this->get_js_options($params)));
+        
+        $attributes = array('url' => $url->out(false), 'name' => $name, 'options' => $this->get_js_options($params));
+        parent::__construct($event, $this->jsfunction, $attributes);
     }
 
     /**
@@ -168,4 +173,3 @@ class popup_action extends component_action {
         return $jsoptions;
     }
 }
-

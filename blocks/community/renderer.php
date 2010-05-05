@@ -79,6 +79,7 @@ class block_community_renderer extends plugin_renderer_base {
 
 
                 //create description to display
+                $course->subject = get_string($course->subject, 'edufields');
                 $deschtml = $course->description; //the description
                 /// courses and sites number display under the description, in smaller
                 $deschtml .= html_writer::empty_tag('br');
@@ -102,13 +103,11 @@ class block_community_renderer extends plugin_renderer_base {
                                 'coursedescription' => $course->description));
                     $addlinkhtml = html_writer::tag('a', get_string('add'), array('href' => $addurl));
                 } else {
-                    //Add link TODO make it a button and send by post
-//                    $addurl = new moodle_url("/blocks/community/communitycourse.php",
-//                            array('sesskey' => sesskey(), 'download' => 1, 'confirmed' => 1,
-//                                'courseid' => $course->id, 'huburl' => $huburl));
-//                    $addlinkhtml = html_writer::tag('a', get_string('download', 'block_community'), array('href' => $addurl));
-                
-                    $addlinkhtml = "Download not implemented yet";
+//                    Add link TODO make it a button and send by post
+                    $addurl = new moodle_url("/blocks/community/communitycourse.php",
+                            array('sesskey' => sesskey(), 'download' => 1, 'confirmed' => 1,
+                                'courseid' => $course->id, 'huburl' => $huburl));
+                    $addlinkhtml = html_writer::tag('a', get_string('download', 'block_community'), array('href' => $addurl));
                 }
 
                 // add a row to the table

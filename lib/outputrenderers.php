@@ -407,7 +407,8 @@ class core_renderer extends renderer_base {
             $context = get_context_instance(CONTEXT_COURSE, $course->id);
 
             $fullname = fullname($USER, true);
-            $username = "<a href=\"$CFG->wwwroot/user/view.php?id=$USER->id&amp;course=$course->id\">$fullname</a>";
+            // Since Moodle 2.0 this link always goes to the public profile page (not the course profile page)
+            $username = "<a href=\"$CFG->wwwroot/user/profile.php?id=$USER->id\">$fullname</a>";
             if (is_mnet_remote_user($USER) and $idprovider = $DB->get_record('mnet_host', array('id'=>$USER->mnethostid))) {
                 $username .= " from <a href=\"{$idprovider->wwwroot}\">{$idprovider->name}</a>";
             }
@@ -622,7 +623,7 @@ class core_renderer extends renderer_base {
         global $CFG, $DB;
 
         $output = $this->container_end_all(true);
-
+        
         $footer = $this->opencontainers->pop('header/footer');
 
         if (debugging() and $DB and $DB->is_transaction_started()) {
@@ -645,7 +646,6 @@ class core_renderer extends renderer_base {
         $footer = str_replace(self::END_HTML_TOKEN, $this->page->requires->get_end_code(), $footer);
 
         $this->page->set_state(moodle_page::STATE_DONE);
-
 
         return $output . $footer;
     }
@@ -739,7 +739,7 @@ class core_renderer extends renderer_base {
             $output = html_writer::tag('a', get_string('skipa', 'access', $skiptitle), array('href' => '#sb-' . $bc->skipid, 'class' => 'skip-block'));
             $skipdest = html_writer::tag('span', '', array('id' => 'sb-' . $bc->skipid, 'class' => 'skip-block-to'));
         }
-
+        
         $output .= html_writer::start_tag('div', $bc->attributes);
 
         $controlshtml = $this->block_controls($bc->controls);
@@ -1460,8 +1460,9 @@ END;
         $attributes = array('href'=>$url, 'title'=>$title);
         $id = html_writer::random_id('helpicon');
         $attributes['id'] = $id;
-        $this->add_action_handler(new popup_action('click', $url), $id);
         $output = html_writer::tag('a', $output, $attributes);
+
+        $this->page->requires->js_init_call('M.util.help_icon.add', array(array('id'=>$id, 'url'=>$url->out(false))));
 
         // and finally span
         return html_writer::tag('span', $output, array('class' => 'helplink'));
@@ -1523,8 +1524,9 @@ END;
         $attributes = array('href'=>$url, 'title'=>$title);
         $id = html_writer::random_id('helpicon');
         $attributes['id'] = $id;
-        $this->add_action_handler(new popup_action('click', $url), $id);
         $output = html_writer::tag('a', $output, $attributes);
+
+        $this->page->requires->js_init_call('M.util.help_icon.add', array(array('id'=>$id, 'url'=>$url->out(false))));
 
         // and finally span
         return html_writer::tag('span', $output, array('class' => 'helplink'));
@@ -1675,7 +1677,11 @@ END;
             $courseid = $userpicture->courseid;
         }
 
-        $url = new moodle_url('/user/view.php', array('id' => $user->id, 'course' => $courseid));
+        if ($courseid == SITEID) {
+            $url = new moodle_url('/user/profile.php', array('id' => $user->id));
+        } else {
+            $url = new moodle_url('/user/view.php', array('id' => $user->id, 'course' => $courseid));
+        }
 
         $attributes = array('href'=>$url);
 
