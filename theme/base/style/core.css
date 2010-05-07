@@ -28,8 +28,8 @@ a.dimmed_text,
 .unlist li,
 .inline-list,
 .inline-list li,
-.sideblock .list,
-.sideblock .list li,
+.block .list,
+.block .list li,
 .sitetopic .section li,
 .course-content .section li.activity,
 .tabtree li {list-style: none;margin:0;padding:0;}
@@ -60,7 +60,7 @@ a.autolink.glossary:hover {cursor: help;}
 .pagingbar .thispage,
 .headingblock {font-weight: bold;}
 img.resize {height: 1em;width: 1em;}
-.sideblock img.resize,
+.block img.resize,
 .breadcrumb img.resize {height: 0.9em;width: 0.8em;}
 img.icon {height:16px;vertical-align:middle;width:16px;}
 img.iconsmall {height:11px;margin-right:1px;vertical-align:middle;width:11px;}
@@ -477,8 +477,6 @@ body.tag .managelink {padding: 5px;}
 .file-picker .fp-rename-form p {margin: 1em;}
 .file-picker .fp-upload-form {margin: 2em 0;text-align:center;}
 .file-picker .fp-upload-btn {clear:both;margin-top: 2em;}
-.file-picker .fp-upload-btn a {cursor: default;background: white;border:1px solid gray;color:black;padding: .5em;}
-.file-picker .fp-upload-btn a:hover {background: gray;color:white;}
 .file-picker .fp-paging {margin:1em .5em;clear:both;text-align:center;line-height: 2.5em;}
 .file-picker .fp-paging a {padding: .5em;border: 1px solid #CCC;}
 .file-picker .fp-paging a.cur_page {border: 1px solid blue;}

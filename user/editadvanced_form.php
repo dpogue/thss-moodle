@@ -39,18 +39,18 @@ class user_editadvanced_form extends moodleform {
             $auth_options[$auth] = get_string('pluginname', "auth_{$auth}");
         }
         $mform->addElement('select', 'auth', get_string('chooseauthmethod','auth'), $auth_options);
-        $mform->setHelpButton('auth', array('authchange', get_string('chooseauthmethod','auth')));
+        $mform->addHelpButton('auth', 'chooseauthmethod', 'auth');
         $mform->setAdvanced('auth');
 
         if (!empty($CFG->passwordpolicy)){
             $mform->addElement('static', 'passwordpolicyinfo', '', print_password_policy());
         }
         $mform->addElement('passwordunmask', 'newpassword', get_string('newpassword'), 'size="20"');
-        $mform->setHelpButton('newpassword',array('newpassword', get_string('leavetokeep')));
+        $mform->addHelpButton('newpassword', 'newpassword');
         $mform->setType('newpassword', PARAM_RAW);
 
         $mform->addElement('advcheckbox', 'preference_auth_forcepasswordchange', get_string('forcepasswordchange'));
-        $mform->setHelpButton('preference_auth_forcepasswordchange',array('forcepasswordchange', get_string('forcepasswordchange')));
+        $mform->addHelpButton('preference_auth_forcepasswordchange', 'forcepasswordchange');
         /// shared fields
         useredit_shared_definition($mform, $editoroptions);
 

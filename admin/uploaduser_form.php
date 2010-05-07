@@ -149,7 +149,7 @@ class admin_uploaduser_form2 extends moodleform {
         $choices = uu_allowed_auths();
         $mform->addElement('select', 'auth', get_string('chooseauthmethod','auth'), $choices);
         $mform->setDefault('auth', 'manual'); // manual is a sensible backwards compatible default
-        $mform->setHelpButton('auth', array('authchange', get_string('chooseauthmethod','auth')));
+        $mform->addHelpButton('auth', 'chooseauthmethod', 'auth');
         $mform->setAdvanced('auth');
 
         $mform->addElement('text', 'email', get_string('email'), 'maxlength="100" size="30"');
@@ -216,7 +216,7 @@ class admin_uploaduser_form2 extends moodleform {
         $editoroptions = array('maxfiles'=>0, 'maxbytes'=>0, 'trusttext'=>false, 'forcehttps'=>false);
         $mform->addElement('editor', 'description', get_string('userdescription'), null, $editoroptions);
         $mform->setType('description', PARAM_CLEANHTML);
-        $mform->setHelpButton('description', array('text2', get_string('helptext')));
+        $mform->addHelpButton('description', 'userdescription');
         $mform->setAdvanced('description');
 
         $mform->addElement('text', 'url', get_string('webpage'), 'maxlength="255" size="50"');
