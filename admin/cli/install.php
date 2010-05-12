@@ -47,8 +47,8 @@ Options:
 --wwwroot=URL         Web address for the Moodle site,
                       required in non-interactive mode.
 --dataroot=DIR        Location of the moodle data folder,
-                      must not be web accessible. Default is moodleroot
-                      in parent directory.
+                      must not be web accessible. Default is moodledata
+                      in the parent directory.
 --dbtype=TYPE         Database type. Default is mysqli
 --dbhost=HOST         Database host. Default is localhost
 --dbname=NAME         Database name. Default is moodle
@@ -56,7 +56,8 @@ Options:
 --dbpass=PASSWORD     Database password. Default is blank
 --dbsocket            Use database sockets. Available for some databases only.
 --prefix=STRING       Table prefix for above database tables. Default is mdl_
---admin-password=PASS Password for the moodle admin account,
+--adminuser=USERNAME  Username for the moodle admin account. Default is admin
+--adminpass=PASSWORD  Password for the moodle admin account,
                       required in non-interactive mode.
 --non-interactive     No interactive questions, installation fails if any
                       problem encountered.
@@ -110,7 +111,7 @@ $CFG->dirroot              = str_replace('\\', '/', dirname(dirname(dirname(__FI
 $CFG->libdir               = "$CFG->dirroot/lib";
 $CFG->wwwroot              = "http://localhost";
 $CFG->httpswwwroot         = $CFG->wwwroot;
-$CFG->dataroot             = str_replace('\\', '/', dirname(dirname(dirname(__FILE__))).'/moodledata');
+$CFG->dataroot             = str_replace('\\', '/', dirname(dirname(dirname(dirname(__FILE__)))).'/moodledata');
 $CFG->docroot              = 'http://docs.moodle.org';
 $CFG->directorypermissions = 00777;
 $CFG->running_installer    = true;
@@ -161,10 +162,28 @@ if (empty($databases)) {
 }
 
 // now get cli options
-list($options, $unrecognized) = cli_get_params(array('lang'=>$CFG->lang, 'wwwroot'=>'', 'dataroot'=>$CFG->dataroot, 'dbtype'=>$defaultdb, 'dbhost'=>'localhost',
-                                                     'dbname'=>'moodle', 'dbuser'=>'root', 'dbpass'=>'', 'dbsocket'=>false, 'prefix'=>'mdl_', 'admin-password'=>'',
-                                                     'non-interactive'=>false, 'agree-license'=>false, 'help'=>false),
-                                               array('h'=>'help'));
+list($options, $unrecognized) = cli_get_params(
+    array(
+        'lang'              => $CFG->lang,
+        'wwwroot'           => '',
+        'dataroot'          => $CFG->dataroot,
+        'dbtype'            => $defaultdb,
+        'dbhost'            => 'localhost',
+        'dbname'            => 'moodle',
+        'dbuser'            => 'root',
+        'dbpass'            => '',
+        'dbsocket'          => false,
+        'prefix'            => 'mdl_',
+        'adminuser'         => 'admin',
+        'adminpass'         => '',
+        'non-interactive'   => false,
+        'agree-license'     => false,
+        'help'              => false
+    ),
+    array(
+        'h' => 'help'
+    )
+);
 
 $interactive = empty($options['non-interactive']);
 
@@ -262,6 +281,9 @@ $CFG->httpswwwroot  = $CFG->wwwroot;
 
 
 //We need dataroot before lang download
+if (!empty($options['dataroot'])) {
+    $CFG->dataroot = clean_param($options['dataroot'], PARAM_SAFEPATH);
+}
 if ($interactive) {
     cli_separator();
     $i=0;
@@ -288,13 +310,13 @@ if ($interactive) {
             $error = get_string('cliincorrectvalueretry', 'admin')."\n";
         } else if (is_dataroot_insecure()) {
             $CFG->dataroot = '';
-            //TODO: use unsecure warning instead
-            $error = get_string('cliincorrectvalueretry', 'admin')."\n";
+            $error = get_string('pathsunsecuredataroot', 'install')."\n";
         } else {
             if (make_upload_directory('lang', false)) {
                 $error = '';
             } else {
-                $error = get_string('pathserrcreatedataroot', 'install', $CFG->dataroot)."\n";
+                $a = (object)array('dataroot' => $CFG->dataroot);
+                $error = get_string('pathserrcreatedataroot', 'install', $a)."\n";
             }
         }
 
@@ -302,12 +324,11 @@ if ($interactive) {
 
 } else {
     if (is_dataroot_insecure()) {
-        $a = (object)array('option'=>'dataroot', 'value'=>$CFG->dataroot);
-        //TODO: use unsecure warning instead
-        cli_error(get_string('cliincorrectvalueerror', 'admin', $a));
+        cli_error(get_string('pathsunsecuredataroot', 'install'));
     }
     if (!make_upload_directory('lang', false)) {
-        cli_error(get_string('pathserrcreatedataroot', 'install', $CFG->dataroot));
+        $a = (object)array('dataroot' => $CFG->dataroot);
+        cli_error(get_string('pathserrcreatedataroot', 'install', $a));
     }
 }
 
@@ -334,7 +355,11 @@ if ($CFG->lang != 'en') {
     }
 }
 
+// switch the string_manager instance to stop using install/lang/
 $CFG->early_install_lang = false;
+$CFG->langotherroot      = $CFG->dataroot.'/lang';
+$CFG->langlocalroot      = $CFG->dataroot.'/lang';
+get_string_manager(true);
 
 // ask for db type - show only drivers available
 if ($interactive) {
@@ -445,17 +470,36 @@ if ($interactive) {
     }
 }
 
+// ask for admin user name
+if ($interactive) {
+    cli_separator();
+    cli_heading(get_string('cliadminusername', 'install'));
+    if (!empty($options['adminuser'])) {
+        $prompt = get_string('clitypevaluedefault', 'admin', $options['adminuser']);
+    } else {
+        $prompt = get_string('clitypevalue', 'admin');
+    }
+    do {
+        $options['adminuser'] = cli_input($prompt, $options['adminuser']);
+    } while (empty($options['adminuser']) or $options['adminuser'] === 'guest');
+} else {
+    if (empty($options['adminuser']) or $options['adminuser'] === 'guest') {
+        $a = (object)array('option'=>'adminuser', 'value'=>$options['adminuser']);
+        cli_error(get_string('cliincorrectvalueerror', 'admin', $a));
+    }
+}
+
 // ask for admin user password
 if ($interactive) {
     cli_separator();
     cli_heading(get_string('cliadminpassword', 'install'));
     $prompt = get_string('clitypevalue', 'admin');
     do {
-        $options['admin-password'] = cli_input($prompt);
-    } while (empty($options['admin-password']) or $options['admin-password'] === 'admin');
+        $options['adminpass'] = cli_input($prompt);
+    } while (empty($options['adminpass']) or $options['adminpass'] === 'admin');
 } else {
-    if (empty($options['admin-password']) or $options['admin-password'] === 'admin') {
-        $a = (object)array('option'=>'admin-password', 'value'=>$options['admin-password']);
+    if (empty($options['adminpass']) or $options['adminpass'] === 'admin') {
+        $a = (object)array('option'=>'adminpass', 'value'=>$options['adminpass']);
         cli_error(get_string('cliincorrectvalueerror', 'admin', $a));
     }
 }
@@ -545,7 +589,12 @@ set_config('release', $release);
 upgrade_noncore(true);
 
 // set up admin user password
-$DB->set_field('user', 'password', hash_internal_user_password($options['admin-password'], array('username'=>'admin')));
+$DB->set_field('user', 'password', hash_internal_user_password($options['adminpass']), array('username' => 'admin'));
+
+// rename admin username if needed
+if ($options['adminuser'] !== 'admin') {
+    $DB->set_field('user', 'username', $options['adminuser'], array('username' => 'admin'));
+}
 
 // indicate that this site is fully configured
 set_config('rolesactive', 1);

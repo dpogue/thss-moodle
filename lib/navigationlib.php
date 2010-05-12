@@ -2359,12 +2359,12 @@ class settings_navigation extends navigation_node {
             // Override roles
             if (has_capability('moodle/role:review', $coursecontext) or count(get_overridable_roles($coursecontext))>0) {
                 $url = new moodle_url('/'.$CFG->admin.'/roles/permissions.php', array('contextid'=>$coursecontext->id));
-                $coursenode->add(get_string('permissions', 'role'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/roles', ''));
+                $coursenode->add(get_string('permissions', 'role'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/permissions', ''));
             }
             // Check role permissions
             if (has_any_capability(array('moodle/role:assign', 'moodle/role:safeoverride','moodle/role:override', 'moodle/role:assign'), $coursecontext)) {
                 $url = new moodle_url('/'.$CFG->admin.'/roles/check.php', array('contextid'=>$coursecontext->id));
-                $coursenode->add(get_string('checkpermissions', 'role'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/roles', ''));
+                $coursenode->add(get_string('checkpermissions', 'role'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/checkpermissions', ''));
             }
             // Manage filters
             if (has_capability('moodle/filter:manage', $coursecontext) && count(filter_get_available_in_context($coursecontext))>0) {
@@ -2458,9 +2458,9 @@ class settings_navigation extends navigation_node {
                               'moodle/question:viewall',
                               'moodle/question:movemine',
                               'moodle/question:moveall');
-        if (has_any_capability($questioncaps, $this->context)) {
+        if (has_any_capability($questioncaps, $coursecontext)) {
             $questionlink = $CFG->wwwroot.'/question/edit.php';
-        } else if (has_capability('moodle/question:managecategory', $this->context)) {
+        } else if (has_capability('moodle/question:managecategory', $coursecontext)) {
             $questionlink = $CFG->wwwroot.'/question/category.php';
         }
         if (isset($questionlink)) {
@@ -2470,16 +2470,16 @@ class settings_navigation extends navigation_node {
 
         // Repository Instances
         require_once($CFG->dirroot.'/repository/lib.php');
-        $editabletypes = repository::get_editable_types($this->context);
-        if (has_capability('moodle/course:update', $this->context) && !empty($editabletypes)) {
-            $url = new moodle_url('/repository/manage_instances.php', array('contextid'=>$this->context->id));
+        $editabletypes = repository::get_editable_types($coursecontext);
+        if (has_capability('moodle/course:update', $coursecontext) && !empty($editabletypes)) {
+            $url = new moodle_url('/repository/manage_instances.php', array('contextid'=>$coursecontext->id));
             $coursenode->add(get_string('repositories'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/repository', ''));
         }
 
         // Manage files
-        if (has_capability('moodle/course:managefiles', $this->context)) {
-            $url = new moodle_url('/files/index.php', array('id'=>$course->id));
-            $coursenode->add(get_string('files'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/files', ''));
+        if (has_capability('moodle/course:managefiles', $coursecontext)) {
+            $url = new moodle_url('/files/index.php', array('contextid'=>$coursecontext->id, 'itemid'=>0, 'filearea'=>'course_content'));
+            $coursenode->add(get_string('files'), $url, self::TYPE_SETTING, null, 'coursefiles', new pix_icon('i/files', ''));
         }
 
         // Authorize hooks
@@ -2519,8 +2519,8 @@ class settings_navigation extends navigation_node {
         if ($assumedrole!==false) {
             $roles[0] = get_string('switchrolereturn');
         }
-        if (has_capability('moodle/role:switchroles', $this->context)) {
-            $availableroles = get_switchable_roles($this->context);
+        if (has_capability('moodle/role:switchroles', $coursecontext)) {
+            $availableroles = get_switchable_roles($coursecontext);
             if (is_array($availableroles)) {
                 foreach ($availableroles as $key=>$role) {
                     if ($key == $CFG->guestroleid || $assumedrole===(int)$key) {
@@ -2593,6 +2593,11 @@ class settings_navigation extends navigation_node {
         if (has_capability('moodle/filter:manage', $this->page->cm->context) && count(filter_get_available_in_context($this->page->cm->context))>0) {
             $url = new moodle_url('/filter/manage.php', array('contextid'=>$this->page->cm->context->id));
             $modulenode->add(get_string('filters', 'admin'), $url, self::TYPE_SETTING);
+        }
+
+        if (has_capability('coursereport/log:view', get_context_instance(CONTEXT_COURSE, $this->page->cm->course))) {
+            $url = new moodle_url('/course/report/log/index.php', array('chooselog'=>'1','id'=>$this->page->cm->course,'modid'=>$this->page->cm->id));
+            $modulenode->add(get_string('logs'), $url, self::TYPE_SETTING);
         }
 
         // Add a backup link
@@ -2984,12 +2989,12 @@ class settings_navigation extends navigation_node {
             // Override roles
             if (has_capability('moodle/role:review', $coursecontext) or count(get_overridable_roles($coursecontext))>0) {
                 $url = new moodle_url('/'.$CFG->admin.'/roles/permissions.php', array('contextid'=>$coursecontext->id));
-                $frontpage->add(get_string('permissions', 'role'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/roles', ''));
+                $frontpage->add(get_string('permissions', 'role'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/permissions', ''));
             }
             // Check role permissions
             if (has_any_capability(array('moodle/role:assign', 'moodle/role:safeoverride','moodle/role:override', 'moodle/role:assign'), $coursecontext)) {
                 $url = new moodle_url('/'.$CFG->admin.'/roles/check.php', array('contextid'=>$coursecontext->id));
-                $frontpage->add(get_string('checkpermissions', 'role'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/roles', ''));
+                $frontpage->add(get_string('checkpermissions', 'role'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/checkpermissions', ''));
             }
             // Manage filters
             if (has_capability('moodle/filter:manage', $coursecontext) && count(filter_get_available_in_context($coursecontext))>0) {

@@ -53,7 +53,6 @@ $string['authentication'] = 'Authentication';
 $string['authsettings'] = 'Manage authentication';
 $string['autolang'] = 'Language autodetect';
 $string['autologinguests'] = 'Auto-login guests';
-$string['availablelangs'] = 'Available language packs';
 $string['availableto'] = 'Available to';
 $string['backgroundcolour'] = 'Transparent colour';
 $string['backups'] = 'Backups';
@@ -153,6 +152,18 @@ $string['configcronremotepassword'] = 'This means that the cron.php script canno
     http://site.example.com/admin/cron.php?password=opensesame
 </pre>If this is left empty, no password is required.';
 $string['configcurlcache'] = 'Time-to-live for cURL cache, in seconds.';
+$string['configcustommenuitems'] = 'You can configure a custom menu here to be shown by themes. Each line consists of some menu text, a link URL (optional) and a tooltip title (optional), separated by pipe characters. You can specify a structure using hyphens. For example:
+<pre>
+Moodle community|http://moodle.org
+-Moodle free support|http://moodle.org/support
+-Moodle development|http://moodle.org/development
+--Moodle Tracker|http://tracker.moodle.org
+--Moodle Docs|http://docs.moodle.org
+-Moodle News|http://moodle.org/news
+Moodle company
+-Moodle commercial hosting|http://moodle.com/hosting
+-Moodle commercial support|http://moodle.com/support
+</pre>';
 $string['configdbsessions'] = 'If enabled, this setting will use the database to store information about current sessions.  This is especially useful for large/busy sites or sites built on cluster of servers.  For most sites this should probably be left disabled so that the server disk is used instead.  Note that changing this setting now will log out all current users (including you). If you are using MySQL please make sure that \'max_allowed_packet\' in my.cnf (or my.ini) is at least 4M.';
 $string['configdebug'] = 'If you turn this on, then PHP\'s error_reporting will be increased so that more warnings are printed.  This is only useful for developers.';
 $string['configdebugdisplay'] = 'Set to on, the error reporting will go to the HTML page. This is practical, but breaks XHTML, JS, cookies and HTTP headers in general. Set to off, it will send the output to your server logs, allowing better debugging. The PHP setting error_log controls which log this goes to.';
@@ -292,6 +303,7 @@ $string['configrestrictbydefault'] = 'Should new courses that are created that f
 $string['configrestrictmodulesfor'] = 'Which courses should have <b>the setting</b> for disabling some activity modules?  Note that this setting only applies to teachers, administrators will still be able to add any activity to a course.';
 $string['configrunclamavonupload'] = 'When enabled, clam AV will be used to scan all uploaded files.';
 $string['configrunclamonupload'] = 'Run clam AV on file upload? You will need a correct path in pathtoclam for this to work.  (Clam AV is a free virus scanner that you can get from http://www.clamav.net/)';
+$string['configuserquota'] = 'The maximum number of bytes that a user can store in their own private file area. {$a->bytes} bytes == {$a->displaysize}';
 $string['configsectioninterface'] = 'Interface';
 $string['configsectionmail'] = 'Mail';
 $string['configsectionmaintenance'] = 'Maintenance';
@@ -380,6 +392,8 @@ $string['curlcache'] = 'cURL cache TTL';
 $string['curlrecommended'] = 'Installing the optional cURL library is highly recommended in order to enable Moodle Networking functionality.';
 $string['curlrequired'] = 'The cURL PHP extension is now required by Moodle, in order to commnunicate with Moodle repositories.';
 $string['customcheck'] = 'Other Checks';
+$string['custommenu'] = 'Custom menu';
+$string['custommenuitems'] = 'Custom menu items';
 $string['datarootsecurityerror'] = '<p><strong>SECURITY WARNING!</strong></p><p>Your dataroot directory is in the wrong location and is exposed to the web. This means that all your private files are available to anyone in the world, and some of them could be used by a cracker to obtain unauthorised administrative access to your site!</p>
 <p>You <em>must</em> move dataroot directory ({$a}) to a new location that is not within your public web directory, and update the <code>$CFG->dataroot</code> setting in your config.php accordingly.</p>';
 $string['datarootsecuritywarning'] = 'Your site configuration might not be secure. Please make sure that your dataroot directory ({$a}) is not directly accessible via web.';
@@ -428,7 +442,7 @@ $string['denyemailaddresses'] = 'Denied email domains';
 $string['development'] = 'Development';
 $string['digestmailtime'] = 'Hour to send digest emails';
 $string['disablecourseajax'] = 'Disable AJAX course editing';
-$string['disableuserimages'] = 'Disable User Profile Images';
+$string['disableuserimages'] = 'Disable user profile images';
 $string['displayerrorswarning'] = 'Enabling the PHP setting <em>display_errors</em> is not recommended on production sites because some error messages may reveal sensitive information about your server.';
 $string['displayloginfailures'] = 'Display login failures to';
 $string['docroot'] = 'Moodle Docs document root';
@@ -458,11 +472,11 @@ $string['enablecourserequests'] = 'Enable course requests';
 $string['enableglobalsearch'] = 'Enable global search';
 $string['enablegroupmembersonly'] = 'Enable group members only';
 $string['enablehtmlpurifier'] = 'Enable HTML Purifier';
-$string['enablerecordcache'] = 'Enable Record Cache';
+$string['enablerecordcache'] = 'Enable record cache';
 $string['enablerssfeeds'] = 'Enable RSS feeds';
 $string['enablesafebrowserintegration'] = 'Enable Safe Exam Browser integration';
 $string['enablestats'] = 'Enable statistics';
-$string['enabletrusttext'] = 'Enable Trusted Content';
+$string['enabletrusttext'] = 'Enable trusted content';
 $string['enablewebservices'] = 'Enable web services';
 $string['enablewsdocumentation'] = 'Web services documentation';
 $string['encoding'] = 'Encoding';
@@ -524,7 +538,7 @@ $string['fullnamedisplay'] = 'Full name format';
 $string['gdrecommended'] = 'GD extension is used for conversion of images, some features such as user profile images will not be available if missing.';
 $string['gdversion'] = 'GD version';
 $string['generalsettings'] = 'General settings';
-$string['geoipfile'] = 'GeoIP City data file';
+$string['geoipfile'] = 'GeoIP city data file';
 $string['getremoteaddrconf'] = 'Logged IP address source';
 $string['globalsquoteswarning'] = '<p><strong>Security Warning</strong>: to operate properly, Moodle requires <br />that you make certain changes to your current PHP settings.<p/><p>You <em>must</em> set <code>register_globals=off</code> and/or <code>magic_quotes_gpc=on</code>. <br />If possible, you should set <code>register_globals=off</code> to improve general <br /> server security, setting <code>magic_quotes_gpc=on</code> is also recommended.<p/><p>These settings are controlled by editing your <code>php.ini</code>, Apache/IIS <br />configuration or <code>.htaccess</code> file.</p>';
 $string['globalswarning'] = '<p><strong>SECURITY WARNING!</strong></p><p> To operate properly, Moodle requires <br />that you make certain changes to your current PHP settings.</p><p>You <em>must</em> set <code>register_globals=off</code>.</p><p>This setting is controlled by editing your <code>php.ini</code>, Apache/IIS <br />configuration or <code>.htaccess</code> file.</p>';
@@ -650,7 +664,7 @@ $string['memcachedhosts'] = 'memcached hosts';
 $string['memcachedpconn'] = 'memcached use persistent connections';
 $string['messaging'] = 'Enable messaging system';
 $string['minpassworddigits'] = 'Digits';
-$string['minpasswordlength'] = 'Password Length';
+$string['minpasswordlength'] = 'Password length';
 $string['minpasswordlower'] = 'Lowercase letters';
 $string['minpasswordnonalphanum'] = 'Non-alphanumeric characters';
 $string['minpasswordupper'] = 'Uppercase letters';
@@ -674,7 +688,7 @@ $string['mydashboard'] = 'System default dashboard';
 $string['mymoodle'] = 'My Moodle';
 $string['mymoodleredirect'] = 'Force users to use My Moodle';
 $string['mypage'] = 'Default My Moodle page';
-$string['myprofile'] = 'Default Profile page';
+$string['myprofile'] = 'Default profile page';
 $string['mypagelocked'] = 'Lock default page';
 $string['mysql416bypassed'] = 'However, if your site is using iso-8859-1 (latin) languages ONLY, you may continue using your currently installed MySQL 4.1.12 (or higher).';
 $string['mysql416required'] = 'MySQL 4.1.16 is the minimum version required for Moodle 1.6 in order to guarantee that all data can be converted to UTF-8 in the future.';
@@ -708,7 +722,7 @@ $string['order1'] = 'First';
 $string['order2'] = 'Second';
 $string['order3'] = 'Third';
 $string['order4'] = 'Fourth';
-$string['passwordpolicy'] = 'Password Policy';
+$string['passwordpolicy'] = 'Password policy';
 $string['pathconvert'] = 'Path of <i>convert</i> binary';
 $string['pathdvips'] = 'Path of <i>dvips</i> binary';
 $string['pathlatex'] = 'Path of <i>latex</i> binary';
@@ -750,7 +764,7 @@ $string['profiledeletefield'] = 'Deleting a field';
 $string['profiledescription'] = 'Description of the field';
 $string['profileeditcategory'] = 'Editing category: {$a}';
 $string['profileeditfield'] = 'Editing profile field: {$a}';
-$string['profilefield'] = 'Profile Field';
+$string['profilefield'] = 'Profile field';
 $string['profilefieldcolumns'] = 'Columns';
 $string['profilefieldispassword'] = 'Is this a password field?';
 $string['profilefieldlink'] = 'Link';
@@ -970,6 +984,7 @@ $string['usersrenamed'] = 'Users renamed';
 $string['usersskipped'] = 'Users skipped';
 $string['usersupdated'] = 'Users updated';
 $string['usersweakpassword'] = 'Users having a weak password';
+$string['userquota'] = 'User quota';
 $string['usetags'] = 'Enable tags functionality';
 $string['uubulk'] = 'Select for bulk operations';
 $string['uubulkall'] = 'All users';

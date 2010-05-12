@@ -269,12 +269,10 @@ function quiz_update_effective_access($quiz, $userid) {
 
     // check for group overrides
     $groupings = groups_get_user_groups($quiz->course, $userid);
-    $groupingid = empty($cm->groupingid)? 0 : $cm->groupingid;
 
-    if (!empty($groupings[$groupingid])) {
-
+    if (!empty($groupings[0])) {
         // Select all overrides that apply to the User's groups
-        list($extra, $params) = $DB->get_in_or_equal(array_values($groupings[$groupingid]));
+        list($extra, $params) = $DB->get_in_or_equal(array_values($groupings[0]));
         $sql = "SELECT * FROM {quiz_overrides}
                 WHERE groupid $extra AND quiz = ?";
         $params[] = $quiz->id;
@@ -843,10 +841,9 @@ function quiz_get_recent_mod_activity(&$activities, &$index, $timestart,
     }
 
     $context         = get_context_instance(CONTEXT_MODULE, $cm->id);
-    $grader          = has_capability('moodle/grade:viewall', $context);
     $accessallgroups = has_capability('moodle/site:accessallgroups', $context);
     $viewfullnames   = has_capability('moodle/site:viewfullnames', $context);
-    $grader          = has_capability('mod/quiz:grade', $context);
+    $grader          = has_capability('mod/quiz:viewreports', $context);
     $groupmode       = groups_get_activity_groupmode($cm, $course);
 
     if (is_null($modinfo->groups)) {
