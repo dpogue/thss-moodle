@@ -23,6 +23,12 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+ function rss_add_http_header($context, $modname, $modinstance, $title) {
+    global $PAGE, $USER;
+    $rsspath = rss_get_url($context->id, $USER->id, $modname, $modinstance->id);
+    $PAGE->add_alternate_version($title, $rsspath, 'application/rss+xml');
+ }
+
 /**
  * This function returns the icon (from theme) with the link to rss/file.php
  *
@@ -333,10 +339,9 @@ function rss_get_token($userid) {
     return get_user_key('rss', $userid);
 }
 
-/*function rss_update_token_last_access($userid) {
-    global $DB;
-    $DB->set_field('rss_tokens', 'lastaccess', time(), array('userid'=>$userid));
-}*/
+function rss_delete_token($userid) {
+    delete_user_key('rss', $userid);
+}
 
 // ===== This function are used to write XML tags =========
 // [stronk7]: They are similar to the glossary export and backup generation

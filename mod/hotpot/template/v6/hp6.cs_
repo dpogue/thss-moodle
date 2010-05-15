@@ -531,7 +531,7 @@ div.NavButtonBar{
 
 .NavButton {
 	border-style: solid;
-[inclNavBarColor]	
+[inclNavBarColor]
 	border-left-color: [strNavLightColor];
 	border-top-color: [strNavLightColor];
 	border-right-color: [strNavShadeColor];
@@ -540,7 +540,7 @@ div.NavButtonBar{
 	color: [strNavTextColor];
 [/inclNavBarColor]
 	border-width: 2px;
-	cursor: pointer;	
+	cursor: pointer;
 }
 
 .NavButtonUp {
@@ -554,7 +554,7 @@ div.NavButtonBar{
 	background-color: [strNavTextColor];
 [/inclNavBarColor]
 	border-width: 2px;
-	cursor: pointer;	
+	cursor: pointer;
 }
 
 .NavButtonDown {
@@ -568,7 +568,7 @@ div.NavButtonBar{
 	background-color: [strNavTextColor];
 [/inclNavBarColor]
 	border-width: 2px;
-	cursor: pointer;	
+	cursor: pointer;
 }
 
 /*EndNavBarStyle*/

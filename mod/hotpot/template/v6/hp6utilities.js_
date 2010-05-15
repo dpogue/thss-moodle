@@ -80,7 +80,7 @@ function SuppressBackspace(e){
 
 	if (Suppress == true){
 		if (C.ie){
-			window.event.returnValue = false;	
+			window.event.returnValue = false;
 			window.event.cancelBubble = true;
 		}
 		else{

@@ -32,6 +32,7 @@ require_once($CFG->dirroot.'/blocks/community/forms.php');
 
 require_login();
 
+$PAGE->set_context(get_context_instance(CONTEXT_SYSTEM));
 $PAGE->set_url('/blocks/community/communitycourse.php');
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagelayout('course');
@@ -110,7 +111,7 @@ if (!empty($fromform)) {
 
 
     $function = 'hub_get_courses';
-    $params = array($search, $downloadable, $options);
+    $params = array($search, $downloadable, !$downloadable, $options);
     $serverurl = $huburl."/local/hub/webservice/webservices.php";
     require_once($CFG->dirroot."/webservice/xmlrpc/lib.php");
     $xmlrpcclient = new webservice_xmlrpc_client();

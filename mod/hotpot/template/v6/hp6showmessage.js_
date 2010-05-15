@@ -21,7 +21,7 @@ function ShowMessage(Feedback){
 
 //Focus the OK button
 	setTimeout("document.getElementById('FeedbackOKButton').focus()", 50);
-	
+
 //[inclPreloadImages]
 //	RefreshImages();
 //[/inclPreloadImages]

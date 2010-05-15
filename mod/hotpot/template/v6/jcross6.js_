@@ -5,7 +5,7 @@ function SetScormScore(){
 //Reports the current score and any other information back to the LMS
 	if (API != null){
 		API.LMSSetValue('cmi.core.score.raw', Score);
-		
+
 //Now send a detailed reports on the item
 		var ItemLabel = 'Crossword';
 		API.LMSSetValue('cmi.objectives.0.id', 'obj'+ItemLabel);
@@ -15,13 +15,13 @@ function SetScormScore(){
 		}
 		else{
 			API.LMSSetValue('cmi.objectives.0.status', 'incomplete');
-		}		
+		}
 		API.LMSSetValue('cmi.objectives.0.score.min', '0');
 		API.LMSSetValue('cmi.objectives.0.score.max', '100');
 		API.LMSSetValue('cmi.objectives.0.score.raw', Score);
 //We're not sending any student response data, so we can set this to a non-standard value
 		API.LMSSetValue('cmi.interactions.0.type', 'crossword');
-		
+
 		API.LMSCommit('');
 	}
 }
@@ -65,7 +65,7 @@ function StartUp(){
 [inclScorm1.2]
 	ScormStartUp();
 [/inclScorm1.2]
-	
+
 	AcrossCaption = document.getElementById('CluesAcrossLabel').innerHTML;
 	DownCaption = document.getElementById('CluesDownLabel').innerHTML;
 [inclSendResults]
@@ -95,7 +95,7 @@ function GetAnswerLength(Across,x,y){
 		while ((y<L[x].length)&&(L[x][y].length > 0)){
 			Result += L[x][y].length;
 			y++;
-		} 	
+		}
 		return Result;
 	}
 }
@@ -165,7 +165,7 @@ function SplitStringToPerceivedChars(InString, PC){
 function EnterAnswer(Guess,Across,AnsLength,x,y){
 	var PC = new Array();
 	SplitStringToPerceivedChars(Guess, PC);
-	
+
 	var i=x;
 	var j=y;
 	var Letter = 0;
@@ -271,7 +271,7 @@ function CheckAnswers(){
 	var CorrectLetters = 0;
 	var LetterFromKey = '';
 	var LetterFromGuess = '';
-	
+
 //Check each letter
 	for (var i=0; i<L.length; i++){
 		for (var j=0; j<L[i].length; j++){
@@ -316,7 +316,7 @@ function CheckAnswers(){
 
 	ShowMessage(Output);
 	WriteToInstructions(Output);
-	
+
 	if ((AllCorrect == true)||(TimeOver == true)){
 [inclSendResults]
 		setTimeout('SendResults(' + Score + ')', 50);

@@ -1083,16 +1083,16 @@ function GetJCrossQuestionDetails(hp, v) {
 					for (var i=0; i<2; i++) { // 0==across, 1==down
 						var AD = (i==0) ? 'A' : 'D';
 						var acrossdown = (i==0) ? 'across' : 'down';
-						
+
 						var clue = (hp==5) ? eval(AD+'['+q+']') : GetJCrossClue('Clue_'+AD+'_'+q);
 						if (clue) {
 							// format 'Q' (a padded, two-digit version of 'q')
 							var Q = getQ('JCross', q) + acrossdown + '_'; // e.g. JCross_01_across_
-		
+
 							if (JCross[0]) {
 								qDetails += makeSeparator(Q);
 							}
-							if (JCross[5]) {
+							if (JCross[3]) {
 								var x = (HP[_correct][AD] && HP[_correct][AD][q]) ? HP[_correct][AD][q] : '';
 								qDetails += hpHiddenField(Q+'correct', x);
 							}
@@ -1548,7 +1548,7 @@ function hpClickClue(hp, t, v, args) {
 }
 function hpClickCheck(hp, t, v, args) {
 	if (t==2) { // JCloze
-    if (v==5 || v==6) {
+        if (v==5 || v==6) {
 			var r = hpRottmeier();
 			var already_correct = 'true';
 			if (r==0) {
@@ -1598,7 +1598,7 @@ function hpClickCheck(hp, t, v, args) {
                             // Rottmeier DropDown 2.4
                             // do nothing
                         } else {
-    						var G = g.toUpperCase();	
+    						var G = g.toUpperCase();
     						var ii_max = I[i][1].length;
     						for (var ii=0; ii<ii_max; ii++) {
     							if (window.CaseSensitive) {
@@ -1826,7 +1826,7 @@ function hpClickCheck(hp, t, v, args) {
 			} else {
 				if (!HP[_wrong][q]) HP[_wrong][q] = 0;
 				HP[_wrong][q]++;
-			}			
+			}
 		}
 	}
 	//return true;
@@ -1844,7 +1844,12 @@ function hpClickCheckJCrossV5V6(hp, v, AD, q, row, col) {
 		var check = false;
 		var guess = GetJCrossWord(G, row, col, (AD=='D'));
 		var correct = GetJCrossWord(L, row, col, (AD=='D'));
-		if (guess==correct) {
+        if (window.CaseSensitive) {
+            var is_correct = (guess==correct);
+        } else {
+            var is_correct = (guess.toUpperCase()==correct.toUpperCase());
+        }
+		if (is_correct) {
 			HP[_correct][AD][q] = correct;
 			check = true;
 		} else if (guess) {
@@ -2310,7 +2315,7 @@ function hpInterceptHints() {
 		var f = 'Hint';
 		var a = getFuncArgs(f, true);
 		x = 'hpClick(1,0);'; // question number is always zero
-	
+
 	} else if (window.CheckAnswer) {
 		var f = 'CheckAnswer';
 		var a = getFuncArgs(f, true);

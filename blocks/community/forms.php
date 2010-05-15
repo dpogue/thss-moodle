@@ -64,7 +64,7 @@ class community_hub_search_form extends moodleform {
                 $options);
 
         $options = array();
-        $options['all'] = get_string('all', 'hub');
+        $options['all'] = get_string('any');
         $options[AUDIENCE_EDUCATORS] = get_string('audienceeducators', 'hub');
         $options[AUDIENCE_STUDENTS] = get_string('audiencestudents', 'hub');
         $options[AUDIENCE_ADMINS] = get_string('audienceadmins', 'hub');
@@ -74,7 +74,7 @@ class community_hub_search_form extends moodleform {
         $mform->addHelpButton('audience', 'audience', 'hub');
 
         $options = array();
-        $options['all'] = get_string('all', 'hub');
+        $options['all'] = get_string('any');
         $options[EDULEVEL_PRIMARY] = get_string('edulevelprimary', 'hub');
         $options[EDULEVEL_SECONDARY] = get_string('edulevelsecondary', 'hub');
         $options[EDULEVEL_TERTIARY] = get_string('eduleveltertiary', 'hub');
@@ -88,7 +88,15 @@ class community_hub_search_form extends moodleform {
         $mform->addHelpButton('educationallevel', 'educationallevel', 'hub');
 
         $options = get_string_manager()->load_component_strings('edufields', current_language());
-        $options['all'] = get_string('all', 'hub');
+        foreach ($options as $key => &$option) {
+            $keylength = strlen ( $key );
+            if ( $keylength == 10) {
+                $option = "&nbsp;&nbsp;" . $option;
+            } else  if ( $keylength == 12) {
+                $option = "&nbsp;&nbsp;&nbsp;&nbsp;" . $option;
+            }
+        }
+        $options = array_merge (array('all' => get_string('any')),$options);
         $mform->addElement('select', 'subject', get_string('subject', 'hub'), $options);
         $mform->setDefault('subject', 'all');
         unset($options);
@@ -98,7 +106,7 @@ class community_hub_search_form extends moodleform {
         $licensemanager = new license_manager();
         $licences = $licensemanager->get_licenses();
         $options = array();
-        $options['all'] = get_string('all', 'hub');
+        $options['all'] = get_string('any');
         foreach ($licences as $license) {
             $options[$license->shortname] = get_string($license->shortname, 'license');
         }
@@ -109,7 +117,8 @@ class community_hub_search_form extends moodleform {
         $mform->setDefault('licence', 'all');
 
         $languages = get_string_manager()->get_list_of_languages();
-        $languages['all'] = get_string('all', 'hub');
+        asort($languages, SORT_LOCALE_STRING);
+        $languages = array_merge (array('all' => get_string('any')),$languages);
         $mform->addElement('select', 'language',get_string('language'), $languages);
         $mform->setDefault('language', 'all');
 

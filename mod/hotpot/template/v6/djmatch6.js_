@@ -6,20 +6,20 @@ function SetScormScore(){
 //Reports the current score and any other information back to the LMS
 	if (API != null){
 		API.LMSSetValue('cmi.core.score.raw', Score);
-		
-		
+
+
 //Now send a detailed reports on the item
 		var ItemLabel = 'Matching';
 		API.LMSSetValue('cmi.objectives.0.id', 'obj'+ItemLabel);
-		API.LMSSetValue('cmi.interactions.0.id', 'int'+ItemLabel);	
-		API.LMSSetValue('cmi.objectives.0.status', API.LMSGetValue('cmi.core.lesson_status'));	
+		API.LMSSetValue('cmi.interactions.0.id', 'int'+ItemLabel);
+		API.LMSSetValue('cmi.objectives.0.status', API.LMSGetValue('cmi.core.lesson_status'));
 		API.LMSSetValue('cmi.objectives.0.score.min', '0');
 		API.LMSSetValue('cmi.objectives.0.score.max', '100');
 		API.LMSSetValue('cmi.objectives.0.score.raw', Score);
 //We can only use the performance type, because we're storing multiple responses of various types.
 		API.LMSSetValue('cmi.interactions.0.type', 'performance');
 		API.LMSSetValue('cmi.interactions.0.student_response', AnswersTried);
-		
+
 		API.LMSCommit('');
 	}
 }
@@ -121,12 +121,12 @@ function StartUp(){
 	if (C.ie){
 		DragTop += 15;
 	}
-	
+
 //Reduce array if required
 	if (QsToShow < F.length){
 		ReduceItems2();
 	}
-	
+
 //Shuffle the left items if required
 	if (ShuffleQs == true){
 		F = Shuffle(F);
@@ -276,7 +276,7 @@ function ReduceItems2(){
 		}
 		for (j=ItemToDump; j<(D.length-1); j++){
 			D[j] = D[j+1];
-		}		
+		}
 		F.length = F.length-1;
 		D.length = D.length-1;
 	}

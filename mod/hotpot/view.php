@@ -47,6 +47,7 @@
     $title = format_string($course->shortname.': '.$hotpot->name, true);
     $heading = $course->fullname;
 
+    $button = update_module_button($cm->id, $course->id, get_string("modulename", "hotpot"));
     $button = '<div style="font-size:0.75em;">'.$button.'</div>';
 
     $PAGE->set_title($title);
@@ -163,8 +164,43 @@
                         $hp->insert_giveup_form($attemptid, '<!-- BeginTopNavButtons -->', '<!-- EndTopNavButtons -->');
                         break;
                     case HOTPOT_NAVIGATION_FRAME:
-                        $targetframe = $CFG->framename;
-                        // drop through to remove nav buttons too
+                    case HOTPOT_NAVIGATION_IFRAME:
+                        if (empty($CFG->framename)) {
+                            $targetframe = '_top';
+                        } else {
+                            $targetframe = $CFG->framename;
+                        }
+                        if ($pos = strpos($hp->html, '</body>')) {
+                            $insert = ''
+                                .'<script type="text/javascript">'."\n"
+                                .'//<![CDATA['."\n"
+                                ."var obj = document.getElementsByTagName('a');\n"
+                                ."if (obj) {\n"
+                                ."	var i_max = obj.length;\n"
+                                ."	for (var i=0; i<i_max; i++) {\n"
+                                ."		if (obj[i].href && ! obj[i].target) {\n"
+                                ."			obj[i].target = '$targetframe';\n"
+                                ."		}\n"
+                                ."	}\n"
+                                ."	var obj = null;\n"
+                                ."}\n"
+                                ."var obj = document.getElementsByTagName('form');\n"
+                                ."if (obj) {\n"
+                                ."	var i_max = obj.length;\n"
+                                ."	for (var i=0; i<i_max; i++) {\n"
+                                ."		if (obj[i].action && ! obj[i].target) {\n"
+                                ."			obj[i].target = '$targetframe';\n"
+                                ."		}\n"
+                                ."	}\n"
+                                ."	var obj = null;\n"
+                                ."}\n"
+                                .'//]]>'."\n"
+                                .'</script>'."\n"
+                            ;
+                            $hp->html = substr_replace($hp->html, $insert, $pos, 0);
+                        }
+                        $hp->remove_nav_buttons();
+                        break;
                     default:
                         $hp->remove_nav_buttons();
                 }
@@ -374,7 +410,6 @@
             $PAGE->set_title($title);
             $PAGE->set_heading($heading);
             $PAGE->set_button($button);
-            $PAGE->set_headingmenu($loggedinas);
             echo $OUTPUT->header();
             if (!empty($available_msg)) {
                 echo $OUTPUT->notification($available_msg);
@@ -424,19 +459,33 @@
                     print $hp->html;
                 break;
                 default:
-                    $iframe_id = 'hotpot_iframe';
+                    // set iframe attributes
+                    $iframe_id = 'hotpot_embed_object';
+                    $iframe_src = 'view.php?id='.$cm->id.'&amp;framename=main';
+
                     $PAGE->requires->js('/mod/hotpot/iframe.js');
-                    $PAGE->requires->js_function_call('set_iframe_height', array($iframe_id), true);
+                    $PAGE->requires->js_function_call('set_embed_object_height', array($iframe_id), true);
+
                     echo $OUTPUT->header();
                     if (!empty($available_msg)) {
                         echo $OUTPUT->notification($available_msg);
                     }
-                    print "<iframe id=\"$iframe_id\" src=\"view.php?id=$cm->id&amp;framename=main\" height=\"100%\" width=\"100%\">";
-                    print "<ilayer name=\"$iframe_id\" src=\"view.php?id=$cm->id&amp;framename=main\" height=\"100%\" width=\"100%\">";
-                    print "</ilayer>\n";
-                    print "</iframe>\n";
+
+                    // for XHTML 1.0 Strict compatability, the embedded page should be implemented
+                    // using an <object> not an <iframe>. However, IE <object>'s are problematic
+                    // (links and forms cannot escape), so we use conditional comments to display
+                    // an <iframe> in IE and an <object> in other browsers
+
+                    // print the html element to hold the embedded html page
+                    // Note: the iframe in IE needs a "name" attribute for the resizing to work
+                    print '<!--[if IE]>'."\n";
+                    print '<iframe id="'.$iframe_id.'" name="'.$iframe_id.'_name" src="'.$iframe_src.'" width="100%" height="100%"></iframe>'."\n";
+                    print '<![endif]-->'."\n";
+                    print '<!--[if !IE]> <-->'."\n";
+                    print '<object id="'.$iframe_id.'" type="text/html" data="'.$iframe_src.'" width="100%" height="100%"></object>'."\n";
+                    print '<!--> <![endif]-->'."\n";
+
                     print $footer;
-                break;
             } // end switch $framename
         break;
         case HOTPOT_NAVIGATION_GIVEUP:
@@ -477,4 +526,3 @@ function hotpot_feedback_teachers(&$course, &$hotpot) {
     }
     return $teacherdetails;
 }
-

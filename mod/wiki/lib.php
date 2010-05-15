@@ -200,6 +200,8 @@ function wiki_supports($feature) {
         return true;
     case FEATURE_RATE:
         return false;
+    case FEATURE_BACKUP_MOODLE2:
+        return true;
 
     default:
         return null;
@@ -224,11 +226,11 @@ function wiki_print_recent_activity($course, $viewfullnames, $timestart) {
     global $CFG, $DB, $OUTPUT;
 
     if (!$pages = $DB->get_records_sql("SELECT p.*, w.id as wikiid, sw.groupid
-							              FROM {wiki_pages} p
-							              	JOIN {wiki_subwikis} sw ON sw.id = p.subwikiid
-							              	JOIN {wiki} w ON w.id = sw.wikiid
-							            WHERE p.timemodified > ? AND w.course = ?
-							          ORDER BY p.timemodified ASC", array($timestart, $course->id))) {
+                                        FROM {wiki_pages} p
+                                            JOIN {wiki_subwikis} sw ON sw.id = p.subwikiid
+                                            JOIN {wiki} w ON w.id = sw.wikiid
+                                        WHERE p.timemodified > ? AND w.course = ?
+                                        ORDER BY p.timemodified ASC", array($timestart, $course->id))) {
         return false;
     }
     $modinfo =& get_fast_modinfo($course);
@@ -436,7 +438,9 @@ function wiki_extend_navigation(navigation_node $navref, $course, $module, $cm) 
         return false;
     }
 
-    $gid = groups_get_activity_group($cm);
+    if (!$gid = groups_get_activity_group($cm)){
+        $gid = 0;
+    }
     if (!$subwiki = wiki_get_subwiki_by_group($cm->instance, $gid, $userid)){
         return null;
     } else {
