@@ -169,7 +169,9 @@ if ($currentpage->userid == 0) {
 }
 
 // TODO WORK OUT WHERE THE NAV BAR IS!
+
 echo $OUTPUT->header();
+echo '<div class="userprofile">';
 
 
 // Print the standard content of this page, the basic profile info
@@ -198,11 +200,11 @@ if (is_mnet_remote_user($user)) {
     }
 }
 
-echo '<div class="profilepicture">';
+echo '<div class="userprofilebox clearfix"><div class="profilepicture">';
 echo $OUTPUT->user_picture($user, array('size'=>100));
 echo '</div>';
 
-echo '<div class="description">';
+echo '<div class="descriptionbox"><div class="description">';
 // Print the description
 
 if ($user->description && !isset($hiddenfields['description'])) {
@@ -365,11 +367,18 @@ if (!empty($CFG->usetags)) {
     }
 }
 
-echo "</table>";
+echo "</table></div></div>";
 
 
 echo $OUTPUT->blocks_for_region('content');
 
+if ($CFG->debugdisplay && debugging('', DEBUG_DEVELOPER) && $currentuser) {  // Show user object
+    echo '<br /><br /><hr />';
+    echo $OUTPUT->heading('DEBUG MODE:  User session variables');
+    print_object($USER);
+}
+
+echo '</div>';  // userprofile class
 echo $OUTPUT->footer();
 
 

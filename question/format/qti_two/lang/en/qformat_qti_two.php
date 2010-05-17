@@ -16,11 +16,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'block_admin', language 'en', branch 'MOODLE_20_STABLE'
+ * Strings for component 'qformat_qti_two', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package   block_admin
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @package   qformat_qti_two
+ * @copyright 2010 Helen Foster
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'Administration';
+$string['qti_two'] = 'IMS QTI 2.0 format';
+$string['qti_two_help'] = 'This format enables questions to be exported in the standard IMS QTI format (version 2.0) via a zip file.';
+$string['qti_two_link'] = 'qformat/qti/two';

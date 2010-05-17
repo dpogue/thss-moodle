@@ -16,11 +16,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'block_admin_tree', language 'en', branch 'MOODLE_20_STABLE'
+ * Strings for component 'qformat_xhtml', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package   block_admin_tree
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @package   qformat_xhtml
+ * @copyright 2010 Helen Foster
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'Site administration';
+$string['xhtml'] = 'XHTML format';
+$string['xhtml_help'] = 'XHTML format enables all questions in the category to be exported to a single page of strict XHTML for possible use in another application.';
+$string['xhtml_link'] = 'qformat/xhtml';
