@@ -1,11 +1,8 @@
 /* Login Page */
 .loginbox {
-	margin-top: 15px;
-	margin-bottom: 15px;
+	margin: 15px auto;
 	border: 0 none;
 	width: 50%;
-	margin-right: 250px;
-	margin-left: auto;
 	overflow: hidden;
 	background: white;
 	border-radius: 15px;
