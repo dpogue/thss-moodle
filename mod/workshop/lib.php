@@ -412,6 +412,7 @@ function workshop_get_file_areas($course, $cm, $context) {
     $areas = array();
     if (has_capability('moodle/course:managefiles', $context)) {
         $areas['workshop_instructauthors']          = get_string('areainstructauthors', 'workshop');
+        $areas['workshop_instructreviewers']        = get_string('areainstructreviewers', 'workshop');
         $areas['workshop_submission_content']       = get_string('areasubmissioncontent', 'workshop');
         $areas['workshop_submission_attachment']    = get_string('areasubmissionattachment', 'workshop');
     }
@@ -491,6 +492,7 @@ function workshop_pluginfile($course, $cminfo, $context, $filearea, array $args,
     }
 
     // the following file areas are for the files embedded into the assessment forms
+    // TODO this should be rewritten to using callbacks into subplugins
     if (in_array($filearea, array(
             'workshopform_comments_description',
             'workshopform_accumulative_description',
@@ -618,27 +620,7 @@ function workshop_get_file_info($browser, $areas, $course, $cm, $context, $filea
         return new file_info_stored($browser, $context, $storedfile, $urlbase, $topvisiblename, true, true, false, false);
     }
 
-    /* todo was replaced by subplugins' areas
-    if ($filearea === 'workshop_dimension_description') {
-        // always only itemid 0 - TODO not true, review
-
-        $filepath = is_null($filepath) ? '/' : $filepath;
-        $filename = is_null($filename) ? '.' : $filename;
-
-        $urlbase = $CFG->wwwroot.'/pluginfile.php';
-        if (!$storedfile = $fs->get_file($context->id, $filearea, 0, $filepath, $filename)) {
-            if ($filepath === '/' and $filename === '.') {
-                $storedfile = new virtual_root_file($context->id, $filearea, 0);
-            } else {
-                // not found
-                return null;
-            }
-        }
-        return new file_info_stored($browser, $context, $storedfile, $urlbase, $areas[$filearea], false, true, true, false);
-    }
-     */
-
-    if ($filearea === 'workshop_instructauthors') {
+    if ($filearea == 'workshop_instructauthors' or $filearea == 'workshop_instructreviewers') {
         // always only itemid 0
 
         $filepath = is_null($filepath) ? '/' : $filepath;

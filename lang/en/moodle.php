@@ -1024,7 +1024,7 @@ $string['lookback'] = 'Look back';
 $string['mailadmins'] = 'Inform admins';
 $string['mailstudents'] = 'Inform students';
 $string['mailteachers'] = 'Inform teachers';
-$string['makeafolder'] = 'Make a folder';
+$string['makeafolder'] = 'Create folder';
 $string['makeeditable'] = 'If you make \'{$a}\' editable by the web server process (eg apache) then you could edit this file directly from this page';
 $string['makethismyhome'] = 'Make this my default home page';
 $string['manageblocks'] = 'Blocks';
@@ -1496,6 +1496,9 @@ $string['screenreaderuse'] = 'Screen reader';
 $string['screenreaderyes'] = 'Yes';
 $string['screenshot'] = 'Screenshot';
 $string['search'] = 'Search';
+$string['search_help'] = 'For basic searching of one or more words anywhere in the text, just type them separated by spaces. All words longer than two characters are used.
+
+For advanced searching, press the search button without typing anything in the search box to access the advanced search form.';
 $string['searchagain'] = 'Search again';
 $string['searchbyemail'] = 'Search by email address';
 $string['searchbyusername'] = 'Search by username';
@@ -1546,6 +1549,7 @@ $string['shortnameuser'] = 'User short name';
 $string['shortsitename'] = 'Short name for site (eg single word)';
 $string['show'] = 'Show';
 $string['showactions'] = 'Show actions';
+$string['showactions_help'] = 'Actions shown can be views and/or posts (making a change, such as add, update or delete).';
 $string['showadvancedsettings'] = 'Show advanced settings';
 $string['showall'] = 'Show all {$a}';
 $string['showallcourses'] = 'Show all courses';
@@ -1668,6 +1672,7 @@ $string['submit'] = 'Submit';
 $string['success'] = 'Success';
 $string['summary'] = 'Summary';
 $string['summaryof'] = 'Summary of {$a}';
+$string['summaryof_help'] = 'The idea of a summary is a short text to prepare students for the activities within the topic or week. The text is shown on the course page under the section name.';
 $string['supplyinfo'] = 'More details';
 $string['switchrolereturn'] = 'Return to my normal role';
 $string['switchroleto'] = 'Switch role to...';
@@ -1763,14 +1768,6 @@ $string['uploadrenamedcollision'] = 'File was renamed from {$a->oldname} to {$a-
 $string['uploadrenamedchars'] = 'File was renamed from {$a->oldname} to {$a->newname} because of invalid characters.';
 $string['uploadserverlimit'] = 'Uploaded file exceeded the maximum size limit set by the server';
 $string['uploadthisfile'] = 'Upload this file';
-$string['uploadusers'] = 'Upload users';
-$string['uploadusers_help'] = 'Users may be uploaded (and optionally enrolled in courses) via text file. The format of the file should be as follows:
-
-* Each line of the file contains one record
-* Each record is a series of data separated by commas (or other delimiters) 
-* The first record contains a list of fieldnames defining the format of the rest of the file
-* Required fieldnames are username, password, firstname, lastname, email';
-$string['uploadusers_link'] = 'admin/uploaduser';
 $string['url'] = 'URL';
 $string['used'] = 'Used';
 $string['usedinnplaces'] = 'Used in {$a} places';
@@ -1855,6 +1852,11 @@ $string['windowclosing'] = 'This window should close automatically. If not, plea
 $string['withchosenfiles'] = 'With chosen files';
 $string['withoutuserdata'] = 'without user data';
 $string['withselectedusers'] = 'With selected users...';
+$string['withselectedusers_help'] = '* Add / send message - For sending a message to one or more participants
+* Add a new note - For adding a note to a selected participant
+* Add a common note - For adding the same note to more than one participant
+* Extend enrolment (individual) - For extending a selected student\'s access to the course, even when an enrolment period is set
+* Extend enrolment (common) - For extending more than one student\'s access to the course by the same amount';
 $string['withuserdata'] = 'with user data';
 $string['wordforstudent'] = 'Your word for Student';
 $string['wordforstudenteg'] = 'eg Student, Participant etc';

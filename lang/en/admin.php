@@ -241,6 +241,7 @@ $string['configiplookup'] = 'When you click on an IP address (such as 34.12.222.
 $string['configkeeptagnamecase'] = 'Check this if you want tag names to keep the original casing as entered by users who created them';
 $string['configlang'] = 'Choose a default language for the whole site.  Users can override this setting later. You can also set $CFG->lang="yourlangcode_utf8"; in config.php if you want localised error messages for database connection problems.';
 $string['configlangcache'] = 'Cache the language menu. Saves a lot of memory and processing power. If you enable this, the menu takes a few minutes to update after you have added or removed languages.';
+$string['configlangstringcache'] = 'Caches all the language strings into compiled files in the data directory.  If you are translating Moodle or changing strings in the Moodle source code then you may want to switch this off.  Otherwise leave it on to see performance benefits.';
 $string['configlangdir'] = 'Most languages are printed left-to-right, but some, like Arabic and Hebrew, are printed right-to-left.';
 $string['configlanglist'] = 'Leave this blank to allow users to choose from any language you have in this installation of Moodle.  However, you can shorten the language menu by entering a comma-separated list of language codes that you want.  For example:  en,es_es,fr,it';
 $string['configlangmenu'] = 'Choose whether or not you want to display the general-purpose language menu on the home page, login page etc.  This does not affect the user\'s ability to set the preferred language in their own profile.';
@@ -620,6 +621,7 @@ $string['langpackupdated'] = 'Language pack {$a} was successfully updated';
 $string['langpackupdateskipped'] = 'Update of {$a} language pack skipped';
 $string['langpackwillbeupdated'] = 'Note for translators: During the upgrade, Moodle will try to update your language pack. Your modifications in non-local language folders will be overwritten.';
 $string['langrmyourself'] = 'To prevent data loss, lang.php is not able to overwrite existing file with empty content. Please, remove the file manually in order to get rid of it.';
+$string['langstringcache'] = 'Cache all language strings';
 $string['languagesettings'] = 'Language settings';
 $string['langupdatecomplete'] = 'Language pack update completed';
 $string['lang16notify'] = 'Moodle 1.6 and above allows you to install and update language packs directly from download.moodle.org by following the link below';
@@ -792,6 +794,11 @@ $string['profileshortnamenotunique'] = 'This short name is already in use';
 $string['profilesignup'] = 'Display on signup page?';
 $string['profilespecificsettings'] = 'Specific settings';
 $string['profilevisible'] = 'Who is this field visible to?';
+$string['profilevisible_help'] = 'There are 3 options:
+
+* Not visible - For private data only viewable by administrators
+* Visible to user - For private data only viewable by the user and by administrators
+* Visible to everyone';
 $string['profilevisibleall'] = 'Visible to everyone';
 $string['profilevisiblenone'] = 'Not visible';
 $string['profilevisibleprivate'] = 'Visible to user';
@@ -967,6 +974,14 @@ $string['uploadpicture_userfield'] = 'User attribute to use to match pictures:';
 $string['uploadpicture_usernotfound'] = 'User with a \'{$a->userfield}\' value of \'{$a->uservalue}\' does not exist. Skipping.';
 $string['uploadpicture_userskipped'] = 'Skipping user {$a} (already has a picture).';
 $string['uploadpicture_userupdated'] = 'Picture updated for user {$a}.';
+$string['uploadusers'] = 'Upload users';
+$string['uploadusers_help'] = 'Users may be uploaded (and optionally enrolled in courses) via text file. The format of the file should be as follows:
+
+* Each line of the file contains one record
+* Each record is a series of data separated by commas (or other delimiters)
+* The first record contains a list of fieldnames defining the format of the rest of the file
+* Required fieldnames are username, password, firstname, lastname, email';
+$string['uploadusers_link'] = 'admin/uploaduser';
 $string['uploaduserspreview'] = 'Upload users preview';
 $string['uploadusersresult'] = 'Upload users results';
 $string['upwards'] = 'upwards';

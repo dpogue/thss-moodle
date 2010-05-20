@@ -1210,7 +1210,7 @@ abstract class admin_setting {
     public $name;
     /** @var string localised name */
     public $visiblename;
-    /** @var string localised long description */
+    /** @var string localised long description in Markdown format */
     public $description;
     /** @var mixed Can be string or array of string */
     public $defaultsetting;
@@ -1232,7 +1232,7 @@ abstract class admin_setting {
     public function __construct($name, $visiblename, $description, $defaultsetting) {
         $this->parse_setting_name($name);
         $this->visiblename    = $visiblename;
-        $this->description    = $description;
+        $this->description    = markdown_to_html($description);
         $this->defaultsetting = $defaultsetting;
     }
 
@@ -2599,8 +2599,10 @@ class admin_setting_configiplist extends admin_setting_configtextarea {
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class admin_setting_users_with_capability extends admin_setting_configmultiselect {
-/** @var string The capabilities name */
+    /** @var string The capabilities name */
     protected $capability;
+    /** @var int include admin users too */
+    protected $includeadmins;
 
     /**
      * Constructor.
@@ -2610,9 +2612,11 @@ class admin_setting_users_with_capability extends admin_setting_configmultiselec
      * @param string $description localised long description
      * @param array $defaultsetting array of usernames
      * @param string $capability string capability name.
+     * @param bool $include admins, include aadministrators
      */
-    function __construct($name, $visiblename, $description, $defaultsetting, $capability) {
-        $this->capability = $capability;
+    function __construct($name, $visiblename, $description, $defaultsetting, $capability, $includeadmins = true) {
+        $this->capability    = $capability;
+        $this->includeadmins = $includeadmins;
         parent::__construct($name, $visiblename, $description, $defaultsetting, NULL);
     }
 
@@ -2631,8 +2635,14 @@ class admin_setting_users_with_capability extends admin_setting_configmultiselec
             '$@NONE@$' => get_string('nobody'),
             '$@ALL@$' => get_string('everyonewhocan', 'admin', get_capability_string($this->capability)),
         );
+        if ($this->includeadmins) {
+            $admins = get_admins();
+            foreach ($admins as $user) {
+                $this->choices[$user->id] = fullname($user);
+            }
+        }
         foreach ($users as $user) {
-            $this->choices[$user->username] = fullname($user);
+            $this->choices[$user->id] = fullname($user);
         }
         return true;
     }
@@ -2661,6 +2671,10 @@ class admin_setting_users_with_capability extends admin_setting_configmultiselec
      */
     public function get_setting() {
         $result = parent::get_setting();
+        if ($result === null) {
+            // this is necessary for settings upgrade
+            return null;
+        }
         if (empty($result)) {
             $result = array('$@NONE@$');
         }
@@ -5704,10 +5718,15 @@ function format_admin_setting($setting, $title='', $form='', $description='', $l
         $labelfor = '';
     }
 
-    if (empty($setting->plugin) and array_key_exists($setting->name, $CFG->config_php_settings)) {
-        $override = '<div class="form-overridden">'.get_string('configoverride', 'admin').'</div>';
+    $override = '';
+    if (empty($setting->plugin)) {
+        if (array_key_exists($setting->name, $CFG->config_php_settings)) {
+            $override = '<div class="form-overridden">'.get_string('configoverride', 'admin').'</div>';
+        }
     } else {
-        $override = '';
+        if (array_key_exists($setting->plugin, $CFG->forced_plugin_settings) and array_key_exists($setting->name, $CFG->forced_plugin_settings[$setting->plugin])) {
+            $override = '<div class="form-overridden">'.get_string('configoverride', 'admin').'</div>';
+        }
     }
 
     if ($warning !== '') {

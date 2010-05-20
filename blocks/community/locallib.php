@@ -39,7 +39,7 @@ class community {
     public function add_community_course($course, $userid) {
         global $DB;
 
-        $community = $this->get_community_course($course->id, $userid);
+        $community = $this->get_community_course($course->url, $userid);
 
         if (empty($community)) {
             $community->userid = $userid;
@@ -69,9 +69,9 @@ class community {
      * @param integer $userid
      * @return array of course
      */
-    public function get_community_course($courseid, $userid) {
+    public function get_community_course($courseurl, $userid) {
         global $DB;
-        return $DB->get_record('block_community', array('id' => $courseid, 'userid' => $userid));
+        return $DB->get_record('block_community', array('courseurl' => $courseurl, 'userid' => $userid));
     }
 
     /**
@@ -97,8 +97,8 @@ class community {
         fclose($fp);
 
         $record->contextid = get_context_instance(CONTEXT_USER, $USER->id)->id;
-        $record->filearea = 'community_backups';
-        $record->itemid = $courseid;
+        $record->filearea = 'user_backup';
+        $record->itemid = 0;
         $record->filename = 'backup_'.$courseid.".zip";
         $record->filepath = '/';
         $fs = get_file_storage();

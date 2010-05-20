@@ -74,6 +74,10 @@ function get_admin() {
 function get_admins() {
     global $DB, $CFG;
 
+    if (empty($CFG->siteadmins)) {  // Should not happen on an ordinary site
+        return array();
+    }
+
     $sql = "SELECT u.*
               FROM {user} u
              WHERE u.deleted = 0 AND u.id IN ($CFG->siteadmins)";
@@ -2003,9 +2007,6 @@ function add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user
     }
 
     $REMOTE_ADDR = getremoteaddr();
-    if (empty($REMOTE_ADDR)) {
-        $REMOTE_ADDR = '0.0.0.0';
-    }
 
     $timenow = time();
     $info = $info;

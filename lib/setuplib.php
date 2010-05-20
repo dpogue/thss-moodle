@@ -85,7 +85,11 @@ class moodle_exception extends Exception {
         $this->a         = $a;
         $this->debuginfo = $debuginfo;
 
-        $message = get_string($errorcode, $module, $a);
+        if (get_string_manager()->string_exists($errorcode, $module)) {
+            $message = get_string($errorcode, $module, $a);
+        } else {
+            $message = $module . '/' . $errorcode;
+        }
 
         parent::__construct($message, 0);
     }
@@ -336,11 +340,14 @@ function get_exception_info($ex) {
     if (empty($module) || $module == 'moodle' || $module == 'core') {
         $module = 'error';
     }
-    if (function_exists('get_string')) {
-        $message = get_string($errorcode, $module, $a);
-        if ($module === 'error' and strpos($message, '[[') === 0) {
+    if (function_exists('get_string_manager')) {
+        if (get_string_manager()->string_exists($errorcode, $module)) {
+            $message = get_string($errorcode, $module, $a);
+        } elseif ($module == 'error' && get_string_manager()->string_exists($errorcode, 'moodle')) {
             // Search in moodle file if error specified - needed for backwards compatibility
             $message = get_string($errorcode, 'moodle', $a);
+        } else {
+            $message = $module . '/' . $errorcode;
         }
     } else {
         $message = $module . '/' . $errorcode;
@@ -445,6 +452,29 @@ function setup_validate_php_configuration() {
    if (ini_get_bool('magic_quotes_runtime')) {
        print_error('fatalmagicquotesruntime', 'admin');
    }
+}
+
+/**
+ * Initialise global $CFG variable
+ * @return void
+ */
+function initialise_cfg() {
+    global $CFG, $DB;
+    
+    try {
+        if ($DB) {
+            $localcfg = $DB->get_records_menu('config', array(), '', 'name,value');
+            foreach ($localcfg as $name=>$value) {
+                if (property_exists($CFG, $name)) {
+                    // config.php settings always take precedence
+                    continue;
+                }
+                $CFG->{$name} = $value;
+            }
+        }
+    } catch (dml_read_exception $e) {
+        // most probably empty db, going to install soon
+    }
 }
 
 /**

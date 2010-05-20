@@ -215,7 +215,9 @@ class grade_edit_tree {
 
                     $cell = new html_table_cell();
                     $cell->colspan = 12;
-                    $cell->text = $OUTPUT->action_icon($aurl, $strmovehere, new pix_icon(array('class'=>'movetarget'), 'movehere'));
+                    
+                    $icon = new pix_icon('movehere', $strmovehere, null, array('class'=>'movetarget'));
+                    $cell->text = $OUTPUT->action_icon($aurl, $icon);
 
                     $moveto = new html_table_row(array($cell));
                 }
@@ -814,7 +816,7 @@ class grade_edit_tree_column_aggregateonlygraded extends grade_edit_tree_column_
         $headercell = clone($this->headercell);
         $headercell->style .= 'width: 40px;';
         $headercell->text = get_string('aggregateonlygraded', 'grades')
-                . $OUTPUT->old_help_icon('aggregateonlygraded', 'aggregateonlygraded', 'grade');
+                . $OUTPUT->help_icon('aggregateonlygraded', 'grades');
         return $headercell;
     }
 

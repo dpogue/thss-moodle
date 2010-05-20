@@ -126,12 +126,10 @@ switch ($action) {
 $strgroups = get_string('groups');
 $strparticipants = get_string('participants');
 
-$PAGE->navbar->add($strparticipants, new moodle_url('/user/index.php', array('id'=>$courseid)));
-$PAGE->navbar->add($strgroups);
-
 /// Print header
 $PAGE->set_title($strgroups);
-$PAGE->set_heading(': '.$strgroups);
+$PAGE->set_heading($course->fullname);
+$PAGE->set_pagelayout('incourse');
 echo $OUTPUT->header();
 
 // Add tabs
@@ -256,7 +254,7 @@ echo '</div>'."\n";
 echo '</form>'."\n";
 
 if (ajaxenabled()) {
-    $PAGE->requires->js_init_call('M.core_group.init_index');
+    $PAGE->requires->js_init_call('M.core_group.init_index', array($CFG->wwwroot, $courseid));
 }
 
 echo $OUTPUT->footer();

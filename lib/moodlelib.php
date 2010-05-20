@@ -935,58 +935,71 @@ function set_config($name, $value, $plugin=NULL) {
  * Get configuration values from the global config table
  * or the config_plugins table.
  *
- * If called with no parameters it will do the right thing
- * generating $CFG safely from the database without overwriting
- * existing values.
- *
  * If called with one parameter, it will load all the config
- * variables for one pugin, and return them as an object.
+ * variables for one plugin, and return them as an object.
  *
- * If called with 2 parameters it will return a $string single
- * value or false of the value is not found.
+ * If called with 2 parameters it will return a string single
+ * value or false if the value is not found.
  *
- * @global object
- * @param string $plugin default NULL
+ * @param string $plugin full component name
  * @param string $name default NULL
  * @return mixed hash-like object or single value, return false no config found
  */
-function get_config($plugin=NULL, $name=NULL) {
+function get_config($plugin, $name = NULL) {
     global $CFG, $DB;
+
+    // normalise component name
+    if ($plugin === 'moodle' or $plugin === 'core') {
+        $plugin = NULL;
+    }
 
     if (!empty($name)) { // the user is asking for a specific value
         if (!empty($plugin)) {
-            return $DB->get_field('config_plugins', 'value', array('plugin'=>$plugin, 'name'=>$name));
+            if (isset($CFG->forced_plugin_settings[$plugin]) and array_key_exists($name, $CFG->forced_plugin_settings[$plugin])) {
+                // setting forced in config file
+                return $CFG->forced_plugin_settings[$plugin][$name];
+            } else {
+                return $DB->get_field('config_plugins', 'value', array('plugin'=>$plugin, 'name'=>$name));
+            }
         } else {
-            return $DB->get_field('config', 'value', array('name'=>$name));
+            if (array_key_exists($name, $CFG->config_php_settings)) {
+                // setting force in config file
+                return $CFG->config_php_settings[$name];
+            } else {
+                return $DB->get_field('config', 'value', array('name'=>$name));
+            }
         }
     }
 
     // the user is after a recordset
-    if (!empty($plugin)) {
+    if ($plugin) {
         $localcfg = $DB->get_records_menu('config_plugins', array('plugin'=>$plugin), '', 'name,value');
-        if (!empty($localcfg)) {
-            return (object)$localcfg;
-        } else {
-            return false;
-        }
-    } else {
-        // this was originally in setup.php
-        if ($configs = $DB->get_records('config')) {
-            $localcfg = (array)$CFG;
-            foreach ($configs as $config) {
-                if (!isset($localcfg[$config->name])) {
-                    $localcfg[$config->name] = $config->value;
+        if (isset($CFG->forced_plugin_settings[$plugin])) {
+            foreach($CFG->forced_plugin_settings[$plugin] as $n=>$v) {
+                if (is_null($v) or is_array($v) or is_object($v)) {
+                    // we do not want any extra mess here, just real settings that could be saved in db
+                    unset($localcfg[$n]);
+                } else {
+                    //convert to string as if it went through the DB
+                    $localcfg[$n] = (string)$v;
                 }
-                // do not complain anymore if config.php overrides settings from db
             }
-
-            $localcfg = (object)$localcfg;
-            return $localcfg;
-        } else {
-            // preserve $CFG if DB returns nothing or error
-            return $CFG;
         }
+        return (object)$localcfg;
 
+    } else {
+        // this part is not really used any more, but anyway...
+        $localcfg = $DB->get_records_menu('config', array(), '', 'name,value');
+        foreach($CFG->config_php_settings as $n=>$v) {
+            if (is_null($v) or is_array($v) or is_object($v)) {
+                // we do not want any extra mess here, just real settings that could be saved in db
+                unset($localcfg[$n]);
+            } else {
+                //convert to string as if it went through the DB
+                $localcfg[$n] = (string)$v;
+            }
+        }
+        return (object)$localcfg;
     }
 }
 
@@ -1026,20 +1039,46 @@ function unset_all_config_for_plugin($plugin) {
 
 /**
  * Use this funciton to get a list of users from a config setting of type admin_setting_users_with_capability.
+ *
+ * All users are verified if they still have the necessary capability.
+ *
  * @param string $value the value of the config setting.
  * @param string $capability the capability - must match the one passed to the admin_setting_users_with_capability constructor.
+ * @param bool $include admins, include aadministrators
  * @return array of user objects.
  */
-function get_users_from_config($value, $capability) {
-    global $CFG;
-    if ($value == '$@ALL@$') {
-        $users = get_users_by_capability(get_context_instance(CONTEXT_SYSTEM), $capability);
-    } else {
-        list($where, $params) = $DB->get_in_or_equal(explode(',', $CFG->courserequestnotify));
-        $params[] = $CFG->mnet_localhost_id;
-        $users = $DB->get_records_select('user', 'username ' . $where . ' AND mnethostid = ?', $params);
+function get_users_from_config($value, $capability, $includeadmins = true) {
+    global $CFG, $DB;
+
+    if (empty($value) or $value === '$@NONE@$') {
+        return array();
     }
-    return $users;
+
+    // we have to make sure that users still have the necessary capability,
+    // it should be faster to fetch them all first and then test if they are present
+    // instead of validating them one-by-one 
+    $users = get_users_by_capability(get_context_instance(CONTEXT_SYSTEM), $capability);
+    if ($includeadmins) {
+        $admins = get_admins();
+        foreach ($admins as $admin) {
+            $users[$admin->id] = $admin;
+        }
+    }
+
+    if ($value === '$@ALL@$') {
+        return $users;
+    }
+
+    $result = array(); // result in correct order
+    $allowed = explode(',', $value);
+    foreach ($allowed as $uid) {
+        if (isset($users[$uid])) {
+            $user = $users[$uid];
+            $result[$user->id] = $user;
+        }
+    }
+
+    return $result;
 }
 
 /**
@@ -2487,8 +2526,8 @@ function require_user_key_login($script, $instance=null) {
     }
 
     if ($key->iprestriction) {
-        $remoteaddr = getremoteaddr();
-        if ($remoteaddr == '' or !address_in_subnet($remoteaddr, $key->iprestriction)) {
+        $remoteaddr = getremoteaddr(null);
+        if (empty($remoteaddr) or !address_in_subnet($remoteaddr, $key->iprestriction)) {
             print_error('ipmismatch');
         }
     }
@@ -5934,7 +5973,7 @@ class core_string_manager implements string_manager {
         }
 
         // try on-disk cache then
-        if (empty($CFG->disablelangdiskcache) and file_exists($this->cacheroot . "/$lang/$component")) {
+        if (!empty($CFG->langstringcache) and file_exists($this->cacheroot . "/$lang/$component")) {
             $this->countdiskcache++;
             eval('$this->cache[$lang][$component] = ' . file_get_contents($this->cacheroot . "/$lang/$component") . ';');
             return $this->cache[$lang][$component];
@@ -6015,7 +6054,7 @@ class core_string_manager implements string_manager {
         // now we have a list of strings from all possible sources. put it into both in-memory and on-disk
         // caches so we do not need to do all this merging and dependecies resolving again
         $this->cache[$lang][$component] = $string;
-        if (empty($CFG->disablelangdiskcache)) {
+        if (!empty($CFG->langstringcache)) {
             check_dir_exists($this->cacheroot . '/' . $lang, true, true);
             file_put_contents($this->cacheroot . "/$lang/$component", var_export($string, true));
         }
@@ -8513,6 +8552,9 @@ function make_unique_id_code($extra='') {
  */
 function address_in_subnet($addr, $subnetstr) {
 
+    if ($addr == '0.0.0.0') {
+        return false;
+    }
     $subnets = explode(',', $subnetstr);
     $found = false;
     $addr = trim($addr);
@@ -8774,7 +8816,7 @@ function cleardoubleslashes ($path) {
  */
 function remoteip_in_list($list){
     $inlist = false;
-    $client_ip = getremoteaddr();
+    $client_ip = getremoteaddr(null);
 
     if(!$client_ip){
         // ensure access on cli
@@ -8796,9 +8838,10 @@ function remoteip_in_list($list){
  * Returns most reliable client address
  *
  * @global object
+ * @param string $default If an address can't be determined, then return this
  * @return string The remote IP address
  */
-function getremoteaddr() {
+function getremoteaddr($default='0.0.0.0') {
     global $CFG;
 
     if (empty($CFG->getremoteaddrconf)) {
@@ -8810,18 +8853,21 @@ function getremoteaddr() {
     }
     if (!($variablestoskip & GETREMOTEADDR_SKIP_HTTP_CLIENT_IP)) {
         if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            return cleanremoteaddr($_SERVER['HTTP_CLIENT_IP']);
+            $address = cleanremoteaddr($_SERVER['HTTP_CLIENT_IP']);
+            return $address ? $address : $default;
         }
     }
     if (!($variablestoskip & GETREMOTEADDR_SKIP_HTTP_X_FORWARDED_FOR)) {
         if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            return cleanremoteaddr($_SERVER['HTTP_X_FORWARDED_FOR']);
+            $address = cleanremoteaddr($_SERVER['HTTP_X_FORWARDED_FOR']);
+            return $address ? $address : $default;
         }
     }
     if (!empty($_SERVER['REMOTE_ADDR'])) {
-        return cleanremoteaddr($_SERVER['REMOTE_ADDR']);
+        $address = cleanremoteaddr($_SERVER['REMOTE_ADDR']);
+        return $address ? $address : $default;
     } else {
-        return null;
+        return $default;
     }
 }
 

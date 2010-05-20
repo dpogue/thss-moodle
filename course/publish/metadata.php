@@ -32,6 +32,8 @@
 require_once('../../config.php');
 require_once($CFG->dirroot.'/course/publish/forms.php');
 require_once($CFG->dirroot.'/lib/hublib.php');
+require_once($CFG->dirroot.'/lib/filelib.php');
+require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
 
 //check user access capability to this page
 $id = optional_param('id', 0, PARAM_INT);
@@ -39,7 +41,7 @@ $course = $DB->get_record('course', array('id'=>$id), '*', MUST_EXIST);
 require_login($course);
 
 if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE, $id))) {
-
+    
     //page settings
     $PAGE->set_url('/course/publish/metadata.php', array('id' => $course->id));
     $PAGE->set_pagelayout('course');
@@ -71,6 +73,7 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
         $courseinfo->description = $fromform->description;
         $courseinfo->language = $fromform->language;
         $courseinfo->publishername = $fromform->publishername;
+        $courseinfo->publisheremail = $fromform->publisheremail;
         $courseinfo->contributornames = $fromform->contributornames;
         $courseinfo->coverage = $fromform->coverage;
         $courseinfo->creatorname = $fromform->creatorname;
@@ -134,9 +137,6 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
             throw new moodle_exception('coursewronglypublished');
         }
 
-        $courseregisteredmsg = $OUTPUT->notification(get_string('coursepublished', 'hub'), 'notifysuccess');
-
-
         //save the record into the published course table
         $publication =  $hub->get_publication($courseids[0]);
         if (empty($publication)) {
@@ -149,13 +149,14 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
 
 
         // SEND FILES
+         $curl = new curl();
 
         // send screenshots
         if (!empty($fromform->screenshots)) {
             require_once($CFG->dirroot. "/lib/filelib.php");
             $params = array('token' => $registeredhub->token, 'filetype' => SCREENSHOT_FILE_TYPE,
                     'courseshortname' => $courseinfo->shortname);
-            $curl = new curl();
+           
             foreach ($files as $file) {
                 if ($file->is_valid_image()) {
                     $params['file'] = $file;
@@ -178,13 +179,18 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
 
 
         //TODO: Delete the backup from user_tohub
-       
+
+
+        //redirect to the index publis page
+        redirect(new moodle_url('/course/publish/index.php',
+                array('sesskey' => sesskey(), 'id' => $id, 'published' => true)));
     }
 
 
     /////// OUTPUT SECTION /////////////
 
     echo $OUTPUT->header();
+    echo $OUTPUT->heading(get_string('publishcourseon', 'hub', !empty($hubname)?$hubname:$huburl), 3, 'main');
     if (!empty($courseregisteredmsg)) {
             echo $courseregisteredmsg;
     }

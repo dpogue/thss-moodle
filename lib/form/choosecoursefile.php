@@ -62,7 +62,7 @@ class MoodleQuickForm_choosecoursefile extends MoodleQuickForm_group
     // {{{ _createElements()
 
     function _createElements() {
-        global $COURSE;
+        global $COURSE, $OUTPUT;
         $this->_elements = array();
 
         if (!is_array($this->getAttributes()) || !array_key_exists('size', $this->getAttributes())) {
@@ -96,7 +96,8 @@ class MoodleQuickForm_choosecoursefile extends MoodleQuickForm_group
             $options = $this->_options['options'];
         }
         $action = new popup_action('click', $url, $button->getName(), $options);
-        $OUTPUT->add_action_handler($action, $button->id);
+        
+        $button->updateAttributes(array('id'=>$OUTPUT->add_action_handler($action, $button->getAttribute('id'))));
     }
 
     /**
