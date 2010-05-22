@@ -34,13 +34,29 @@ require_once('Minify.php');
 $file = min_optional_param('file', '', 'RAW');
 $rev  = min_optional_param('rev', 0, 'INT');
 
-if (strpos($file, ',')) {
-    $jsfiles = explode(',', $file);
-    foreach ($jsfiles as $key=>$file) {
-        $jsfiles[$key] = $CFG->dirroot.$file;
+// some security first - pick only files with .js extension in dirroot
+$jsfiles = array();
+$files = explode(',', $file);
+foreach ($files as $fsfile) {
+    $jsfile = realpath($CFG->dirroot.$fsfile);
+    if ($jsfile === false) {
+        // does not exist
+        continue;
+    }
+    if (strpos($jsfile, $CFG->dirroot . DIRECTORY_SEPARATOR) !== 0) {
+        // hackers - not in dirroot
+        continue;
+    }
+    if (substr($jsfile, -3) !== '.js') {
+        // hackers - not a JS file
+        continue;
+    }
+    $jsfiles[] = $jsfile;
 }
-} else {
-    $jsfiles = array($CFG->dirroot.$file);
+
+if (!$jsfiles) {
+    // bad luck - no valid files
+    die();
 }
 
 minify($jsfiles);
@@ -48,10 +64,16 @@ minify($jsfiles);
 function minify($files) {
     global $CFG;
 
+    $cachedir = $CFG->dataroot.'/cache/js';
+    // make sure the cache dir exist
+    if (!file_exists($cachedir)) {
+        @mkdir($cachedir, $CFG->directorypermissions, true);
+    }
+
     if (0 === stripos(PHP_OS, 'win')) {
         Minify::setDocRoot(); // IIS may need help
     }
-    Minify::setCache($CFG->dataroot.'/temp', true);
+    Minify::setCache($cachedir, true);
 
     $options = array(
         // Maximum age to cache
@@ -62,4 +84,4 @@ function minify($files) {
 
     Minify::serve('Files', $options);
     die();
-    }
+}
