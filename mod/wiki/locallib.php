@@ -197,13 +197,6 @@ function wiki_get_version($versionid) {
  */
 function wiki_get_first_page($subwikid, $module = null) {
     global $DB, $USER;
-    // TODO:
-    // not sure if we should use current userid
-
-    $extra = '';
-    if ($module && $module->wikimode == 'individual') {
-        $extra = ' AND p.userid=' . $USER->id;
-    }
 
     $sql = 'SELECT p.* ' .
         'FROM {wiki} w, {wiki_subwikis} s, {wiki_pages} p ' .
@@ -211,7 +204,6 @@ function wiki_get_first_page($subwikid, $module = null) {
         's.wikiid = w.id AND ' .
         'w.firstpagetitle = p.title AND ' .
         'p.subwikiid = s.id';
-    $sql .= $extra;
 
     return $DB->get_record_sql($sql, array($subwikid));
 }
@@ -324,7 +316,10 @@ function wiki_refresh_page_links($page, $links) {
  */
 function wiki_create_page($swid, $title, $format, $userid) {
     global $DB, $PAGE;
-    require_capability('mod/wiki:editpage', $PAGE->context);
+    $subwiki = wiki_get_subwiki($swid);
+    $cm = get_coursemodule_from_instance('wiki', $subwiki->wikiid);
+    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    require_capability('mod/wiki:editpage', $context);
     // if page exists
     if ($page = wiki_get_page_by_title($swid, $title)) {
         return $page->id;

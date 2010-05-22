@@ -1425,8 +1425,8 @@ class MoodleQuickForm extends HTML_QuickForm_DHTMLRulesTableless {
     function addHelpButton($elementname, $identifier, $component = 'moodle', $linktext = '', $suppresscheck = false) {
         global $OUTPUT;
         if (array_key_exists($elementname, $this->_elementIndex)) {
-            $element = $this->_elements[$this->_elementIndex[$elementname]];            
-            $element->_helpbutton = $OUTPUT->help_icon($identifier, $component, $linktext);            
+            $element = $this->_elements[$this->_elementIndex[$elementname]];
+            $element->_helpbutton = $OUTPUT->help_icon($identifier, $component, $linktext);
         } else if (!$suppresscheck) {
             debugging(get_string('nonexistentformelements', 'form', $elementname));
         }

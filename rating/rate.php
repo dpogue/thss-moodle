@@ -40,6 +40,15 @@ $result = new stdClass;
 list($context, $course, $cm) = get_context_info_array($contextid);
 require_login($course, false, $cm);
 
+$contextid = null;//now we have a context object throw away the id from the user
+
+if (!confirm_sesskey() || $USER->id==$rateduserid) {
+    echo $OUTPUT->header();
+    echo get_string('ratepermissiondenied', 'ratings');
+    echo $OUTPUT->footer();
+    die();
+}
+
 //check the module rating permissions
 $pluginrateallowed = true;
 $pluginpermissionsarray = null;
@@ -49,6 +58,11 @@ if ($context->contextlevel==CONTEXT_MODULE) {
     $rm = new rating_manager();
     $pluginpermissionsarray = $rm->get_plugin_permissions_array($context->id, $plugintype, $pluginname);
     $pluginrateallowed = $pluginpermissionsarray['rate'];
+
+    if ($pluginrateallowed) {
+        //check the item exists and isn't owned by the current user
+        $pluginrateallowed = $rm->check_item_and_owner($plugintype, $pluginname, $itemid);
+    }
 }
 
 if (!$pluginrateallowed || !has_capability('moodle/rating:rate',$context)) {
@@ -58,20 +72,15 @@ if (!$pluginrateallowed || !has_capability('moodle/rating:rate',$context)) {
     die();
 }
 
-$userid = $USER->id;
-
 $PAGE->set_url('/lib/rate.php', array(
-        'contextid'=>$contextid
+        'contextid'=>$context->id
     ));
-
-//todo how can we validate the forum post,glossary entry or whatever id?
-//how do we know where to look for the item? how we we work from module to forum_posts, glossary_entries etc?
 
 $ratingoptions = new stdclass;
 $ratingoptions->context = $context;
 $ratingoptions->itemid  = $itemid;
 $ratingoptions->scaleid = $scaleid;
-$ratingoptions->userid  = $userid;
+$ratingoptions->userid  = $USER->id;
 $rating = new rating($ratingoptions);
 
 $rating->update_rating($userrating);

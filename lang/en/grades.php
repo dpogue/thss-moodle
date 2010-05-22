@@ -46,11 +46,9 @@ $string['aggregateonlygraded_help'] = 'An empty grade is a grade which is missin
 This setting determines whether empty grades are not included in the aggregation or are counted as minimal grades, for example 0 for an assignment graded between 0 and 100.';
 $string['aggregateoutcomes'] = 'Include outcomes in aggregation';
 $string['aggregateoutcomes_help'] = 'If enabled, outcomes are included in the aggregation. This may result in an unexpected category total.';
-$string['aggregateoutcomeshelp'] = 'Including outcomes in aggregation may not lead to the desired overall grade, so you have the option to include or leave them out.';
 $string['aggregatesonly'] = 'Aggregates only';
 $string['aggregatesubcats'] = 'Aggregate including subcategories';
 $string['aggregatesubcats_help'] = 'This setting determines whether grades in subcategories are included in the aggregation.';
-$string['aggregatesubcatshelp'] = 'The aggregation is usually done only with immediate children, it is also possible to aggregate including individual grades in all subcategories excluding other aggregated grades.';
 $string['aggregatesum'] = 'Sum of grades';
 $string['aggregateweightedmean'] = 'Weighted mean of grades';
 $string['aggregateweightedmean2'] = 'Simple weighted mean of grades';
@@ -65,18 +63,20 @@ $string['aggregation_help'] = 'The aggregation determines how grades in a catego
 * Sum of grades - The sum of all grade values, with scale grades being ignored';
 $string['aggregation_link'] = 'grade/aggregation';
 $string['aggregationcoef'] = 'Aggregation coefficient';
-$string['aggregationcoefextra'] = 'Extra credit';
-$string['aggregationcoefextra_help'] = 'If the aggregation is Sum of grades and the extra credit checkbox is ticked, the grade item\'s maximum grade is not added to the category\'s maximum grade, resulting in the possibility of achieving the maximum grade (or grades over the maximum if enabled by the site administrator) in the category without having the maximum grade in all the grade items. 
+$string['aggregationcoefextra'] = 'Extra credit'; // for the header of the table at Edit categories and items page
+$string['aggregationcoefextra_help'] = 'If the aggregation is Sum of grades or Simple weighted mean and the extra credit checkbox is ticked, the grade item\'s maximum grade is not added to the category\'s maximum grade, resulting in the possibility of achieving the maximum grade (or grades over the maximum if enabled by the site administrator) in the category without having the maximum grade in all the grade items.
 
 If the aggregation is Mean of grades (with extra credits) and the extra credit is set to a value greater than zero, the extra credit is the factor by which the grade is multiplied before adding it to the total after the computation of the mean.';
 $string['aggregationcoefextra_link'] = 'grade/aggregation';
-$string['aggregationcoefextrahelp'] = 'Extra credit for this grade item during aggregation.';
-$string['aggregationcoefextrasum'] = 'Extra credit';
-$string['aggregationcoefextrasumhelp'] = 'Extra credit for this grade item during aggregation.';
+$string['aggregationcoefextrasum'] = 'Extra credit'; // for the form with checkboxes: Sum of grades or Simple weighted mean
+$string['aggregationcoefextrasum_help'] = 'If the extra credit checkbox is ticked, the grade item\'s maximum grade is not added to the category\'s maximum grade, resulting in the possibility of achieving the maximum grade (or grades over the maximum if enabled by the site administrator) in the category without having the maximum grade in all the grade items.';
+$string['aggregationcoefextrasum_link'] = 'grade/aggregation';
+$string['aggregationcoefextraweight'] = 'Extra credit weight'; // for the form with input: Mean of grades (with extra credits) only
+$string['aggregationcoefextraweight_help'] = 'If the extra credit weight is set to a value greater than zero, the grade acts as extra credit during aggregation. The number is the factor by which the grade is multiplied before adding it to the total for the computation of the mean.';
+$string['aggregationcoefextraweight_link'] = 'grade/aggregation';
 $string['aggregationcoefweight'] = 'Item weight';
 $string['aggregationcoefweight_help'] = 'The item weight is used in the category aggregation to influence the importance of the item compared with other grade items in the same category.';
 $string['aggregationcoefweight_link'] = 'grade/aggregation';
-$string['aggregationcoefweighthelp'] = 'Weight applied to all grades in this grade item during aggregation with other grade items.';
 $string['aggregationhelp'] = 'Strategy used to aggregate grades across all students in a course.';
 $string['aggregationposition'] = 'Aggregation position';
 $string['aggregationposition_help'] = 'This setting determines whether the category and course total columns are displayed first or last in the gradebook reports.';
@@ -237,7 +237,6 @@ $string['exportfeedback'] = 'Include feedback in export';
 $string['exportplugins'] = 'Export plugins';
 $string['exportsettings'] = 'Export settings';
 $string['exportto'] = 'Export to';
-$string['extracredit'] = 'Extra Credit';
 $string['extracreditwarning'] = 'Note: Setting all items for a category to extra credit will effectively remove them from the grade calculation. Since there will be no point total';
 $string['feedback'] = 'Feedback';
 $string['feedback_help'] = 'This box enables any comments about the grade to be added.';

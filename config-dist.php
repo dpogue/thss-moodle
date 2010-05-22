@@ -16,7 +16,7 @@
 //                                                                       //
 // This program is free software; you can redistribute it and/or modify  //
 // it under the terms of the GNU General Public License as published by  //
-// the Free Software Foundation; either version 2 of the License, or     //
+// the Free Software Foundation; either version 3 of the License, or     //
 // (at your option) any later version.                                   //
 //                                                                       //
 // This program is distributed in the hope that it will be useful,       //
@@ -59,7 +59,7 @@ $CFG->dboptions = array(
 
 
 //=========================================================================
-// 1.5. SECRET PASSWORD SALT
+// 2. SECRET PASSWORD SALT
 //=========================================================================
 // User password salt is very important security feature, it is created
 // automatically in installer, you have to uncomment and modify value
@@ -80,7 +80,7 @@ $CFG->dboptions = array(
 
 
 //=========================================================================
-// 2. WEB SITE LOCATION
+// 3. WEB SITE LOCATION
 //=========================================================================
 // Now you need to tell Moodle where it is located. Specify the full
 // web address to where moodle has been installed.  If your web site
@@ -91,19 +91,6 @@ $CFG->dboptions = array(
 // http://docs.moodle.org/en/masquerading
 
 $CFG->wwwroot   = 'http://example.com/moodle';
-
-
-//=========================================================================
-// 3. SERVER FILES LOCATION
-//=========================================================================
-// Next, specify the full OS directory path to this same location
-// Make sure the upper/lower case is correct.  Some examples:
-//
-//    $CFG->dirroot = 'C:\program files\easyphp\www\moodle';    // Windows
-//    $CFG->dirroot = '/var/www/html/moodle';     // Redhat Linux
-//    $CFG->dirroot = '/home/example/public_html/moodle'; // Cpanel host
-
-$CFG->dirroot   = '/home/example/public_html/moodle';
 
 
 //=========================================================================
@@ -391,7 +378,7 @@ $CFG->admin = 'admin';
 // $CFG->xmldbdisablenextprevchecking = true;   // NOT FOR PRODUCTION SERVERS!
 //
 // Special magic - evil developer only wanting to edit xmldb files manually
-// AND allowing the XMLDBEditor to recostruct the prev/next elements every
+// AND allowing the XMLDBEditor to reconstruct the prev/next elements every
 // time one file is loaded and saved (Moodle).
 // Uncomment this if you're lazy like Petr
 // $CFG->xmldbreconstructprevnext = true;   // NOT FOR PRODUCTION SERVERS!
@@ -419,24 +406,8 @@ $CFG->admin = 'admin';
 //=========================================================================
 // ALL DONE!  To continue installation, visit your main page with a browser
 //=========================================================================
-if ($CFG->wwwroot == 'http://example.com/moodle') {
-    echo "<p>Error detected in configuration file</p>";
-    echo "<p>Your server address can not be: \$CFG->wwwroot = 'http://example.com/moodle';</p>";
-    die;
-}
 
-if (file_exists("$CFG->dirroot/lib/setup.php"))  {       // Do not edit
-    include_once("$CFG->dirroot/lib/setup.php");
-} else {
-    if ($CFG->dirroot == dirname(__FILE__)) {
-        echo "<p>Could not find this file: $CFG->dirroot/lib/setup.php</p>";
-        echo "<p>Are you sure all your files have been uploaded?</p>";
-    } else {
-        echo "<p>Error detected in config.php</p>";
-        echo "<p>Error in: \$CFG->dirroot = '$CFG->dirroot';</p>";
-        echo "<p>Try this: \$CFG->dirroot = '".dirname(__FILE__)."';</p>";
-    }
-    die;
-}
+require_once(dirname(_FILE_) . '/lib/setup.php'); // Do not edit
+
 // There is no php closing tag in this file,
 // it is intentional because it prevents trailing whitespace problems!

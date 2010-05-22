@@ -43,6 +43,9 @@ or use chmod/chown after installation.
 Site defaults may be changed via local/defaults.php.
 
 Options:
+--chmod=OCTAL-MODE    Permissions of new directories created within dataroot.
+                      Default is 2777. You may want to change it to 2770
+                      or 2750 or 750. See chmod man page for details.
 --lang=CODE           Installation and default site language.
 --wwwroot=URL         Web address for the Moodle site,
                       required in non-interactive mode.
@@ -107,13 +110,12 @@ if (version_compare(phpversion(), "5.2.8") < 0) {
 // set up configuration
 $CFG = new stdClass();
 $CFG->lang                 = 'en';
-$CFG->dirroot              = str_replace('\\', '/', dirname(dirname(dirname(__FILE__)))); // Fix for win32
+$CFG->dirroot              = dirname(dirname(dirname(__FILE__)));
 $CFG->libdir               = "$CFG->dirroot/lib";
 $CFG->wwwroot              = "http://localhost";
 $CFG->httpswwwroot         = $CFG->wwwroot;
 $CFG->dataroot             = str_replace('\\', '/', dirname(dirname(dirname(dirname(__FILE__)))).'/moodledata');
 $CFG->docroot              = 'http://docs.moodle.org';
-$CFG->directorypermissions = 00777;
 $CFG->running_installer    = true;
 $CFG->early_install_lang   = true;
 
@@ -164,6 +166,7 @@ if (empty($databases)) {
 // now get cli options
 list($options, $unrecognized) = cli_get_params(
     array(
+        'chmod'             => '02777',
         'lang'              => $CFG->lang,
         'wwwroot'           => '',
         'dataroot'          => $CFG->dataroot,
@@ -243,6 +246,32 @@ if ($interactive) {
     // already selected and verified
 }
 
+// Set directorypermissions first
+$chmod = octdec(clean_param($options['chmod'], PARAM_INT));
+if ($interactive) {
+    cli_separator();
+    cli_heading('Data directories permission'); // todo localize
+    $prompt = get_string('clitypevaluedefault', 'admin', decoct($chmod));
+    $error = '';
+    do {
+        echo $error;
+        $input = cli_input($prompt, $chmod);
+        $input = octdec(clean_param($input, PARAM_INT));
+        if (empty($input)) {
+            $error = get_string('cliincorrectvalueretry', 'admin')."\n";
+        } else {
+            $error = '';
+        }
+     } while ($error !== '');
+    $chmod = $input;
+
+} else {
+    if (empty($chmod)) {
+        $a = (object)array('option' => 'chmod', 'value' => decoct($chmod));
+        cli_error(get_string('cliincorrectvalueerror', 'admin', $a));
+    }
+}
+$CFG->directorypermissions = $chmod;
 
 //We need wwwroot before we test dataroot
 $wwwroot = clean_param($options['wwwroot'], PARAM_URL);

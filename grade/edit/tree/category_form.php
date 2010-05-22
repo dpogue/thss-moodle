@@ -65,14 +65,14 @@ class edit_category_form extends moodleform {
             $mform->setType('aggregateoutcomes', PARAM_INT);
         } else {
             $mform->addElement('checkbox', 'aggregateoutcomes', get_string('aggregateoutcomes', 'grades'));
-            $mform->setHelpButton('aggregateoutcomes', array('aggregateoutcomes', get_string('aggregateoutcomes', 'grades'), 'grade'), true);
+            $mform->addHelpButton('aggregateoutcomes', 'aggregateoutcomes', 'grades');
             if ((int)$CFG->grade_aggregateoutcomes_flag & 2) {
                 $mform->setAdvanced('aggregateoutcomes');
             }
         }
 
         $mform->addElement('advcheckbox', 'aggregatesubcats', get_string('aggregatesubcats', 'grades'));
-        $mform->setHelpButton('aggregatesubcats', array('aggregatesubcats', get_string('aggregatesubcats', 'grades'), 'grade'), true);
+        $mform->addHelpButton('aggregatesubcats', 'aggregatesubcats', 'grades');
 
         if ((int)$CFG->grade_aggregatesubcats_flag & 2) {
             $mform->setAdvanced('aggregatesubcats');
@@ -142,7 +142,7 @@ class edit_category_form extends moodleform {
             }
         }
         $mform->addElement('select', 'grade_item_scaleid', get_string('scale'), $options);
-        $mform->setHelpButton('grade_item_scaleid', array('scaleid', get_string('scaleid', 'grades'), 'grade'), true);
+        $mform->setHelpButton('grade_item_scaleid', array('scaleid', get_string('scale'), 'grade'), true);
         $mform->disabledIf('grade_item_scaleid', 'grade_item_gradetype', 'noteq', GRADE_TYPE_SCALE);
         $mform->disabledIf('grade_item_scaleid', 'aggregation', 'eq', GRADE_AGGREGATE_SUM);
 
@@ -439,7 +439,7 @@ class edit_category_form extends moodleform {
                         $element =& $mform->createElement('text', 'grade_item_aggregationcoef', get_string($coefstring, 'grades'));
                     }
                     $mform->insertElementBefore($element, 'parentcategory');
-                    $mform->setHelpButton('grade_item_aggregationcoef', array($coefstring, get_string($coefstring, 'grades'), 'grade'), true);
+                    $mform->addHelpButton('grade_item_aggregationcoef', $coefstring, 'grades');
                 }
             }
         }

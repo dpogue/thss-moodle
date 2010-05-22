@@ -146,14 +146,14 @@ function file_encode_url($urlbase, $path, $forcedownload=false, $https=false) {
  * Prepares 'editor' formslib element from data in database
  *
  * The passed $data record must contain field foobar, foobarformat and optionally foobartrust. This
- * function then copies the embeded files into draft area (assigning itemids automatically),
- * creates the form element foobar_editor and rewrites the URLs so the embeded images can be
+ * function then copies the embedded files into draft area (assigning itemids automatically),
+ * creates the form element foobar_editor and rewrites the URLs so the embedded images can be
  * displayed.
  * In your mform definition, you must have an 'editor' element called foobar_editor. Then you call
  * your mform's set_data() supplying the object returned by this function.
  *
- * @param object $data database field that holds the html text with embeded media
- * @param string $field the name of the database field that holds the html text with embeded media
+ * @param object $data database field that holds the html text with embedded media
+ * @param string $field the name of the database field that holds the html text with embedded media
  * @param array $options editor options (like maxifiles, maxbytes etc.)
  * @param object $context context of the editor
  * @param string $filearea file area name
@@ -218,7 +218,7 @@ function file_prepare_standard_editor($data, $field, array $options, $context=nu
 }
 
 /**
- * Prepares the content of the 'editor' form element with embeded media files to be saved in database
+ * Prepares the content of the 'editor' form element with embedded media files to be saved in database
  *
  * This function moves files from draft area to the destination area and
  * encodes URLs to the draft files so they can be safely saved into DB. The
@@ -226,10 +226,10 @@ function file_prepare_standard_editor($data, $field, array $options, $context=nu
  * is the name of the database field to hold the wysiwyg editor content. The
  * editor data comes as an array with text, format and itemid properties. This
  * function automatically adds $data properties foobar, foobarformat and
- * foobartrust, where foobar has URL to embeded files encoded.
+ * foobartrust, where foobar has URL to embedded files encoded.
  *
  * @param object $data raw data submitted by the form
- * @param string $field name of the database field containing the html with embeded media files
+ * @param string $field name of the database field containing the html with embedded media files
  * @param array $options editor options (trusttext, subdirs, maxfiles, maxbytes etc.)
  * @param object $context context, required for existing data
  * @param string $filearea file area name
@@ -429,7 +429,7 @@ function file_prepare_draft_area(&$draftitemid, $contextid, $filearea, $itemid, 
  * @param string $text The content that may contain ULRs in need of rewriting.
  * @param string $file The script that should be used to serve these files. pluginfile.php, draftfile.php, etc.
  * @param integer $contextid This parameter and the next two identify the file area to use.
- * @param string $filearea helps indentify the file area.
+ * @param string $filearea helps identify the file area.
  * @param integer $itemid helps identify the file area.
  * @param array $options text and file options ('forcehttps'=>false)
  * @return string the processed text.
@@ -501,7 +501,7 @@ function file_get_user_area_info($draftitemid, $filearea = 'user_draft') {
 
 /**
  * Get used space of files
- * @return int totalbytes
+ * @return int total bytes
  */
 function file_get_user_used_space() {
     global $DB, $CFG, $USER;
@@ -539,7 +539,7 @@ function file_correct_filepath($str) {
 }
 
 /**
- * Generate a folder tree of currect draft area recursively
+ * Generate a folder tree of draft area of current USER recursively
  * @param int $itemid
  * @param string $filepath
  * @param mixed $data
@@ -641,7 +641,7 @@ function file_get_user_area_files($draftitemid, $filepath = '/', $filearea = 'us
  * Returns draft area itemid for a given element.
  *
  * @param string $elname name of formlib editor element, or a hidden form field that stores the draft area item id, etc.
- * @return inteter the itemid, or 0 if there is not one yet.
+ * @return integer the itemid, or 0 if there is not one yet.
  */
 function file_get_submitted_draft_itemid($elname) {
     $param = optional_param($elname, 0, PARAM_INT);
@@ -901,9 +901,10 @@ function format_postdata_for_curlcall($postdata) {
  *   usually happens if the remote server is completely down (default 20 seconds);
  *   may not work when using proxy
  * @param bool $skipcertverify If true, the peer's SSL certificate will not be checked. Only use this when already in a trusted location.
- * @return mixed false if request failed or content of the file as string if ok.
+ * @param string $tofile store the downloaded content to file instead of returning it
+ * @return mixed false if request failed or content of the file as string if ok. true if file downloaded into $tofile successfully.
  */
-function download_file_content($url, $headers=null, $postdata=null, $fullresponse=false, $timeout=300, $connecttimeout=20, $skipcertverify=false) {
+function download_file_content($url, $headers=null, $postdata=null, $fullresponse=false, $timeout=300, $connecttimeout=20, $skipcertverify=false, $tofile=NULL) {
     global $CFG;
 
     // some extra security
@@ -958,7 +959,7 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
     }
 
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HEADER, true);
+    curl_setopt($ch, CURLOPT_HEADER, false);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $connecttimeout);
     curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
     if (!ini_get('open_basedir') and !ini_get('safe_mode')) {
@@ -1006,12 +1007,26 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
         }
     }
 
-    $data = curl_exec($ch);
+    // set up header and content handlers
+    $received = new object();
+    $received->headers = array(); // received headers array
+    $received->tofile  = $tofile;
+    $received->fh      = null;
+    curl_setopt($ch, CURLOPT_HEADERFUNCTION, partial('download_file_content_header_handler', $received));
+    if ($tofile) {
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, partial('download_file_content_write_handler', $received));
+    }
+
+    $result = curl_exec($ch);
 
     // try to detect encoding problems
     if ((curl_errno($ch) == 23 or curl_errno($ch) == 61) and defined('CURLOPT_ENCODING')) {
         curl_setopt($ch, CURLOPT_ENCODING, 'none');
-        $data = curl_exec($ch);
+        $result = curl_exec($ch);
+    }
+
+    if ($received->fh) {
+        fclose($received->fh);
     }
 
     if (curl_errno($ch)) {
@@ -1028,7 +1043,7 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
             }
             $response->headers       = array();
             $response->response_code = $error;
-            $response->results       = '';
+            $response->results       = false;
             $response->error         = $error;
             return $response;
         } else {
@@ -1046,21 +1061,15 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
             $response->status        = '0';
             $response->headers       = array();
             $response->response_code = 'Unknown cURL error';
-            $response->results       = ''; // do NOT change this!
+            $response->results       = false; // do NOT change this, we really want to ignore the result!
             $response->error         = 'Unknown cURL error';
 
         } else {
-            // strip redirect headers and get headers array and content
-            $data = explode("\r\n\r\n", $data, $info['redirect_count'] + 2);
-            $results = array_pop($data);
-            $headers = array_pop($data);
-            $headers = explode("\r\n", trim($headers));
-
             $response = new object();;
             $response->status        = (string)$info['http_code'];
-            $response->headers       = $headers;
-            $response->response_code = $headers[0];
-            $response->results       = $results;
+            $response->headers       = $received->headers;
+            $response->response_code = $received->headers[0];
+            $response->results       = $result;
             $response->error         = '';
         }
 
@@ -1073,6 +1082,32 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
             return $response->results;
         }
     }
+}
+
+/**
+ * internal implementation 
+ */
+function download_file_content_header_handler($received, $ch, $header) {
+    $received->headers[] = $header;
+    return strlen($header);
+}
+
+/**
+ * internal implementation 
+ */
+function download_file_content_write_handler($received, $ch, $data) {
+    if (!$received->fh) {
+        $received->fh = fopen($received->tofile, 'w');
+        if ($received->fh === false) {
+            // bad luck, file creation or overriding failed
+            return 0;
+        }
+    }
+    if (fwrite($received->fh, $data) === false) {
+        // bad luck, write failed, let's abort completely
+        return 0;
+    }
+    return strlen($data);
 }
 
 /**
@@ -1360,7 +1395,7 @@ function mimeinfo_from_icon($element, $icon, $all=false) {
 /**
  * Returns the relative icon path for a given mime type
  *
- * This function should be used in conjuction with $OUTPUT->pix_url to produce
+ * This function should be used in conjunction with $OUTPUT->pix_url to produce
  * a return the full path to an icon.
  *
  * <code>
@@ -1388,7 +1423,7 @@ function file_mimetype_icon($mimetype, $size=null) {
 /**
  * Returns the relative icon path for a given file name
  *
- * This function should be used in conjuction with $OUTPUT->pix_url to produce
+ * This function should be used in conjunction with $OUTPUT->pix_url to produce
  * a return the full path to an icon.
  *
  * <code>
@@ -1435,7 +1470,7 @@ function get_mimetype_description($mimetype,$capitalise=false) {
 }
 
 /**
- * Reprot file is not found or not accessible
+ * Requested file is not found or not accessible
  *
  * @return does not return, terminates script
  */
@@ -1447,7 +1482,7 @@ function send_file_not_found() {
 
 /**
  * Handles the sending of temporary file to user, download is forced.
- * File is deleted after abort or succesful sending.
+ * File is deleted after abort or successful sending.
  *
  * @global object
  * @param string $path path to file, preferably from moodledata/temp/something; or content of file itself
@@ -1470,7 +1505,7 @@ function send_temp_file($path, $filename, $pathisstring=false) {
         @register_shutdown_function('send_temp_file_finished', $path);
     }
 
-    //IE compatibiltiy HACK!
+    //IE compatibility HACK!
     if (ini_get('zlib.output_compression')) {
         ini_set('zlib.output_compression', 'Off');
     }
@@ -1506,7 +1541,7 @@ function send_temp_file($path, $filename, $pathisstring=false) {
 }
 
 /**
- * Internal callnack function used by send_temp_file()
+ * Internal callback function used by send_temp_file()
  */
 function send_temp_file_finished($path) {
     if (file_exists($path)) {
@@ -1921,7 +1956,7 @@ function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownl
 }
 
 /**
- * Retreievs an array of records from a CSV file and places
+ * Retrieves an array of records from a CSV file and places
  * them into a given table structure
  *
  * @global object

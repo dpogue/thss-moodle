@@ -1852,8 +1852,8 @@ function assign_legacy_capabilities($capability, $legacyperms) {
 }
 
 /**
- * @param object $capability a capbility - a row from the capabilitites table.
- * @return boolean whether this capability is safe - that is, wether people with the
+ * @param object $capability a capability - a row from the capabilities table.
+ * @return boolean whether this capability is safe - that is, whether people with the
  *      safeoverrides capability should be allowed to change it.
  */
 function is_safe_capability($capability) {
@@ -2089,11 +2089,9 @@ function get_system_context($cache=true) {
  * Remove a context record and any dependent entries,
  * removes context from static context cache too
  *
- * @global object
- * @global object
  * @param int $level
  * @param int $instanceid
- * @return bool properly deleted
+ * @return bool returns true or throws an exception
  */
 function delete_context($contextlevel, $instanceid) {
     global $DB, $ACCESSLIB_PRIVATE, $CFG;
@@ -2101,10 +2099,14 @@ function delete_context($contextlevel, $instanceid) {
     // do not use get_context_instance(), because the related object might not exist,
     // or the context does not exist yet and it would be created now
     if ($context = $DB->get_record('context', array('contextlevel'=>$contextlevel, 'instanceid'=>$instanceid))) {
-        $result = $DB->delete_records('role_assignments', array('contextid'=>$context->id)) &&
-                  $DB->delete_records('role_capabilities', array('contextid'=>$context->id)) &&
-                  $DB->delete_records('context', array('id'=>$context->id)) &&
-                  $DB->delete_records('role_names', array('contextid'=>$context->id));
+        $DB->delete_records('role_assignments', array('contextid'=>$context->id));
+        $DB->delete_records('role_capabilities', array('contextid'=>$context->id));
+        $DB->delete_records('context', array('id'=>$context->id));
+        $DB->delete_records('role_names', array('contextid'=>$context->id));
+
+        // delete all files attached to this context
+        $fs = get_file_storage();
+        $fs->delete_area_files($context->id);
 
         // do not mark dirty contexts if parents unknown
         if (!is_null($context->path) and $context->depth > 0) {
@@ -2117,12 +2119,9 @@ function delete_context($contextlevel, $instanceid) {
 
         blocks_delete_all_for_context($context->id);
         filter_delete_all_for_context($context->id);
-
-        return $result;
-    } else {
-
-        return true;
     }
+
+    return true;
 }
 
 /**
@@ -3412,8 +3411,16 @@ function get_default_capabilities($archetype) {
         }
     }
     foreach($alldefs as $name=>$def) {
-        if (isset($def['legacy'][$archetype])) {
-            $defaults[$name] = $def['legacy'][$archetype];
+        // Use array 'archetypes if available. Only if not specified, use 'legacy'.
+        if (isset($def['archetypes'])) {
+            if (isset($def['archetypes'][$archetype])) {
+                $defaults[$name] = $def['archetypes'][$archetype];
+            }
+        // 'legacy' is for backward compatibility with 1.9 access.php
+        } else {
+            if (isset($def['legacy'][$archetype])) {
+                $defaults[$name] = $def['legacy'][$archetype];
+            }
         }
     }
 
@@ -3421,7 +3428,7 @@ function get_default_capabilities($archetype) {
 }
 
 /**
- * Reset role capabilitites to default according to selected role archetype.
+ * Reset role capabilities to default according to selected role archetype.
  * If no archetype selected, removes all capabilities.
  * @param int @roleid
  */
@@ -3527,7 +3534,10 @@ function update_capabilities($component='moodle') {
                     }
                 }
             }
-        // we ignore legacy key if we have cloned permissions
+        // we ignore archetype key if we have cloned permissions
+        } else if (isset($capdef['archetypes']) && is_array($capdef['archetypes'])) {
+            assign_legacy_capabilities($capname, $capdef['archetypes']);
+        // 'legacy' is for backward compatibility with 1.9 access.php
         } else if (isset($capdef['legacy']) && is_array($capdef['legacy'])) {
             assign_legacy_capabilities($capname, $capdef['legacy']);
         }

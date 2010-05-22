@@ -560,6 +560,49 @@ class navigation_node implements renderable {
         }
         return $nodes;
     }
+
+    /**
+     * Removes this node if it is empty
+     */
+    public function trim_if_empty() {
+        if ($this->children->count() == 0) {
+            $this->remove();
+        }
+    }
+
+    /**
+     * Creates a tab representation of this nodes children that can be used
+     * with print_tabs to produce the tabs on a page.
+     *
+     * call_user_func_array('print_tabs', $node->get_tabs_array());
+     *
+     * @param array $inactive
+     * @param bool $return
+     * @return array Array (tabs, selected, inactive, activated, return)
+     */
+    public function get_tabs_array(array $inactive=array(), $return=false) {
+        $tabs = array();
+        $rows = array();
+        $selected = null;
+        $activated = array();
+        foreach ($this->children as $node) {
+            $tabs[] = new tabobject($node->key, $node->action, $node->get_content(), $node->get_title());
+            if ($node->contains_active_node()) {
+                if ($node->children->count() > 0) {
+                    $activated[] = $node->key;
+                    foreach ($node->children as $child) {
+                        if ($child->contains_active_node()) {
+                            $selected = $child->key;
+                        }
+                        $rows[] = new tabobject($child->key, $child->action, $child->get_content(), $child->get_title());
+                    }
+                } else {
+                    $selected = $node->key;
+                }
+            }
+        }
+        return array(array($tabs, $rows), $selected, $inactive, $activated, $return);
+    }
 }
 
 /**
@@ -1856,7 +1899,7 @@ class global_navigation_for_ajax extends global_navigation {
         $this->cache = new navigation_cache(NAVIGATION_CACHE_NAME);
         $this->children = new navigation_node_collection();
         $this->rootnodes = array();
-        //$this->rootnodes['site']      = $this->add_course($SITE);
+        $this->rootnodes['site']      = $this->add_course($SITE);
         $this->rootnodes['courses'] = $this->add(get_string('courses'), null, self::TYPE_ROOTNODE, null, 'courses');
     }
     /**
@@ -1925,8 +1968,12 @@ class global_navigation_for_ajax extends global_navigation {
                         break;
                     }
                 }
-                $activities = $this->load_section_activities($sections[$cm->sectionnumber]->sectionnode, $cm->sectionnumber, get_fast_modinfo($course));
-                $modulenode = $this->load_activity($cm, $course, $activities[$cm->id]);
+                if ($course->id == SITEID) {
+                    $modulenode = $this->load_activity($cm, $course, $coursenode->find($cm->id, self::TYPE_ACTIVITY));
+                } else {
+                    $activities = $this->load_section_activities($sections[$cm->sectionnumber]->sectionnode, $cm->sectionnumber, get_fast_modinfo($course));
+                    $modulenode = $this->load_activity($cm, $course, $activities[$cm->id]);
+                }
                 break;
             default:
                 throw new Exception('Unknown type');
@@ -2660,7 +2707,7 @@ class settings_navigation extends navigation_node {
         //  Add outcome if permitted
         if (!empty($CFG->enableoutcomes) && has_capability('moodle/course:update', $coursecontext)) {
             $url = new moodle_url('/grade/edit/outcome/course.php', array('id'=>$course->id));
-            $coursenode->add(get_string('outcomes', 'grades'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/outcomes', ''));
+            $coursenode->add(get_string('outcomes', 'grades'), $url, self::TYPE_SETTING, null, 'outcomes', new pix_icon('i/outcomes', ''));
         }
 
         // Add meta course links
@@ -2677,33 +2724,33 @@ class settings_navigation extends navigation_node {
         // Manage groups in this course
         if (($course->groupmode || !$course->groupmodeforce) && has_capability('moodle/course:managegroups', $coursecontext)) {
             $url = new moodle_url('/group/index.php', array('id'=>$course->id));
-            $coursenode->add(get_string('groups'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/group', ''));
+            $coursenode->add(get_string('groups'), $url, self::TYPE_SETTING, null, 'groups', new pix_icon('i/group', ''));
         }
 
         // Backup this course
         if (has_capability('moodle/backup:backupcourse', $coursecontext)) {
             $url = new moodle_url('/backup/backup.php', array('id'=>$course->id));
-            $coursenode->add(get_string('backup'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/backup', ''));
+            $coursenode->add(get_string('backup'), $url, self::TYPE_SETTING, null, 'backup', new pix_icon('i/backup', ''));
         }
 
         // Restore to this course
         if (has_capability('moodle/restore:restorecourse', $coursecontext)) {
             $url = new moodle_url('/files/index.php', array('id'=>$course->id, 'wdir'=>'/backupdata'));
             $url = null; // Disabled until restore is implemented. MDL-21432
-            $coursenode->add(get_string('restore'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/restore', ''));
+            $coursenode->add(get_string('restore'), $url, self::TYPE_SETTING, null, 'restore', new pix_icon('i/restore', ''));
         }
 
         // Import data from other courses
         if (has_capability('moodle/restore:restoretargetimport', $coursecontext)) {
             $url = new moodle_url('/course/import.php', array('id'=>$course->id));
             $url = null; // Disabled until restore is implemented. MDL-21432
-            $coursenode->add(get_string('import'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/restore', ''));
+            $coursenode->add(get_string('import'), $url, self::TYPE_SETTING, null, 'import', new pix_icon('i/restore', ''));
         }
 
         // Publish course on a hub
         if (has_capability('moodle/course:publish', $coursecontext)) {
             $url = new moodle_url('/course/publish/index.php', array('id'=>$course->id));
-            $coursenode->add(get_string('publish'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/publish', ''));
+            $coursenode->add(get_string('publish'), $url, self::TYPE_SETTING, null, 'publish', new pix_icon('i/publish', ''));
         }
 
         // Reset this course
@@ -2712,23 +2759,9 @@ class settings_navigation extends navigation_node {
             $coursenode->add(get_string('reset'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/return', ''));
         }
 
-        // Manage questions
-        $questioncaps = array('moodle/question:add',
-                              'moodle/question:editmine',
-                              'moodle/question:editall',
-                              'moodle/question:viewmine',
-                              'moodle/question:viewall',
-                              'moodle/question:movemine',
-                              'moodle/question:moveall');
-        if (has_any_capability($questioncaps, $coursecontext)) {
-            $questionlink = $CFG->wwwroot.'/question/edit.php';
-        } else if (has_capability('moodle/question:managecategory', $coursecontext)) {
-            $questionlink = $CFG->wwwroot.'/question/category.php';
-        }
-        if (isset($questionlink)) {
-            $url = new moodle_url($questionlink, array('courseid'=>$course->id));
-            $coursenode->add(get_string('questions','quiz'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/questions', ''));
-        }
+        // Questions
+        require_once($CFG->dirroot.'/question/editlib.php');
+        question_extend_settings_navigation($coursenode, $coursecontext)->trim_if_empty();
 
         // Repository Instances
         require_once($CFG->dirroot.'/repository/lib.php');
@@ -3117,6 +3150,16 @@ class settings_navigation extends navigation_node {
         if (has_capability('moodle/user:editownmessageprofile', $systemcontext)) {
             $url = new moodle_url('/message/edit.php', array('id'=>$user->id, 'course'=>$course->id));
             $usersetting->add(get_string('editmymessage', 'message'), $url, self::TYPE_SETTING);
+        }
+
+        // Blogs
+        if (!empty($CFG->bloglevel)) {
+            $blog = $usersetting->add(get_string('blogs', 'blog'), null, navigation_node::TYPE_CONTAINER, null, 'blogs');
+            $blog->add(get_string('preferences', 'blog'), new moodle_url('/blog/preferences.php'), navigation_node::TYPE_SETTING);
+            if ($CFG->useexternalblogs && $CFG->maxexternalblogsperuser > 0 && has_capability('moodle/blog:manageexternal', get_context_instance(CONTEXT_SYSTEM))) {
+                $blog->add(get_string('externalblogs', 'blog'), new moodle_url('/blog/external_blogs.php'), navigation_node::TYPE_SETTING);
+                $blog->add(get_string('addnewexternalblog', 'blog'), new moodle_url('/blog/external_blog_edit.php'), navigation_node::TYPE_SETTING);
+            }
         }
 
         // Login as ...

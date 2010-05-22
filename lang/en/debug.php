@@ -33,7 +33,6 @@ $string['cannotsetuptable'] = '{$a} tables could NOT be set up successfully!';
 $string['codingerror'] = 'Coding error detected, it must be fixed by a programmer: {$a}';
 $string['configmoodle'] = 'Moodle has not been configured yet. You need to edit config.php first.';
 $string['erroroccur'] = 'An error has occurred during this process';
-$string['fixsetting'] = 'Please fix your settings in config.php: <p>You have:</p> <p>$CFG->dirroot = \'{$a->current}\';</p> <p>but it should be:</p> <p>$CFG->dirroot = \'{$a->found}\';</p>';
 $string['invalidarraysize'] = 'Incorrect size of arrays in params of {$a}';
 $string['invalideventdata'] = 'Incorrect eventadata submitted: {$a}';
 $string['invalidparameter'] = 'Invalid parameter value detected, execution can not continue.';
@@ -41,7 +40,7 @@ $string['invalidresponse'] = 'Invalid response value detected, execution can not
 $string['missingconfigversion'] = 'Config table does not contain version, can not continue, sorry.';
 $string['modulenotexist'] = '{$a} module doesn\'t exist';
 $string['morethanonerecordinfetch'] = 'Found more than one record in fetch() !';
-$string['mustbeoveride'] = 'Abstract {$a} method must be overriden.';
+$string['mustbeoveride'] = 'Abstract {$a} method must be overridden.';
 $string['noactivityname'] = 'Page object derived from page_generic_activity but did not define $this->activityname';
 $string['noadminrole'] = 'No admin role could be found';
 $string['noblocks'] = 'No blocks installed!';
