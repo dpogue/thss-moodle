@@ -1931,6 +1931,10 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
     if ($result && $oldversion < 2009050615) {
         $table = new xmldb_table('block_instances');
 
+    /// Arrived here, any block_instances record without blockname is one
+    /// orphan block coming from 1.9. Just delete them. MDL-22503
+        $DB->delete_records_select('block_instances', 'blockname IS NULL');
+
     /// Changing nullability of field blockname on table block_instances to not null
         $field = new xmldb_field('blockname', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL, null, null, 'id');
         $dbman->change_field_notnull($table, $field);
@@ -2391,7 +2395,7 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         unset($instanceidstring);
 
         // Now remove the actual block instance
-        $$DB->delete_records_select('block_instances', 'blockname IN ('.$outmodedblocksstring.')');
+        $DB->delete_records_select('block_instances', 'blockname IN ('.$outmodedblocksstring.')');
         unset($outmodedblocksstring);
 
         // Insert the new block instances. Remember they have not been installed yet
@@ -4113,6 +4117,45 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         upgrade_main_savepoint($result, 2010052200);
     }
 
+
+     if ($result && $oldversion < 2010052401) {
+
+    /// Define field status to be added to course_published
+        $table = new xmldb_table('course_published');
+        $field = new xmldb_field('status', XMLDB_TYPE_INTEGER, '1', XMLDB_UNSIGNED, null, null, '0', 'hubcourseid');
+
+    /// Conditionally launch add field status
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+    /// Define field timechecked to be added to course_published
+        $table = new xmldb_table('course_published');
+        $field = new xmldb_field('timechecked', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, null, 'status');
+
+    /// Conditionally launch add field timechecked
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+    /// Main savepoint reached
+        upgrade_main_savepoint($result, 2010052401);
+    }
+
+    if ($result && $oldversion < 2010052700) {
+
+    /// Define field summaryformat to be added to course sections table
+        $table = new xmldb_table('course_sections');
+        $field = new xmldb_field('summaryformat', XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0', 'summary');
+
+    /// Conditionally launch add field summaryformat
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+    /// Main savepoint reached
+        upgrade_main_savepoint($result, 2010052700);
+    }
 
     return $result;
 }

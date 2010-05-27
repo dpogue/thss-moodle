@@ -24,10 +24,6 @@
  */
 
 $string['addingcalculated'] = 'Adding a calculated question';
-$string['addingcalculated_help'] = 'Calculated questions offers a way to create individual numerical question by the use of wildcards that are substituted with individual values when the quiz is taken. ';
-$string['addingcalculated_link'] = 'question/type/calculated';
-$string['addingcalculated_help'] = 'Calculated questions offers a way to create individual numerical question by the use of wildcards that are substituted with individual values when the quiz is taken. ';
-$string['addingcalculated_link'] = 'question/type/calculated';
 $string['additem'] = 'Add Item';
 $string['addmoreanswerblanks'] = 'Add another answer blank.';
 $string['addmoreunitblanks'] = 'Blanks for {$a} More Units';
@@ -37,22 +33,15 @@ $string['atleastoneanswer'] = 'You need to provide at least one answer.';
 $string['atleastonerealdataset']='There should be at least one real dataset in question text';
 $string['atleastonewildcard']='There should be at least one wild card in answer formula or question text';
 $string['calcdistribution'] = 'Distribution';
-$string['calclength'] = 'Decimal Places';
+$string['calclength'] = 'Decimal places';
 $string['calcmax'] = 'Maximum';
 $string['calcmin'] = 'Minimum';
 $string['calculated'] = 'Calculated';
-$string['calculated_help'] = '<p>Calculated questions offers a way to create individual numerical question by the use of wildcards {a},{b}that are substituted with individual values when the quiz is taken.</p>
-<p>The answers are the result of formulas that can use accepted operators as +-*/ and % where % is the modulo operator. 
-It is also possible to use some PHP-style mathematical function.</p>
-<p>Among these there are 24 single-argument function:<b>
-abs, acos, acosh, asin, asinh, atan, atanh, ceil, cos, cosh, deg2rad, exp, expm1, floor, log, log10, log1p, rad2deg, round, sin, sinh, sqrt, tan, tanh
-</b>and two two-argument functions<b>
-atan2, pow
-</b>and the functions <b>min</b> and <b>max</b> that can take two or more arguments.</p> 
-<p>It is also possible to use the function <b>pi()</b></p> 
-<p>Possible usage is for example <b>sin({a}) + cos({b}) * 2</b>.</p> 
-';
+$string['calculated_help'] = 'Calculated questions enable individual numerical questions to be created using wildcards in curly brackets that are substituted with individual values when the quiz is taken. For example, the question "What is the area of a rectangle of length {l} and width {w}?" would have correct answer formula "{l}*{w}" (where * denotes multiplication).';
+$string['calculated_link'] = 'question/type/calculated';
 $string['calculatedsummary'] = 'Calculated questions are like numerical questions but with the numbers used selected randomly from a set when the quiz is taken.';
+$string['choosedatasetproperties'] = 'Choose wildcards dataset properties';
+$string['choosedatasetproperties_help'] = 'A dataset is a set of values inserted in place of a wildcard. You can create a private dataset for a specific question, or a shared dataset that can be used for other calculated questions within the category.';
 $string['correctanswershows'] = 'Correct answer shows';
 $string['correctanswershowsformat'] = 'Format';
 $string['dataitemdefined']='with $a numerical values already defined is available';
@@ -60,12 +49,15 @@ $string['datasetrole']= ' The wild cards <strong>{x..}</strong> will be substitu
 $string['deleteitem'] = 'Delete Item';
 $string['deletelastitem'] = 'Delete Last Item';
 $string['editingcalculated'] = 'Editing a Calculated question';
+$string['editdatasets'] = 'Edit the wildcards datasets';
+$string['editdatasets_help'] = 'Wildcard values may be created by entering a number in each wild card field then clicking the add button. To automatically generate 10 or more values, select the number of values required before clicking the add button. A uniform distribution means any value between the limits is equally likely to be generated; a loguniform distribution means that values towards the lower limit are more likely.';
+$string['editdatasets_link'] = 'question/type/calculated';
 $string['existingcategory1'] = 'will use an already existing shared dataset';
 $string['existingcategory2'] = 'a file from an already existing set of files that are also used by other questions in this category';
 $string['existingcategory3'] = 'a link from an already existing set of links that are also used by other questions in this category';
 $string['forceregeneration'] = 'force regeneration';
-$string['forceregenerationall'] = 'forceregeneration of all wild cards';
-$string['forceregenerationshared'] = 'forceregeneration of only non shared wild cards';
+$string['forceregenerationall'] = 'forceregeneration of all wildcards';
+$string['forceregenerationshared'] = 'forceregeneration of only non-shared wildcards';
 $string['getnextnow'] = 'Get New \'Item to Add\' Now';
 $string['hexanotallowed'] = 'Dataset <strong>{$a->name}</strong> hexadecimal format value $a->value is not allowed' ;
 $string['item(s)'] = 'item(s)';
@@ -100,6 +92,8 @@ $string['notvalidnumber'] = 'Wild card value is not a valid number ' ;
 $string['oneanswertrueansweroutsidelimits'] = 'At least one correct answer outside the true value limits.<br />Modify the answers tolerance settings available as Advanced parameters';   
 $string['param'] = 'Param {<strong>$a</strong>}';
 $string['possiblehdr'] = 'Possible wild cards present only in the question text';
+$string['questiondatasets'] = 'Question datasets';
+$string['questiondatasets_help'] = 'Question datasets of wild cards that will be used in each individual question';
 $string['replacewithrandom'] = 'Replace with a random value';
 $string['reuseifpossible'] = 'reuse previous value if available';
 $string['sharedwildcard']='Shared wild card';

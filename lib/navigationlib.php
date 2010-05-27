@@ -1769,7 +1769,7 @@ class global_navigation extends navigation_node {
             if (!empty($CFG->enablenotes) && (has_capability('moodle/notes:manage', $this->page->context) || has_capability('moodle/notes:view', $this->page->context))) {
                 $participants->add(get_string('notes','notes'), new moodle_url('/notes/index.php', array('filtertype'=>'course', 'filterselect'=>$filterselect)));
             }
-        } else if (count($this->extendforuser) > 0) {
+        } else if (count($this->extendforuser) > 0 || $this->page->course->id == $course->id) {
             $participants = $coursenode->add(get_string('participants'), null, self::TYPE_CONTAINER, get_string('participants'), 'participants');
         }
 
@@ -2630,7 +2630,7 @@ class settings_navigation extends navigation_node {
                             continue;
                         }
                         if (strpos($activity, '--')===0) {
-                            $subbranch = $sectionresources->add(trim($activity, '-'));
+                            $subbranch = $sectionactivities->add(trim($activity, '-'));
                             continue;
                         }
                         $url = new moodle_url('/course/mod.php', array('id'=>$course->id, 'sesskey'=>sesskey(), 'section'=>$section->section));
@@ -2644,7 +2644,7 @@ class settings_navigation extends navigation_node {
                         if ($subbranch !== false) {
                             $subbranch->add($activity, $url, self::TYPE_SETTING);
                         } else {
-                            $sectionresources->add($activity, $url, self::TYPE_SETTING);
+                            $sectionactivities->add($activity, $url, self::TYPE_SETTING);
                         }
                     }
                 }

@@ -120,20 +120,20 @@ a.skip:active {position: static;display: block;}
 /**
  * Header
  */
-#page-header .headermain {float:left;margin:15px;font-size:2.3em;}
-#page-header .headermenu {float:right;margin:15px;font-size:0.8em;text-align:right;}
+.headermain {float:left;margin:15px;font-size:2.3em;}
+.headermenu {float:right;margin:10px;font-size:0.8em;text-align:right;}
 
 /**
  * Navbar
  */
 .navbar {clear:both;overflow:hidden;}
 .ie6 .navbar {overflow:hidden;height:100%;}
-.navbar .breadcrumb {float:left;}
-.navbar .navbutton {text-align:right;}
-.navbar .breadcrumb ul {padding:0;margin:0;text-indent:0;list-style:none;}
-.navbar .breadcrumb li,
-.navbar .navbutton div,
-.navbar .navbutton form {display:inline;}
+.breadcrumb {float:left;}
+.navbutton {text-align:right;}
+.breadcrumb ul {padding:0;margin:0;text-indent:0;list-style:none;}
+.breadcrumb li,
+.navbutton div,
+.navbutton form {display:inline;}
 
 /**
  * Footer
@@ -489,6 +489,7 @@ body.tag .managelink {padding: 5px;}
 .file-picker .fp-grid span {color:gray;}
 .file-picker .fp-error {padding: 2em 0;margin: 3em 5px;text-align:center;background: #FFBBBB;}
 .file-picker .fp-emptylist, .file-picker .fp-msg {padding: 2em 0;margin: 1em;text-align:center;background: green;}
+.filepicker-filelist {padding: 5px;margin: 6px 0;background: #E9F4FF;border: #AACCEE 1px solid}
 /* file picker search dialog */
 .file-picker div.bd {text-align:left;}
 
@@ -503,14 +504,12 @@ body.tag .managelink {padding: 5px;}
 .filemanager-container {padding: 5px;margin: 6px 0;background: #E9F4FF;border: #AACCEE 1px solid}
 .filemanager-container ul{margin:0;padding:0;}
 .filemanager-container ul li{white-space:nowrap;list-style-type:none;}
-.filemanager-container ul li a{margin:1px;}
-.filemanager-container ul li div.fm-file-name a:hover {margin:0;border: 1px solid #CCC; background: grey; color: white;}
+.filemanager-container ul li a{padding:0}
 .filemanager-loading{display:none}
 .jsenabled .filemanager-loading{display:block}
+.fm-menuicon{cursor: pointer;}
 #fm-move-div {margin: 6px;}
 #fm-move-div strong{color:red;}
-.fm-file-menu {width:18px;height:18px;}
-.fm-file-name {}
 .fm-file-entry{border: 1px solid red;}
 .fm-operation {font-weight: bold;}
 

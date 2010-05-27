@@ -36,6 +36,111 @@ interface renderable {
 }
 
 /**
+ * Data structure representing a file tree viewer
+ *
+ * @copyright 2010 Dongsheng Cai
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+class file_tree_viewer implements renderable {
+    public $dir;
+    public $result;
+    public $filearea;
+    /**
+     * Constructor of file_tree_viewer class
+     * @param int $contextid
+     * @param string $area, file area
+     * @param int $itemid
+     * @param string $urlbase, file serving url base
+     */
+    public function __construct($contextid, $area, $itemid, $urlbase='') {
+        global $CFG;
+        $fs = get_file_storage();
+        if (empty($urlbase)) {
+            $this->urlbase = "$CFG->wwwroot/pluginfile.php";
+        } else {
+            $this->urlbase = $urlbase;
+        }
+        $this->contextid = $contextid;
+        $this->filearea = $area;
+        $this->itemid = $itemid;
+        $this->dir = $fs->get_area_tree($contextid, $area, $itemid);
+        $this->tree_view_parser($this->dir);
+    }
+    /**
+     * Pre-process file tree, generate file url
+     * @param array $dir file tree
+     */
+    public function tree_view_parser($dir) {
+        if (empty($dir['subdirs']) and empty($dir['files'])) {
+            return null;
+        }
+        foreach ($dir['subdirs'] as $subdir) {
+            $this->tree_view_parser($subdir);
+        }
+        foreach ($dir['files'] as $file) {
+            $path    = '/'.$this->contextid.'/'.$this->filearea.'/'.$this->itemid.$file->get_filepath().$file->get_filename();
+            $downloadurl = file_encode_url($this->urlbase, $path, true);
+            $file->fileurl = $downloadurl;
+        }
+    }
+}
+
+/**
+ * Data structure representing a file picker.
+ *
+ * @copyright 2010 Dongsheng Cai
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+class file_picker implements renderable {
+    public $options;
+    public function __construct(stdClass $options) {
+        global $CFG, $USER, $PAGE;
+        require_once($CFG->dirroot. '/repository/lib.php');
+        $defaults = array(
+            'accepted_types'=>'*',
+            'context'=>$PAGE->context,
+            'return_types'=>FILE_INTERNAL,
+            'env' => 'filepicker',
+            'client_id' => uniqid(),
+            'itemid' => 0,
+            'maxbytes'=>-1,
+            'maxfiles'=>1,
+        );
+        foreach ($defaults as $key=>$value) {
+            if (empty($options->$key)) {
+                $options->$key = $value;
+            }
+        }
+
+        $options->currentfile = '';
+        if (!empty($options->itemid)) {
+            $fs = get_file_storage();
+            $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+            if (empty($options->filename)) {
+                if ($files = $fs->get_area_files($usercontext->id, 'user_draft', $options->itemid, 'id DESC', false)) {
+                    $file = reset($files);
+                }
+            } else {
+                $file = $fs->get_file($usercontext->id, 'user_draft', $options->itemid, $options->filepath, $options->filename);
+            }
+            if (!empty($file)) {
+                $options->currentfile = html_writer::link(file_encode_url($CFG->wwwroot.'/draftfile.php/', $usercontext->id.'/user_draft/'.$file->get_itemid().'/'.$file->get_filename()), $file->get_filename());
+            }
+        }
+
+        // initilise options, getting files in root path
+        $this->options = initialise_filepicker($options);
+
+        // copying other options
+        foreach ($options as $name=>$value) {
+            $this->options->$name = $value;
+        }
+    }
+}
+
+/**
  * Data structure representing a file manager.
  *
  * @copyright 2010 Dongsheng Cai

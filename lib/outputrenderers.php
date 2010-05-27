@@ -1296,13 +1296,12 @@ class core_renderer extends renderer_base {
             //$scalemax = 0;//no longer displaying scale max
             $aggregatestr = '';
 
-            if ($rating->aggregate) {
-                if (is_array($rating->settings->scale->scaleitems)) {
-                    //$scalemax = $rating->settings->scale->scaleitems[ count($rating->settings->scale->scaleitems) ];
+            //only display aggregate if aggregation method isn't COUNT
+            if ($rating->aggregate && $rating->settings->aggregationmethod!= RATING_AGGREGATE_COUNT) {
+                if ($rating->settings->aggregationmethod!= RATING_AGGREGATE_SUM && is_array($rating->settings->scale->scaleitems)) {
                     $aggregatestr .= $rating->settings->scale->scaleitems[round($rating->aggregate)];//round aggregate as we're using it as an index
                 }
-                else { //its numeric
-                    //$scalemax = $rating->settings->scale->scaleitems;
+                else { //aggregation is SUM or the scale is numeric
                     $aggregatestr .= round($rating->aggregate,1);
                 }
             } else {
@@ -1725,6 +1724,116 @@ class core_renderer extends renderer_base {
     }
 
     /**
+     * Print the file tree viewer
+     *
+     * <pre>
+     * $OUTPUT->file_tree_viewer($contextid, $filearea, $itemid, $urlbase);
+     * </pre>
+     *
+     * @param int $contextid
+     * @param string $area
+     * @param int $itemid
+     * @param string $urlbase
+     * @return string HTML fragment
+     */
+    public function file_tree_viewer($contextid, $area, $itemid, $urlbase='') {
+        $tree = new file_tree_viewer($contextid, $area, $itemid, $urlbase);
+        return $this->render($tree);
+    }
+
+    /**
+     * Internal implementation of file tree viewer rendering.
+     * @param file_tree_viewer $tree
+     * @return string
+     */
+    public function render_file_tree_viewer(file_tree_viewer $tree) {
+        $this->page->requires->js_init_call('M.mod_folder.init_tree', array(true));
+        $html = '';
+        $html .= '<div id="folder_tree">';
+        $html .= $this->htmllize_file_tree($tree->dir);
+        $html .= '</div>';
+        return $html;
+    }
+
+    /**
+     * Internal implementation of file tree viewer items rendering.
+     * @param array $dir
+     * @return string
+     */
+    public function htmllize_file_tree($dir) {
+        if (empty($dir['subdirs']) and empty($dir['files'])) {
+            return '';
+        }
+        $result = '<ul>';
+        foreach ($dir['subdirs'] as $subdir) {
+            $result .= '<li>'.s($subdir['dirname']).' '.$this->htmllize_file_tree($subdir).'</li>';
+        }
+        foreach ($dir['files'] as $file) {
+            $filename = $file->get_filename();
+            $result .= '<li><span>'.html_writer::link($file->fileurl, $filename).'</span></li>';
+        }
+        $result .= '</ul>';
+
+        return $result;
+    }
+    /**
+     * Print the file picker
+     *
+     * <pre>
+     * $OUTPUT->file_picker($options);
+     * </pre>
+     *
+     * @param array $options associative array with file manager options
+     *   options are:
+     *       maxbytes=>-1,
+     *       itemid=>0,
+     *       client_id=>uniqid(),
+     *       acepted_types=>'*',
+     *       return_types=>FILE_INTERNAL,
+     *       context=>$PAGE->context
+     * @return string HTML fragment
+     */
+    public function file_picker($options) {
+        $fp = new file_picker($options);
+        return $this->render($fp);
+    }
+    /**
+     * Internal implementation of file picker rendering.
+     * @param file_picker $fp
+     * @return string
+     */
+    public function render_file_picker(file_picker $fp) {
+        global $CFG, $OUTPUT, $USER;
+        $options = $fp->options;
+        $client_id = $options->client_id;
+        $strsaved = get_string('filesaved', 'repository');
+        $straddfile = get_string('openpicker', 'repository');
+        $strloading  = get_string('loading', 'repository');
+        $icon_progress = $OUTPUT->pix_icon('i/loading_small', $strloading).'';
+
+        $currentfile = $options->currentfile;
+        if (empty($currentfile)) {
+            $currentfile = get_string('nofilesattached', 'repository');
+        }
+        $html = <<<EOD
+<div class="filemanager-loading mdl-align" id='filepicker-loading-{$client_id}'>
+$icon_progress
+</div>
+<div id="filepicker-wrapper-{$client_id}" class="mdl-left" style="display:none">
+    <div>
+        <button id="filepicker-button-{$client_id}">$straddfile</button>
+    </div>
+EOD;
+        if ($options->env != 'url') {
+            $html .= <<<EOD
+    <div id="file_info_{$client_id}" class="mdl-left filepicker-filelist">$currentfile</div>
+EOD;
+        }
+        $html .= '</div>';
+        return $html;
+    }
+
+    /**
      * Print the file manager
      *
      * <pre>
@@ -1739,7 +1848,7 @@ class core_renderer extends renderer_base {
      *       itemid=>0,
      *       subdirs=>false,
      *       client_id=>uniqid(),
-     *       ccepted_types=>'*',
+     *       acepted_types=>'*',
      *       return_types=>FILE_INTERNAL,
      *       context=>$PAGE->context
      * @return string HTML fragment
@@ -1803,7 +1912,7 @@ FMHTML;
         if (empty($filemanagertemplateloaded)) {
             $filemanagertemplateloaded = true;
             $html .= <<<FMHTML
-<div id="fm-template" style="display:none"><span class="fm-file-menu">___action___</span> <span class="fm-file-name">___fullname___</span></div>
+<div id="fm-template" style="display:none">___fullname___ ___action___</div>
 FMHTML;
         }
 
@@ -1825,7 +1934,7 @@ FMHTML;
             'strings' => array(array('loading', 'repository'), array('nomorefiles', 'repository'), array('confirmdeletefile', 'repository'),
                  array('add', 'repository'), array('accessiblefilepicker', 'repository'), array('move', 'moodle'),
                  array('cancel', 'moodle'), array('download', 'moodle'), array('ok', 'moodle'),
-                 array('emptylist', 'repository'), array('entername', 'repository'), array('enternewname', 'repository'),
+                 array('emptylist', 'repository'), array('nofilesattached', 'repository'), array('entername', 'repository'), array('enternewname', 'repository'),
                  array('zip', 'editor'), array('unzip', 'moodle'), array('rename', 'moodle'), array('delete', 'moodle'),
                  array('cannotdeletefile', 'error'), array('confirmdeletefile', 'repository'),
                  array('nopathselected', 'repository'), array('popupblockeddownload', 'repository'),

@@ -79,6 +79,18 @@ $string['deletecoursecategorywithquestions'] = 'There are questions in the quest
 $string['disabled'] = 'Disabled';
 $string['disterror'] = 'The distribution {$a} caused problems';
 $string['donothing'] = 'Don\'t copy or move files or change links.';
+$string['editcategories'] = 'Edit categories';
+$string['editcategories_help'] = 'Rather than keeping everything in one big list, questions may be arranged into categories and subcategories.
+
+Each category has a context which determines where the questions in the category can be used:
+
+* Activity context - Questions only available in the activity module
+* Course context - Questions available in all activity modules in the course
+* Course category context - Questions available in all activity modules and courses in the course category 
+* System context - Questions available in all courses and activities on the site
+
+Categories are also used for random questions, as questions are selected from a particular category.';
+$string['editcategories_link'] = 'question/category';
 $string['editingcategory'] = 'Editing a category';
 $string['editingquestion'] = 'Editing a question';
 $string['editthiscategory'] = 'Edit this category';
@@ -102,6 +114,9 @@ $string['errorprocessingresponses'] = 'An error occurred while processing your r
 $string['errorsavingcomment'] = 'Error saving the comment for question {$a->name} in the database.';
 $string['errorupdatingattempt'] = 'Error updating attempt {$a->id} in the database.';
 $string['exportcategory'] = 'Export category';
+$string['exportcategory_help'] = 'This setting determines the category from which the exported questions will be taken.
+
+Certain import formats, such as GIFT and Moodle XML, permit category and context data to be included in the export file, enabling them to (optionally) be recreated on import. If required, the appropriate checkboxes should be ticked.';
 $string['exporterror'] = 'Errors occur during exporting!';
 $string['exportquestions'] = 'Export questions to file';
 $string['exportquestions_help'] = 'This function enables the export of a complete category (and any subcategories) of questions to file. Please note that, depending on the file format selected, some question data and certain question types may not be exported.';
@@ -119,6 +134,10 @@ $string['changepublishstatuscat'] = '<a href="{$a->caturl}">Category "{$a->name}
 $string['chooseqtypetoadd'] = 'Choose a question type to add';
 $string['ignorebroken'] = 'Ignore broken links';
 $string['impossiblechar'] = 'Impossible character {$a} detected as parenthesis character';
+$string['importcategory'] = 'Import category';
+$string['importcategory_help'] = 'This setting determines the category into which the imported questions will go.
+
+Certain import formats, such as GIFT and Moodle XML, may include category and context data in the import file. To make use of this data, rather than the selected category, the appropriate checkboxes should be ticked. If categories specified in the import file do not exist, they will be created.';
 $string['importquestions'] = 'Import questions from file';
 $string['importquestions_help'] = 'This function enables questions in a variety of formats to be imported via text file. Note that the file must use UTF-8 encoding.';
 $string['importquestions_link'] = 'question/import';
@@ -132,6 +151,11 @@ $string['lastmodifiedby'] = 'Last modified by';
 $string['linkedfiledoesntexist'] = 'Linked file {$a} doesn\'t exist';
 $string['makechildof'] = 'Make Child of \'{$a}\'';
 $string['maketoplevelitem'] = 'Move to top level';
+$string['matchgrades'] = 'Match grades';
+$string['matchgrades_help'] = 'Imported grades must match one of the fixed list of valid grades - 100, 90, 80, 75, 70, 66.666, 60, 50, 40, 33.333, 30, 25, 20, 16.666, 14.2857, 12.5, 11.111, 10, 5, 0 (also negative values). If not, there are two options:
+
+*  Error if grade not listed - If a question contains any grades not found in the list an error is displayed and that question will not be imported
+* Nearest grade if not listed - If a grade is found that does not match a value in the list, the grade is changed to the closest matching value in the list ';
 $string['missingcourseorcmid'] = 'Need to provide courseid or cmid to print_question.';
 $string['missingcourseorcmidtolink'] = 'Need to provide courseid or cmid to get_question_edit_link.';
 $string['missingimportantcode'] = 'This question type is missing important code: {$a}.';
@@ -158,6 +182,9 @@ $string['notenoughdatatoeditaquestion'] = 'Neither a question id, nor a category
 $string['notenoughdatatomovequestions'] = 'You need to provide the question ids of questions you want to move.';
 $string['notflagged'] = 'Not flagged';
 $string['novirtualquestiontype'] = 'No virtual question type for question type {$a}';
+$string['parentcategory'] = 'Parent category';
+$string['parentcategory_help'] = 'The parent category is the one in which the new category will be placed. "Top" means that this category is not contained in any other category. Category contexts are shown in bold type. There must be at least one category in each context.';
+$string['parentcategory_link'] = 'question/category';
 $string['parenthesisinproperclose'] = 'Parenthesis before ** is not properly closed in {$a}**';
 $string['parenthesisinproperstart'] = 'Parenthesis before ** is not properly started in {$a}**';
 $string['permissionedit'] = 'Edit this question';
@@ -183,6 +210,8 @@ $string['selectacategory'] = 'Select a category:';
 $string['selectaqtypefordescription'] = 'Select a question type to see its description.';
 $string['selectquestionsforbulk'] = 'Select questions for bulk actions';
 $string['shareincontext'] = 'Share in context for {$a}';
+$string['stoponerror'] = 'Stop on error';
+$string['stoponerror_help'] = 'This setting determines whether the import process stops when an error is detected, resulting in no questions being imported, or whether any questions containing errors are ignored and any valid questions are imported.';
 $string['tofilecategory'] = 'Write category to file';
 $string['tofilecontext'] = 'Write context to file';
 $string['unknown'] = 'Unknown';

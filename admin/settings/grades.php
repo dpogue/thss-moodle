@@ -32,7 +32,7 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $temp->add(new admin_setting_grade_profilereport());
 
         $temp->add(new admin_setting_configselect('grade_aggregationposition', get_string('aggregationposition', 'grades'),
-                                                  get_string('configaggregationposition', 'grades'), GRADE_REPORT_AGGREGATION_POSITION_LAST,
+                                                  get_string('aggregationposition_help', 'grades'), GRADE_REPORT_AGGREGATION_POSITION_LAST,
                                                   array(GRADE_REPORT_AGGREGATION_POSITION_FIRST => get_string('positionfirst', 'grades'),
                                                         GRADE_REPORT_AGGREGATION_POSITION_LAST => get_string('positionlast', 'grades'))));
 
@@ -47,7 +47,7 @@ if (has_capability('moodle/grade:manage', $systemcontext)
                                                   get_string('configgradeexportdisplaytype', 'grades'), GRADE_DISPLAY_TYPE_REAL, $display_types));
 
         $temp->add(new admin_setting_configselect('grade_export_decimalpoints', get_string('gradeexportdecimalpoints', 'grades'),
-                                                  get_string('configexportdecimalpoints', 'grades'), 2,
+                                                  get_string('gradeexportdecimalpoints_desc', 'grades'), 2,
                                                   array( '0' => '0',
                                                          '1' => '1',
                                                          '2' => '2',
@@ -88,7 +88,7 @@ if (has_capability('moodle/grade:manage', $systemcontext)
                                 GRADE_AGGREGATE_MAX, GRADE_AGGREGATE_MODE, GRADE_AGGREGATE_SUM);
 
         $defaults = array('value'=>GRADE_AGGREGATE_WEIGHTED_MEAN2, 'forced'=>false, 'adv'=>false);
-        $temp->add(new admin_setting_gradecat_combo('grade_aggregation', get_string('aggregation', 'grades'), get_string('aggregationhelp', 'grades'), $defaults, $options));
+        $temp->add(new admin_setting_gradecat_combo('grade_aggregation', get_string('aggregation', 'grades'), get_string('aggregation_help', 'grades'), $defaults, $options));
 
         $temp->add(new admin_setting_configmultiselect('grade_aggregations_visible', get_string('aggregationsvisible', 'grades'),
                                                        get_string('aggregationsvisiblehelp', 'grades'), $defaultvisible, $options));
@@ -115,7 +115,7 @@ if (has_capability('moodle/grade:manage', $systemcontext)
                     get_string('keephighhelp', 'grades'), $defaults, $options));
         $defaults['forced'] = false;
         $temp->add(new admin_setting_gradecat_combo('grade_droplow', get_string('droplow', 'grades'),
-                    get_string('droplowhelp', 'grades'), $defaults, $options));
+                    get_string('droplow_help', 'grades'), $defaults, $options));
     }
     $ADMIN->add('grades', $temp);
 
@@ -127,7 +127,7 @@ if (has_capability('moodle/grade:manage', $systemcontext)
                                                   get_string('configgradedisplaytype', 'grades'), GRADE_DISPLAY_TYPE_REAL, $display_types));
 
         $temp->add(new admin_setting_configselect('grade_decimalpoints', get_string('decimalpoints', 'grades'),
-                                                  get_string('configdecimalpoints', 'grades'), 2,
+                                                  get_string('decimalpoints_help', 'grades'), 2,
                                                   array( '0' => '0',
                                                          '1' => '1',
                                                          '2' => '2',
@@ -166,7 +166,7 @@ if (has_capability('moodle/grade:manage', $systemcontext)
         $outcomes = new admin_externalpage('outcomes', get_string('outcomes', 'grades'), $CFG->wwwroot.'/grade/edit/outcome/index.php', 'moodle/grade:manage');
         $ADMIN->add('grades', $outcomes);
     }
-    $letters = new admin_externalpage('letters', get_string('letters', 'grades'), $CFG->wwwroot.'/grade/edit/letter/edit.php', 'moodle/grade:manageletters');
+    $letters = new admin_externalpage('letters', get_string('letters', 'grades'), $CFG->wwwroot.'/grade/edit/letter/index.php', 'moodle/grade:manageletters');
     $ADMIN->add('grades', $letters);
 
     // The plugins must implement a settings.php file that adds their admin settings to the $settings object

@@ -98,6 +98,7 @@
             $section->course = $SITE->id;
             $section->section = 1;
             $section->summary = '';
+            $section->summaryformat = '0';
             $section->sequence = '';
             $section->visible = 1;
             $section->id = $DB->insert_record('course_sections', $section);
@@ -119,7 +120,7 @@
             $summaryformatoptions = new object();
             $summaryformatoptions->noclean = true;
 
-            echo format_text($summarytext, FORMAT_HTML, $summaryformatoptions);
+            echo format_text($summarytext, $section->summaryformat, $summaryformatoptions);
 
             if ($editing) {
                 $streditsummary = get_string('editsummary');
@@ -196,11 +197,9 @@
             break;
 
             case FRONTPAGECATEGORYCOMBO:
-
                 echo $OUTPUT->heading(get_string('categories'), 2, 'headingblock header');
-                echo $OUTPUT->box_start('generalbox categorybox');
-                print_whole_category_list(NULL, NULL, NULL, -1, true);
-                echo $OUTPUT->box_end();
+                $renderer = $PAGE->get_renderer('core','course');
+                echo $renderer->course_category_tree(get_course_category_tree());
                 print_course_search('', false, 'short');
             break;
 

@@ -39,7 +39,7 @@ $settings->add(new admin_setting_configselect('grade_report_meanselection', get_
                                                 GRADE_REPORT_MEAN_GRADED => get_string('meangraded', 'grades'))));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_enableajax', get_string('enableajax', 'grades'),
-                                            get_string('configenableajax', 'grades'), 0));
+                                            get_string('enableajax_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showcalculations', get_string('showcalculations', 'grades'),
                                             get_string('configshowcalculations', 'grades'), 0));
@@ -69,7 +69,7 @@ $settings->add(new admin_setting_configcheckbox('grade_report_shownumberofgrades
                                             get_string('configshownumberofgrades', 'grades'), 0));
 
 $settings->add(new admin_setting_configselect('grade_report_averagesdisplaytype', get_string('averagesdisplaytype', 'grades'),
-                                          get_string('configaveragesdisplaytype', 'grades'), GRADE_REPORT_PREFERENCE_INHERIT,
+                                          get_string('averagesdisplaytype_help', 'grades'), GRADE_REPORT_PREFERENCE_INHERIT,
                                           array(GRADE_REPORT_PREFERENCE_INHERIT => $strinherit,
                                                 GRADE_DISPLAY_TYPE_REAL => $strreal,
                                                 GRADE_DISPLAY_TYPE_PERCENTAGE => $strpercentage,
@@ -83,7 +83,7 @@ $settings->add(new admin_setting_configselect('grade_report_rangesdisplaytype', 
                                                 GRADE_DISPLAY_TYPE_LETTER => $strletter)));
 
 $settings->add(new admin_setting_configselect('grade_report_averagesdecimalpoints', get_string('averagesdecimalpoints', 'grades'),
-                                          get_string('configaveragesdecimalpoints', 'grades'), GRADE_REPORT_PREFERENCE_INHERIT,
+                                          get_string('averagesdecimalpoints_help', 'grades'), GRADE_REPORT_PREFERENCE_INHERIT,
                                           array(GRADE_REPORT_PREFERENCE_INHERIT => $strinherit,
                                                  '0' => '0',
                                                  '1' => '1',

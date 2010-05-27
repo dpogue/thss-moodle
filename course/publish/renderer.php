@@ -58,25 +58,18 @@ class core_publish_renderer extends plugin_renderer_base {
      * Display the listing of hub where a course is registered on
      */
     public function registeredonhublisting($courseid, $publications) {
-        global $OUTPUT;
+        global $OUTPUT, $CFG;
 
         $table = new html_table();
-        $table->head  = array(get_string('type', 'hub'), get_string('hub', 'hub'), get_string('date'), get_string('operation', 'hub'));
-        $table->size = array('10%', '50%', '30%', '%10');
+        $table->head  = array(get_string('type', 'hub'), get_string('hub', 'hub'), 
+            get_string('date'), get_string('status', 'hub'), get_string('operation', 'hub'));
+        $table->size = array('10%', '40%', '20%', '%10', '%15');
+
+        $brtag = html_writer::empty_tag('br');
 
         foreach ($publications as $publication) {
 
             $updatebuttonhtml = '';
-
-            if ($publication->enrollable) {
-                $params = array('sesskey' => sesskey(), 'id' => $publication->courseid,
-                    'huburl' => $publication->huburl, 'hubname' => $publication->hubname,
-                    'share' => !$publication->enrollable, 'advertise' => $publication->enrollable);
-                $updateurl = new moodle_url("/course/publish/metadata.php", $params);
-                $updatebutton = new single_button($updateurl, get_string('update', 'hub'));
-                $updatebutton->class = 'centeredbutton';
-                $updatebuttonhtml = $OUTPUT->render($updatebutton);
-            }
 
             $params = array('sesskey' => sesskey(), 'id' => $publication->courseid, 'hubcourseid' => $publication->hubcourseid,
                     'huburl' => $publication->huburl, 'hubname' => $publication->hubname,
@@ -86,8 +79,15 @@ class core_publish_renderer extends plugin_renderer_base {
             $cancelbutton->class = 'centeredbutton';
             $cancelbuttonhtml = $OUTPUT->render($cancelbutton);
 
-            if (!empty($updatebuttonhtml)) {
-                $brtag = html_writer::empty_tag('br');
+            if ($publication->enrollable) {
+                $params = array('sesskey' => sesskey(), 'id' => $publication->courseid,
+                    'huburl' => $publication->huburl, 'hubname' => $publication->hubname,
+                    'share' => !$publication->enrollable, 'advertise' => $publication->enrollable);
+                $updateurl = new moodle_url("/course/publish/metadata.php", $params);
+                $updatebutton = new single_button($updateurl, get_string('update', 'hub'));
+                $updatebutton->class = 'centeredbutton';
+                $updatebuttonhtml = $OUTPUT->render($updatebutton);
+
                 $operations = $updatebuttonhtml . $brtag . $cancelbuttonhtml;
             } else {
                 $operations = $cancelbuttonhtml;
@@ -96,15 +96,27 @@ class core_publish_renderer extends plugin_renderer_base {
             $hubname = html_writer::tag('a', $publication->hubname?$publication->hubname:$publication->huburl,
                     array('href' => $publication->huburl));
 
+            if ($publication->status == 0) {
+                $status = get_string('statusunpublished', 'hub');
+            } else {
+                $status = get_string('statuspublished', 'hub');
+            }
+            $status .= $brtag . html_writer::tag('a', get_string('updatestatus', 'hub'),
+                    array('href' => $CFG->wwwroot.'/course/publish/index.php?id='.$courseid.
+                    "&updatestatusid=".$publication->id."&sesskey=".sesskey())) .
+                    $brtag . get_string('lasttimechecked', 'hub') . ": " . userdate($publication->timechecked);
+
             //add button cells     
-            $cells = array($publication->enrollable?get_string('advertised', 'hub'):get_string('uploaded', 'hub'),
-                $hubname,  userdate($publication->timepublished),$operations);
+            $cells = array($publication->enrollable?get_string('advertised', 'hub'):get_string('shared', 'hub'),
+                $hubname,  userdate($publication->timepublished), $status, $operations);
             $row = new html_table_row($cells);
             $table->data[] = $row;
 
         }
 
-        return html_writer::table($table);
+        $contenthtml =  html_writer::table($table);
+        
+        return $contenthtml;
 
     }
 
