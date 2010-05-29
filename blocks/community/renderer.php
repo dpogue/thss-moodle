@@ -43,13 +43,13 @@ class block_community_renderer extends plugin_renderer_base {
         $table = new html_table();
 
 
-        $table->head  = array(get_string('coursename', 'block_community'),
+        $table->head  = array('', get_string('coursename', 'block_community'),
                 get_string('coursedesc', 'block_community'),
                 get_string('courselang', 'block_community'),
                 get_string('operation', 'block_community'));
 
-        $table->align = array('left', 'left', 'center', 'center');
-        $table->size = array('25%', '40%', '5%', '%5');
+        $table->align = array('center', 'left', 'left', 'center', 'center');
+        $table->size = array('10%', '25%', '40%', '5%', '%5');
 
 
         if (empty($courses)) {
@@ -95,6 +95,22 @@ class block_community_renderer extends plugin_renderer_base {
                 $deschtml .= html_writer::empty_tag('br');
                 $additionaldesc = get_string('additionalcoursedesc', 'block_community', $course);
                 $deschtml .= html_writer::tag('span', $additionaldesc, array('class' => 'additionaldesc'));
+                 //add content to the course description
+                if (!empty($course->contents)) {
+                    $activitieshtml = '';
+                    $blockhtml = '';
+                    foreach ($course->contents as $content) {
+                        if ($content['moduletype'] == 'block') {
+                            $blockhtml .= ' - '. $content['modulename']. " (".$content['contentcount'].")";
+                        } else {
+                            $activitieshtml .= ' - '. $content['modulename']. " (".$content['contentcount'].")";
+                        }
+                    }
+                    $deschtml .= html_writer::empty_tag('br').html_writer::tag('span',
+                            get_string('blocks', 'block_community')." : ".$blockhtml, array('class' => 'blockdescription'));
+                    $deschtml .= html_writer::empty_tag('br').html_writer::tag('span',
+                            get_string('activities', 'block_community')." : ".$activitieshtml, array('class' => 'activitiesdescription'));
+                }
 
                 //retrieve language string
                 //construct languages array
@@ -123,7 +139,14 @@ class block_community_renderer extends plugin_renderer_base {
                 }
 
                 // add a row to the table
-                $cells = array($coursenamehtml, $deschtml, $language, $addbuttonhtml);
+                $firstscreenshothtml = '';
+                if (!empty($course->screenshotsids)) {
+                    $params = array('courseid' => $course->id, 'filetype' => SCREENSHOT_FILE_TYPE);
+                    $imgurl = new moodle_url($huburl."/local/hub/webservice/download.php", $params);
+                    $firstscreenshothtml = html_writer::empty_tag('img', array('src' => $imgurl));
+                }
+
+                $cells = array($firstscreenshothtml, $coursenamehtml, $deschtml, $language, $addbuttonhtml);
 
 
                 $row = new html_table_row($cells);

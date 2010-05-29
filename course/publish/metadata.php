@@ -64,7 +64,11 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
                     'id' => $id));
     $fromform = $coursepublicationform->get_data();
 
+
+
     if (!empty($fromform)) {
+
+        $hub = new hub();
 
         //retrieve the course information
         $courseinfo = new stdClass();
@@ -93,6 +97,40 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
             $courseinfo->enrollable = true;
         }
 
+
+        //retrieve the content information from the course
+        $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
+        $courseblocks = $hub->get_block_instances_by_context($coursecontext->id, 'blockname');
+
+        if (!empty($courseblocks)) {
+            $blockname = '';
+            foreach ($courseblocks as $courseblock) {
+                if ($courseblock->blockname != $blockname) {
+                    if (!empty($blockname)) {
+                        $courseinfo->contents[] = $content;
+                    }
+
+                    $blockname = $courseblock->blockname;
+                    $content = new stdClass();
+                    $content->moduletype = 'block';
+                    $content->modulename = $courseblock->blockname;
+                    $content->contentcount = 1;
+                } else {
+                    $content->contentcount = $content->contentcount + 1;
+                }
+            }
+            $courseinfo->contents[] = $content;
+        }
+
+        $activities = get_fast_modinfo($course, $USER->id);
+        foreach ($activities->instances as $activityname => $activitydetails) {
+            $content = new stdClass();
+            $content->moduletype = 'activity';
+            $content->modulename = $activityname;
+            $content->contentcount = count($activities->instances[$activityname]);
+            $courseinfo->contents[] = $content;
+        }
+
         //save into screenshots field the references to the screenshot content hash
         //(it will be like a unique id from the hub perspective)
         if (!empty($fromform->screenshots)) {
@@ -100,12 +138,9 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
             $fs = get_file_storage();
             $files = $fs->get_area_files(get_context_instance(CONTEXT_USER, $USER->id)->id, 'user_draft', $screenshots);
             if (!empty($files)) {
-                $courseinfo->screenshotsids = '';
-                foreach ($files as $file) {
-                    if ($file->is_valid_image()) {
-                        $courseinfo->screenshotsids = $courseinfo->screenshotsids . "notsend:" . $file->get_contenthash() . ";";
-                    }
-                }
+                 $courseinfo->screenshotsids = count($files);
+            } else {
+                $courseinfo->screenshotsids = 0;
             }
         }
 
@@ -122,7 +157,7 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
         // PUBLISH ACTION
 
         //retrieve the token to call the hub
-        $hub = new hub();
+       
         $registeredhub = $hub->get_registeredhub($huburl);
 
         //publish the course information
@@ -154,13 +189,17 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
         // send screenshots
         if (!empty($fromform->screenshots)) {
             require_once($CFG->dirroot. "/lib/filelib.php");
-            $params = array('token' => $registeredhub->token, 'filetype' => SCREENSHOT_FILE_TYPE,
-                    'courseshortname' => $courseinfo->shortname);
-           
+            $screenshotnumber = 0;
             foreach ($files as $file) {
                 if ($file->is_valid_image()) {
+                    $screenshotnumber = $screenshotnumber + 1;
+                    $params = array();
+                    $params['filetype'] = SCREENSHOT_FILE_TYPE;
                     $params['file'] = $file;
+                    $params['courseid'] = $courseids[0];
                     $params['filename'] = $file->get_filename();
+                    $params['screenshotnumber'] = $screenshotnumber;
+                    $params['token'] = $registeredhub->token;
                     $curl->post($huburl."/local/hub/webservice/upload.php", $params);
                 }
             }
@@ -169,14 +208,12 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
 
         // send backup
         if ($share) {
-            foreach ($courseids as $courseid) {
-                $params = array();
-                $params['filetype'] = BACKUP_FILE_TYPE;
-                $params['courseid'] = $courseid;
-                $params['file'] = $backupfile;
-                $params['token'] = $registeredhub->token;
-                $curl->post($huburl."/local/hub/webservice/upload.php", $params);
-            }
+            $params = array();
+            $params['filetype'] = BACKUP_FILE_TYPE;
+            $params['courseid'] = $courseids[0];
+            $params['file'] = $backupfile;
+            $params['token'] = $registeredhub->token;
+            $curl->post($huburl."/local/hub/webservice/upload.php", $params);
             
             //Delete the backup from user_tohub
             $backupfile->delete();

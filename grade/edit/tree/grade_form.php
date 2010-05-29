@@ -51,7 +51,7 @@ class edit_grade_form extends moodleform {
         if ($grade_item->gradetype == GRADE_TYPE_VALUE) {
             // numeric grade
             $mform->addElement('text', 'finalgrade', get_string('finalgrade', 'grades'));
-            $mform->setHelpButton('finalgrade', array('finalgrade', get_string('finalgrade', 'grades'), 'grade'));
+            $mform->addHelpButton('finalgrade', 'finalgrade', 'grades');
             $mform->disabledIf('finalgrade', 'overridden', 'notchecked');
 
         } else if ($grade_item->gradetype == GRADE_TYPE_SCALE) {
@@ -73,7 +73,7 @@ class edit_grade_form extends moodleform {
             }
 
             $mform->addElement('select', 'finalgrade', get_string('finalgrade', 'grades'), $scaleopt);
-            $mform->setHelpButton('finalgrade', array('finalgrade', get_string('finalgrade', 'grades'), 'grade'));
+            $mform->addHelpButton('finalgrade', 'finalgrade', 'finalgrade');
             $mform->disabledIf('finalgrade', 'overridden', 'notchecked');
         }
 
@@ -82,7 +82,7 @@ class edit_grade_form extends moodleform {
         } else {
             $mform->addElement('advcheckbox', 'excluded', get_string('excluded', 'grades'));
         }
-        $mform->setHelpButton('excluded', array('excluded', get_string('excluded', 'grades'), 'grade'));
+        $mform->addHelpButton('excluded', 'excluded', 'grades');
 
         /// hiding
         /// advcheckbox is not compatible with disabledIf !!
@@ -102,7 +102,7 @@ class edit_grade_form extends moodleform {
         // Feedback format is automatically converted to html if user has enabled editor
         $feedbackoptions = array('maxfiles'=>0, 'maxbytes'=>0, 'trusttext'=>true);
         $mform->addElement('editor', 'feedback', get_string('feedback', 'grades'), null, $feedbackoptions);
-        $mform->setHelpButton('feedback', array('feedback', get_string('feedback', 'grades'), 'grade'));
+        $mform->addHelpButton('feedback', 'feedback', 'grades');
         $mform->setType('text', PARAM_RAW); // to be cleaned before display, no XSS risk
 
         // hidden params
