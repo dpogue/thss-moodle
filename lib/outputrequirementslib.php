@@ -380,7 +380,7 @@ class page_requirements_manager {
                 case 'core_dock':
                     $module = array('name'     => 'core_dock',
                                     'fullpath' => '/blocks/dock.js',
-                                    'requires' => array('base', 'cookie', 'dom', 'io', 'node', 'event-custom', 'event-mouseenter', 'yui2-container'),
+                                    'requires' => array('base', 'node', 'event-custom', 'event-mouseenter', 'event-resize'),
                                     'strings' => array(array('addtodock', 'block'),array('undockitem', 'block'),array('undockall', 'block'),array('thisdirectionvertical', 'langconfig')));
                     break;
                 case 'core_calendar':
@@ -475,7 +475,7 @@ class page_requirements_manager {
      * Even if a particular style sheet is requested more than once, it will only
      * be linked to once.
      *
-     * Please note sue of this feature is strongly discouraged,
+     * Please note use of this feature is strongly discouraged,
      * it is suitable only for places where CSS is submitted directly by teachers.
      * (Students must not be allowed to submit any external CSS because it may
      * contain embedded javascript!). Example of correct use is mod/data.

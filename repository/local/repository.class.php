@@ -108,7 +108,13 @@ class repository_local extends repository {
                 $children = $fileinfo->get_children();
                 foreach ($children as $child) {
                     if ($child->is_directory()) {
-                        $encodedpath = base64_encode(serialize($child->get_params()));
+                        $params = $child->get_params();
+                        $encodedpath = base64_encode(serialize($params));
+                        // hide user_private area from local plugin, user should
+                        // use private file plugin to access private files
+                        if ($params['filearea'] == 'user_private') {
+                            continue;
+                        }
                         $node = array(
                             'title' => $child->get_visible_name(),
                             'size' => 0,
@@ -136,6 +142,7 @@ class repository_local extends repository {
             throw new repository_exception('emptyfilelist', 'repository_local');
         }
         $ret['list'] = $list;
+        $ret['list'] = array_filter($list, array($this, 'filter'));
         return $ret;
     }
 

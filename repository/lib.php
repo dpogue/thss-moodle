@@ -633,6 +633,12 @@ abstract class repository {
         $sql = 'SELECT i.*, r.type AS repositorytype, r.sortorder, r.visible FROM {repository} r, {repository_instances} i WHERE ';
         $sql .= 'i.typeid = r.id ';
 
+        if (!empty($args['disable_types']) && is_array($args['disable_types'])) {
+            list($types, $p) = $DB->get_in_or_equal($args['disable_types'], SQL_PARAMS_QM, 'param0000', false);
+            $sql .= ' AND r.type '.$types;
+            $params = array_merge($params, $p);
+        }
+
         if (!empty($args['userid']) && is_numeric($args['userid'])) {
             $sql .= ' AND (i.userid = 0 or i.userid = ?)';
             $params[] = $args['userid'];
@@ -1815,6 +1821,10 @@ function initialise_filepicker($args) {
     } else {
         $context = $args->context;
     }
+    $disable_types = array();
+    if (!empty($args->disable_types)) {
+        $disable_types = $args->disable_types;
+    }
 
     $user_context = get_context_instance(CONTEXT_USER, $USER->id);
 
@@ -1823,7 +1833,8 @@ function initialise_filepicker($args) {
         'context'=>array($user_context, get_system_context()),
         'currentcontext'=> $context,
         'accepted_types'=>$args->accepted_types,
-        'return_types'=>$args->return_types
+        'return_types'=>$args->return_types,
+        'disable_types'=>$disable_types
     ));
 
     $return->repositories = array();
@@ -1854,12 +1865,18 @@ function repository_setup_default_plugins() {
     global $OUTPUT;
     //if the plugin type has no multiple instance (e.g. has no instance option name)
     //repository_type::create will create an instance automatically
-    $local_plugin = new repository_type('local', array(), true);
-    $local_plugin_id = $local_plugin->create(true);
-    $upload_plugin = new repository_type('upload', array(), true);
-    $upload_plugin_id = $upload_plugin->create(true);
+    $user_plugin = new repository_type('user', array(), true);
+    $user_plugin->create(true);
+
     $recent_plugin = new repository_type('recent', array(), true);
-    $recent_plugin_id = $upload_plugin->create(true);
+    $recent_plugin->create(true);
+
+    $upload_plugin = new repository_type('upload', array(), true);
+    $upload_plugin->create(true);
+
+    $local_plugin = new repository_type('local', array(), true);
+    $local_plugin->create(true);
+
     echo $OUTPUT->notification(get_string('setupdefaultplugins', 'repository'), 'notifysuccess');
     return true;
 }
