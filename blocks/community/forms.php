@@ -44,7 +44,7 @@ class community_hub_search_form extends moodleform {
         //retrieve the hub list on the hub directory by web service
         $function = 'hubdirectory_get_hubs';
         $params = array();
-        $serverurl = HUBDIRECTORYURL."/local/hubdirectory/webservice/webservices.php";
+        $serverurl = HUB_HUBDIRECTORYURL."/local/hubdirectory/webservice/webservices.php";
         require_once($CFG->dirroot."/webservice/xmlrpc/lib.php");
         $xmlrpcclient = new webservice_xmlrpc_client();
         $hubs = $xmlrpcclient->call($serverurl, 'publichubdirectory', $function, $params);
@@ -53,10 +53,41 @@ class community_hub_search_form extends moodleform {
 
         //Public hub list
         $options = array();
-        $mform->addElement('static','huburlstring',get_string('selecthub', 'block_community'));
-        $mform->addHelpButton('huburlstring', 'selecthub', 'block_community');
+       // $mform->addElement('static','huburlstring',get_string('selecthub', 'block_community'));
+        
         foreach ($hubs as $hub) {
-            $mform->addElement('radio','huburl',null,' '.$hub['name'], $hub['url']);
+            $params = array('hubid' => $hub['id'],
+                'filetype' => HUB_HUBSCREENSHOT_FILE_TYPE);
+            $imgurl = new moodle_url(HUB_HUBDIRECTORYURL . "/local/hubdirectory/webservice/download.php", $params);
+            $ascreenshothtml = html_writer::empty_tag('img', array('src' => $imgurl, 'alt' => $hub['name']));
+            $brtag = html_writer::empty_tag('br');
+            $hubdescription =   '&nbsp;&nbsp;'.$hub['name'];
+            $hubdescription .= $brtag;
+            $hubdescription .=  html_writer::tag('span', $ascreenshothtml, array('class' => 'hubscreenshot'));
+            $hubdescription .= html_writer::tag('span', $hub['description'], array('class' => 'hubdescription'));
+            $hubdescription .= $brtag;
+            $additionaldesc = get_string('sites', 'block_community'). ': ' . $hub['sites'] . ' - ' .
+                                get_string('courses', 'block_community'). ': ' . $hub['courses'];
+            $hubdescription .= html_writer::tag('span', $additionaldesc, array('class' => 'hubadditionaldesc'));
+            $hubdescription .= $brtag;
+            $hubdescription .= html_writer::tag('span',
+                    $hub['trusted']?get_string('hubtrusted', 'block_community'):get_string('hubnottrusted', 'block_community'),
+                    array('class' => $hub['trusted']?'trusted':'nottrusted'));
+             $hubdescription = html_writer::tag('span',
+                    $hubdescription,
+                    array('class' => $hub['trusted']?'hubtrusted':'hubnottrusted'));
+
+            $radiotitle = '';
+            if (empty($firsthub)) {
+                $radiotitle = get_string('selecthub', 'block_community');                             
+            }
+            $mform->addElement('radio','huburl',$radiotitle, $hubdescription, $hub['url']);
+            if (empty($firsthub)) {
+                $mform->addHelpButton('huburl', 'selecthub', 'block_community');
+                 $mform->setDefault('huburl', true);
+                $firsthub = true;
+            }
+
         }
 
         $options = array(0 => get_string('enrollable', 'block_community'),
@@ -67,9 +98,9 @@ class community_hub_search_form extends moodleform {
 
         $options = array();
         $options['all'] = get_string('any');
-        $options[AUDIENCE_EDUCATORS] = get_string('audienceeducators', 'hub');
-        $options[AUDIENCE_STUDENTS] = get_string('audiencestudents', 'hub');
-        $options[AUDIENCE_ADMINS] = get_string('audienceadmins', 'hub');
+        $options[HUB_AUDIENCE_EDUCATORS] = get_string('audienceeducators', 'hub');
+        $options[HUB_AUDIENCE_STUDENTS] = get_string('audiencestudents', 'hub');
+        $options[HUB_AUDIENCE_ADMINS] = get_string('audienceadmins', 'hub');
         $mform->addElement('select', 'audience', get_string('audience', 'block_community'), $options);
         $mform->setDefault('audience', 'all');
         unset($options);
@@ -77,13 +108,13 @@ class community_hub_search_form extends moodleform {
 
         $options = array();
         $options['all'] = get_string('any');
-        $options[EDULEVEL_PRIMARY] = get_string('edulevelprimary', 'hub');
-        $options[EDULEVEL_SECONDARY] = get_string('edulevelsecondary', 'hub');
-        $options[EDULEVEL_TERTIARY] = get_string('eduleveltertiary', 'hub');
-        $options[EDULEVEL_GOVERNMENT] = get_string('edulevelgovernment', 'hub');
-        $options[EDULEVEL_ASSOCIATION] = get_string('edulevelassociation', 'hub');
-        $options[EDULEVEL_CORPORATE] = get_string('edulevelcorporate', 'hub');
-        $options[EDULEVEL_OTHER] = get_string('edulevelother', 'hub');
+        $options[HUB_EDULEVEL_PRIMARY] = get_string('edulevelprimary', 'hub');
+        $options[HUB_EDULEVEL_SECONDARY] = get_string('edulevelsecondary', 'hub');
+        $options[HUB_EDULEVEL_TERTIARY] = get_string('eduleveltertiary', 'hub');
+        $options[HUB_EDULEVEL_GOVERNMENT] = get_string('edulevelgovernment', 'hub');
+        $options[HUB_EDULEVEL_ASSOCIATION] = get_string('edulevelassociation', 'hub');
+        $options[HUB_EDULEVEL_CORPORATE] = get_string('edulevelcorporate', 'hub');
+        $options[HUB_EDULEVEL_OTHER] = get_string('edulevelother', 'hub');
         $mform->addElement('select', 'educationallevel', get_string('educationallevel', 'block_community'), $options);
         $mform->setDefault('educationallevel', 'all');
         unset($options);

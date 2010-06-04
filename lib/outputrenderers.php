@@ -2415,7 +2415,7 @@ NONJS;
         $title = $item->get_title();
         if ($item->icon instanceof renderable && !$item->hideicon) {
             $icon = $this->render($item->icon);
-            $content = $icon.'&nbsp;'.$content; // use CSS for spacing of icons
+            $content = $icon.$content; // use CSS for spacing of icons
         }
         if ($item->helpbutton !== null) {
             $content = trim($item->helpbutton).html_writer::tag('span', $content, array('class'=>'clearhelpbutton'));
@@ -2597,6 +2597,29 @@ NONJS;
             $content .= html_writer::end_tag('li');
         }
         // Return the sub menu
+        return $content;
+    }
+
+    /**
+     * Renders the image_gallery component and initialises its JavaScript
+     *
+     * @param image_gallery $imagegallery
+     * @return string
+     */
+    protected function render_image_gallery(image_gallery $imagegallery) {
+        $this->page->requires->js_gallery_module(array('gallery-lightbox','gallery-lightbox-skin'), '2010.04.08-12-35', 'Y.Lightbox.init');
+        if (count($imagegallery->images) == 0) {
+            return '';
+        }
+        $classes = array('image_gallery');
+        if ($imagegallery->displayfirstimageonly) {
+            $classes[] = 'oneimageonly';
+        }
+        $content = html_writer::start_tag('div', array('class'=>join(' ', $classes)));
+        foreach ($imagegallery->images as $image) {
+            $content .= html_writer::tag('a', html_writer::empty_tag('img', $image->thumb), $image->link);
+        }
+        $content .= html_writer::end_tag('div');
         return $content;
     }
 }

@@ -116,7 +116,7 @@ class edit_category_form extends moodleform {
                          GRADE_TYPE_TEXT=>get_string('typetext', 'grades'));
 
         $mform->addElement('select', 'grade_item_gradetype', get_string('gradetype', 'grades'), $options);
-        $mform->setHelpButton('grade_item_gradetype', array('gradetype', get_string('gradetype', 'grades'), 'grade'), true);
+        $mform->addHelpButton('grade_item_gradetype', 'gradetype', 'grades');
         $mform->setDefault('grade_item_gradetype', GRADE_TYPE_VALUE);
         $mform->disabledIf('grade_item_gradetype', 'aggregation', 'eq', GRADE_AGGREGATE_SUM);
 
@@ -147,17 +147,17 @@ class edit_category_form extends moodleform {
         $mform->disabledIf('grade_item_scaleid', 'aggregation', 'eq', GRADE_AGGREGATE_SUM);
 
         $mform->addElement('text', 'grade_item_grademax', get_string('grademax', 'grades'));
-        $mform->setHelpButton('grade_item_grademax', array('grademax', get_string('grademax', 'grades'), 'grade'), true);
+        $mform->addHelpButton('grade_item_grademax', 'grademax', 'grades');
         $mform->disabledIf('grade_item_grademax', 'grade_item_gradetype', 'noteq', GRADE_TYPE_VALUE);
         $mform->disabledIf('grade_item_grademax', 'aggregation', 'eq', GRADE_AGGREGATE_SUM);
 
         $mform->addElement('text', 'grade_item_grademin', get_string('grademin', 'grades'));
-        $mform->setHelpButton('grade_item_grademin', array('grademin', get_string('grademin', 'grades'), 'grade'), true);
+        $mform->addHelpButton('grade_item_grademin', 'grademin', 'grades');
         $mform->disabledIf('grade_item_grademin', 'grade_item_gradetype', 'noteq', GRADE_TYPE_VALUE);
         $mform->disabledIf('grade_item_grademin', 'aggregation', 'eq', GRADE_AGGREGATE_SUM);
 
         $mform->addElement('text', 'grade_item_gradepass', get_string('gradepass', 'grades'));
-        $mform->setHelpButton('grade_item_gradepass', array('gradepass', get_string('gradepass', 'grades'), 'grade'), true);
+        $mform->addHelpButton('grade_item_gradepass', 'gradepass', 'grades');
         $mform->disabledIf('grade_item_gradepass', 'grade_item_gradetype', 'eq', GRADE_TYPE_NONE);
         $mform->disabledIf('grade_item_gradepass', 'grade_item_gradetype', 'eq', GRADE_TYPE_TEXT);
 

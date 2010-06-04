@@ -288,16 +288,13 @@ $string['gradelocked'] = 'Grade is locked';
 $string['gradelong'] = '{$a->grade} / {$a->max}';
 $string['grademax'] = 'Maximum grade';
 $string['grademax_help'] = 'This setting determines the maximum grade when using the value grade type. The maximum grade for an activity-based grade item is set on the activity settings page.';
-$string['grademaxhelp'] = 'When using the value grade type, a maximum grade can be set. The maximum grade for an activity-based grade item is set on the update activity page.';
 $string['grademin'] = 'Minimum grade';
 $string['grademin_help'] = 'This setting determines the minimum grade when using the value grade type.';
-$string['grademinhelp'] = 'When using the value grade type, a minimum grade can be set.';
 $string['gradeoutcomeitem'] = 'Grade outcome item';
 $string['gradeoutcomes'] = 'Outcomes';
 $string['gradeoutcomescourses'] = 'Course outcomes';
 $string['gradepass'] = 'Grade to pass';
 $string['gradepass_help'] = 'This setting determines the minimum grade required to pass. The value is used in activity and course completion, and in the gradebook, where pass grades are highlighted in green and fail grades in red.';
-$string['gradepasshelp'] = 'If an item has a grade that users must equal or exceed to pass that item, you can set that here.';
 $string['gradepreferences'] = 'Grade preferences';
 $string['gradepreferenceshelp'] = 'Grade preferences Help';
 $string['gradepublishing'] = 'Enable publishing';
@@ -316,7 +313,6 @@ $string['gradetype_help'] = 'There are 4 grade types:
 * Text - Feedback only
 
 Only value and scale grade types may be aggregated. The grade type for an activity-based grade item is set on the activity settings page.';
-$string['gradetypehelp'] = 'Specifies the type of grade used: none (no grading possible), value (enables the maximum and minimum grade settings), scale (enables the scale setting) or text (feedback only). Only value and scale grade types may be aggregated. The grade type for an activity-based grade item is set on the update activity page.';
 $string['gradeview'] = 'View Grade';
 $string['gradeweighthelp'] = 'Grade weight Help';
 $string['groupavg'] = 'Group average';

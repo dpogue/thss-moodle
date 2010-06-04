@@ -3,30 +3,14 @@
 require_once("../../config.php");
 require_once("lib.php");
 require_once("$CFG->dirroot/course/lib.php");
+require_once('import_form.php');
 
 $id = required_param('id', PARAM_INT);    // Course Module ID
-
-$step     = optional_param('step', 0, PARAM_INT);
-$dest     = optional_param('dest', 'current', PARAM_ALPHA);   // current | new
-$file     = optional_param('file', '', PARAM_FILE);         // file to import
-$catsincl = optional_param('catsincl', 0, PARAM_INT);         // Import Categories too?
 
 $mode     = optional_param('mode', 'letter', PARAM_ALPHA );
 $hook     = optional_param('hook', 'ALL', PARAM_ALPHANUM);
 
 $url = new moodle_url('/mod/glossary/import.php', array('id'=>$id));
-if ($step !== 0) {
-    $url->param('step', $step);
-}
-if ($dest !== 'current') {
-    $url->param('dest', $dest);
-}
-if ($file !== '') {
-    $url->param('file', $file);
-}
-if ($catsincl !== 0) {
-    $url->param('catsincl', $catsincl);
-}
 if ($mode !== 'letter') {
     $url->param('mode', $mode);
 }
@@ -52,9 +36,6 @@ require_login($course->id, false, $cm);
 $context = get_context_instance(CONTEXT_MODULE, $cm->id);
 require_capability('mod/glossary:import', $context);
 
-if ($dest != 'new' and $dest != 'current') {
-    $dest = 'current';
-}
 $strglossaries = get_string("modulenameplural", "glossary");
 $strglossary = get_string("modulename", "glossary");
 $strallcategories = get_string("allcategories", "glossary");
@@ -65,7 +46,6 @@ $strsearchindefinition = get_string("searchindefinition", "glossary");
 $strsearch = get_string("search");
 $strimportentries = get_string('importentriesfromxml', 'glossary');
 
-$PAGE->set_url('/mod/glossary/import.php', array('id'=>$cm->id, 'mode'=>$mode, 'hook'=>$hook));
 $PAGE->navbar->add($strimportentries);
 $PAGE->set_title(format_string($glossary->name));
 $PAGE->set_heading($course->fullname);
@@ -73,38 +53,37 @@ $PAGE->set_heading($course->fullname);
 echo $OUTPUT->header();
 echo $OUTPUT->heading($strimportentries);
 
-if ( !$step ) {
-    echo $OUTPUT->box_start('glossarydisplay generalbox');
-    include("import.html");
-    echo $OUTPUT->box_end();
+$form = new mod_glossary_import_form();
 
+if ( !$data = $form->get_data() ) {
+    echo $OUTPUT->box_start('glossarydisplay generalbox');
+    // display upload form
+    $data = new stdclass;
+    $data->id = $id;
+    $form->set_data($data);
+    $form->display();
+    echo $OUTPUT->box_end();
     echo $OUTPUT->footer();
     exit;
 }
 
-require_sesskey();
-$form = data_submitted();
-$file = $_FILES["file"];
+$result = $form->get_file_content('file');
 
-require_once($CFG->dirroot.'/lib/uploadlib.php');
-$um = new upload_manager('file',false,false,$course,false,0);
-
-if (!$um->preprocess_files()) {
+if (empty($result)) {
     echo $OUTPUT->box_start('glossarydisplay generalbox');
     echo $OUTPUT->continue_button('import.php?id='.$id);
     echo $OUTPUT->box_end();
-
     echo $OUTPUT->footer();
     die();
 }
 
-if ($xml = glossary_read_imported_file($file['tmp_name']) ) {
-
+if ($xml = glossary_read_imported_file($result)) {
     $importedentries = 0;
     $importedcats    = 0;
     $entriesrejected = 0;
     $rejections      = '';
-    if ($dest == 'new') {
+
+    if ($data->dest == 'newglossary') {
         // If the user chose to create a new glossary
         $xmlglossary = $xml['GLOSSARY']['#']['INFO'][0]['#'];
 
@@ -119,6 +98,7 @@ if ($xml = glossary_read_imported_file($file['tmp_name']) ) {
             $glossary->showall = ($xmlglossary['SHOWALL'][0]['#']);
             $glossary->timecreated = time();
             $glossary->timemodified = time();
+            $glossary->cmidnumber = $cm->idnumber;
 
             // Setting the default values if no values were passed
             if ( isset($xmlglossary['ENTBYPAGE'][0]['#']) ) {
@@ -155,7 +135,6 @@ if ($xml = glossary_read_imported_file($file['tmp_name']) ) {
             // Include new glossary and return the new ID
             if ( !$glossary->id = glossary_add_instance($glossary) ) {
                 echo $OUTPUT->notification("Error while trying to create the new glossary.");
-                echo '</center>';
                 glossary_print_tabbed_table_end();
                 echo $OUTPUT->footer();
                 exit;
@@ -199,7 +178,6 @@ if ($xml = glossary_read_imported_file($file['tmp_name']) ) {
                 rebuild_course_cache($course->id);
 
                 echo $OUTPUT->box(get_string("newglossarycreated","glossary"),'generalbox boxaligncenter boxwidthnormal');
-                echo '<p>';
             }
         } else {
             echo $OUTPUT->notification("Error while trying to create the new glossary.");
@@ -276,7 +254,7 @@ if ($xml = glossary_read_imported_file($file['tmp_name']) ) {
                     }
                 }
 
-                if ( $catsincl ) {
+                if (!empty($data->catsincl)) {
                     // If the categories must be imported...
                     $xmlcats = @$xmlentry['#']['CATEGORIES'][0]['#']['CATEGORY']; // ignore missing CATEGORIES
                     for($k = 0; $k < sizeof($xmlcats); $k++) {
@@ -343,7 +321,7 @@ if ($xml = glossary_read_imported_file($file['tmp_name']) ) {
     }
     echo '</td>';
     echo '</tr>';
-    if ( $catsincl ) {
+    if (!empty($data->catsincl)) {
         echo '<tr>';
         echo '<td width="50%" align="right">';
         echo get_string("importedcategories","glossary");
@@ -357,8 +335,8 @@ if ($xml = glossary_read_imported_file($file['tmp_name']) ) {
 
     // rejected entries
     if ($rejections) {
+        echo $OUTPUT->heading(get_string("rejectionrpt","glossary"), 4);
         echo '<table class="glossaryimportexport">';
-        echo '<tr><td align="center" colspan="2" width="100%"><strong>' . get_string("rejectionrpt","glossary") . '</strong></tr>';
         echo $rejections;
         echo '</table><hr />';
     }
@@ -370,9 +348,11 @@ if ($xml = glossary_read_imported_file($file['tmp_name']) ) {
     }
     echo $OUTPUT->box_end();
 } else {
-    notice(get_string('errorparsingxml', 'glossary'));
+    echo $OUTPUT->box_start('glossarydisplay generalbox');
+    echo get_string('errorparsingxml', 'glossary');
+    echo $OUTPUT->continue_button('import.php?id='.$id);
+    echo $OUTPUT->box_end();
 }
 
 /// Finish the page
 echo $OUTPUT->footer();
-

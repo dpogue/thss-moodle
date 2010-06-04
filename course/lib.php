@@ -1355,11 +1355,11 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                 if ($accessiblebutdim || !$mod->uservisible) {
                     echo '<div class="dimmed_text"><span class="accesshide">'.
                         get_string('hiddenfromstudents').'</span>';
+                } else {
+                    echo '<div>';
                 }
                 echo format_text($extra, FORMAT_HTML, $labelformatoptions);
-                if ($accessiblebutdim || !$mod->uservisible) {
-                    echo "</div>";
-                }
+                echo "</div>";
                 if (!empty($mod->groupingid) && has_capability('moodle/course:managegroups', get_context_instance(CONTEXT_COURSE, $course->id))) {
                     if (!isset($groupings)) {
                         $groupings = groups_get_all_groupings($course->id);
@@ -1884,7 +1884,9 @@ function get_course_category_tree($id = 0, $depth = 0) {
         $categoryids[$category->id] = $category;
         if (empty($CFG->maxcategorydepth) || $depth <= $CFG->maxcategorydepth) {
             list($category->categories, $subcategories) = get_course_category_tree($category->id, $depth+1);
-            $categoryids = array_merge($categoryids, $subcategories);
+            foreach ($subcategories as $subid=>$subcat) {
+                $categoryids[$subid] = $subcat;
+            }
             $category->courses = array();
         }
     }

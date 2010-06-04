@@ -47,7 +47,7 @@ class edit_item_form extends moodleform {
                          GRADE_TYPE_TEXT=>get_string('typetext', 'grades'));
 
         $mform->addElement('select', 'gradetype', get_string('gradetype', 'grades'), $options);
-        $mform->setHelpButton('gradetype', array('gradetype', get_string('gradetype', 'grades'), 'grade'), true);
+        $mform->addHelpButton('gradetype', 'gradetype', 'grades');
         $mform->setDefault('gradetype', GRADE_TYPE_VALUE);
 
         //$mform->addElement('text', 'calculation', get_string('calculation', 'grades'));
@@ -76,15 +76,15 @@ class edit_item_form extends moodleform {
         $mform->disabledIf('scaleid', 'gradetype', 'noteq', GRADE_TYPE_SCALE);
 
         $mform->addElement('text', 'grademax', get_string('grademax', 'grades'));
-        $mform->setHelpButton('grademax', array('grademax', get_string('grademax', 'grades'), 'grade'), true);
+        $mform->addHelpButton('grademax', 'grademax', 'grades');
         $mform->disabledIf('grademax', 'gradetype', 'noteq', GRADE_TYPE_VALUE);
 
         $mform->addElement('text', 'grademin', get_string('grademin', 'grades'));
-        $mform->setHelpButton('grademin', array('grademin', get_string('grademin', 'grades'), 'grade'), true);
+        $mform->addHelpButton('grademin', 'grademin', 'grades');
         $mform->disabledIf('grademin', 'gradetype', 'noteq', GRADE_TYPE_VALUE);
 
         $mform->addElement('text', 'gradepass', get_string('gradepass', 'grades'));
-        $mform->setHelpButton('gradepass', array('gradepass', get_string('gradepass', 'grades'), 'grade'), true);
+        $mform->addHelpButton('gradepass', 'gradepass', 'grades');
         $mform->disabledIf('gradepass', 'gradetype', 'eq', GRADE_TYPE_NONE);
         $mform->disabledIf('gradepass', 'gradetype', 'eq', GRADE_TYPE_TEXT);
 
