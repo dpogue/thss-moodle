@@ -172,7 +172,7 @@ header nav ul#tabbar li ul li a:focus {
 	color: white;
 }
 
-header div#rotate {
+header canvas#rotate {
 	float: right;
 	position: relative;
 	height: 201px;

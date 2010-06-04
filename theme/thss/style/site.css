@@ -1,58 +1,3 @@
-@font-face {
-	font-family: 'DroidSans';
-	src: url('thss/fonts/DroidSans.eot');
-	src: local('Droid Sans Regular'), local('DroidSans'), url('thss/fonts/DroidSans.ttf') format('truetype');
-}
-
-@font-face {
-	font-family: 'DroidSans';
-    font-weight: bold;
-	src: url('thss/fonts/DroidSans-Bold.eot');
-	src: local('Droid Sans Bold'), local('DroidSans-Bold'), url('thss/fonts/DroidSans-Bold.ttf') format('truetype');
-}
-
-/* We're cheating a bit for Italic text, since Sans has no italic */
-@font-face {
-	font-family: 'DroidSans';
-    font-style: italic;
-	src: url('thss/fonts/DroidSerif-Italic.eot');
-	src: local('Droid Serif Italic'), local('DroidSerif-Italic'), url('thss/fonts/DroidSerif-Italic.ttf') format('truetype');
-}
-
-@font-face {
-	font-family: 'DroidSerif';
-	src: url('thss/fonts/DroidSerif-Regular.eot');
-	src: local('Droid Serif Regular'), local('DroidSerif'), url('thss/fonts/DroidSerif-Regular.ttf') format('truetype');
-}
-
-@font-face {
-	font-family: 'DroidSerif';
-    font-style: italic;
-	src: url('thss/fonts/DroidSerif-Italic.eot');
-	src: local('Droid Serif Italic'), local('DroidSerif-Italic'), url('thss/fonts/DroidSerif-Italic.ttf') format('truetype');
-}
-
-@font-face {
-	font-family: 'DroidSerif';
-    font-weight: bold;
-	src: url('thss/fonts/DroidSerif-Bold.eot');
-	src: local('Droid Serif Bold'), local('DroidSerif-Bold'), url('thss/fonts/DroidSerif-Bold.ttf') format('truetype');
-}
-
-@font-face {
-	font-family: 'DroidSerif';
-    font-weight: bold;
-    font-style: italic;
-	src: url('thss/fonts/DroidSerif-BoldItalic.eot');
-	src: local('Droid Serif Bold Italic'), local('DroidSerif-BoldItalic'), url('thss/fonts/DroidSerif-BoldItalic.ttf') format('truetype');
-}
-
-@font-face {
-	font-family: 'DroidMono';
-	src: url('thss/fonts/DroidSansMono.eot');
-	src: local('Droid Sans Mono Regular'), local('DroidSansMono'), url('thss/fonts/DroidSansMono.ttf') format('truetype');
-}
-
 /* Core */
 html {
 	background-color: #dbdbdb;
@@ -62,9 +7,19 @@ html {
 }
 
 body {
-	font-family: DroidSans, sans-serif;
 	background: transparent;
-	
+}
+
+.wf-inactive {
+	font-family: sans-serif;
+}
+
+.wf-active body {
+	font-family: 'Droid Sans', sans-serif;
+}
+
+.wf-active i {
+	font-family: 'Droid Serif', sans-serif;
 }
 
 /* Declaring HTML 5 elements */

@@ -61,6 +61,9 @@ class theme_thss_core_renderer extends core_renderer {
         if ($this->metarefreshtag=='' && $this->page->periodicrefreshdelay!==null) {
             $output .= '<meta http-equiv="refresh" content="'.$this->page->periodicrefreshdelay.';url='.$this->page->url->out().'" />';
         }
+        
+        $output .= '<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script>';
+        $output .= '<script type="text/javascript">WebFont.load({ google: { families: [ \'Droid Sans:n,b\', \'Droid Serif:n,i,b,bi\' ]}});</script>';
 
         //$this->page->requires->js('lib/javascript-static.js')->in_head(); // contains deprecated stuff too, do not add extre file for that for perf reasons!
         //$this->page->requires->js_function_call('setTimeout', array('fix_column_widths()', 20));

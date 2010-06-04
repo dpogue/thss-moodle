@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once('announcement.php');
-
 function tabmenu_nav($index=false) {
     global $USER, $CFG, $SITE, $DB;
     
@@ -46,10 +44,4 @@ function tabmenu_nav($index=false) {
     }
     
     return html_writer::tag('ul', implode('', $out), array('id' => 'tabbar'));
-}
-
-function announcements($page, $all=false) {
-    $mgr = new announcement_manager($page, true);
-
-    echo $mgr->print_announcements('rotate');
 }

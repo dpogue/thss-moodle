@@ -20,9 +20,14 @@
 		<nav>
 <?php echo tabmenu_nav(true); ?>
 		</nav>
-		<div id="rotate">
-<?php /*announcements($PAGE);*/ /*echo $OUTPUT->announcements();*/ ?>
-		</div>
+		<canvas id="rotate" height="201" width="305">
+			<ul>
+				<li>Haney Happenings</li>
+				<li>Newsletter</li>
+				<li>Mobile Site</li>
+				<li>Twitter</li>
+			</ul>
+		</canvas>
 		<div id="welcome">
 			<p>
 				<b>Thomas Haney<br />Secondary School</b>
@@ -78,6 +83,7 @@
 			<?php echo $OUTPUT->login_info(); ?>
 		</span>
 	</footer>
+	<script type="text/javascript" src=""></script>
 <?php echo $OUTPUT->standard_end_of_body_html() ?>
 </body>
 </html>
