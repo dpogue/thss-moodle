@@ -196,9 +196,8 @@ function glossary_delete_instance($id) {
 
     // Delete any dependent records
     $entry_select = "SELECT id FROM {glossary_entries} WHERE glossaryid = ?";
-    $DB->delete_records_select('comments', "contextid={$context->id} AND commentarea='glossary_entry' AND itemid IN ($entry_select)", array($id));
+    $DB->delete_records_select('comments', "contextid=? AND commentarea=? AND itemid IN ($entry_select)", array($id, $context->id, 'glossary_entry'));
     $DB->delete_records_select('glossary_alias',    "entryid IN ($entry_select)", array($id));
-    $DB->delete_records_select('glossary_ratings',  "entryid IN ($entry_select)", array($id));
 
     $category_select = "SELECT id FROM {glossary_categories} WHERE glossaryid = ?";
     $DB->delete_records_select('glossary_entries_categories', "categoryid IN ($category_select)", array($id));
@@ -206,6 +205,12 @@ function glossary_delete_instance($id) {
 
     // delete all files
     $fs->delete_area_files($context->id);
+
+    //delete ratings
+    $rm = new rating_manager();
+    $ratingdeloptions = new stdclass();
+    $ratingdeloptions->contextid = $context->id;
+    $rm->delete_ratings($ratingdeloptions);
 
     glossary_grade_item_delete($glossary);
 
@@ -787,7 +792,7 @@ function glossary_get_entries_search($concept, $courseid) {
                                         e.glossaryid = g.id  AND
                                         ( (e.casesensitive != 0 AND LOWER(concept) = :conceptlower) OR
                                           (e.casesensitive = 0 and concept = :concept)) AND
-                                        (g.course = courseid2 OR g.globalglossary = 1) AND
+                                        (g.course = :courseid2 OR g.globalglossary = 1) AND
                                          e.usedynalink != 0 AND
                                          g.usedynalink != 0", $params);
 }
@@ -863,7 +868,7 @@ function glossary_print_entry_default ($entry, $glossary, $cm) {
  * Print glossary concept/term as a heading &lt;h3>
  * @param object $entry
  */
-function  glossary_print_entry_concept($entry) {
+function  glossary_print_entry_concept($entry, $return=false) {
     global $OUTPUT;
     $options = new object();
     $options->para = false;
@@ -871,7 +876,12 @@ function  glossary_print_entry_concept($entry) {
     if (!empty($entry->highlight)) {
         $text = highlight($entry->highlight, $text);
     }
-    echo $text;
+
+    if ($return) {
+        return $text;
+    } else {
+        echo $text;
+    }
 }
 
 /**
@@ -1094,7 +1104,7 @@ function  glossary_print_entry_lower_section($course, $cm, $glossary, $entry, $m
     if ($printicons) {
         $icons   = glossary_print_entry_icons($course, $cm, $glossary, $entry, $mode, $hook,'html');
     }
-    if ($aliases || $icons || $entry->rating) {
+    if ($aliases || $icons || !empty($entry->rating)) {
         echo '<table>';
         if ( $aliases ) {
             echo '<tr valign="top"><td class="aliases">' .
@@ -1784,40 +1794,6 @@ function glossary_sort_entries ( $entry0, $entry1 ) {
  * @return bool
  */
 function  glossary_print_entry_ratings($course, $entry) {
-/*    global $USER, $CFG, $DB;
-
-    $glossary = $DB->get_record('glossary', array('id'=>$entry->glossaryid));
-    $glossarymod = $DB->get_record('modules', array('name'=>'glossary'));
-    $cm = $DB->get_record_sql("SELECT *
-                                 FROM {course_modules}
-                                WHERE course = ? AND module = ? and instance = ?", array($course->id, $glossarymod->id, $glossary->id));
-
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
-
-    if (!empty($ratings) and isloggedin()) {
-        $useratings = true;
-        if ($entry->rating->settings->assesstimestart and $entry->rating->settings->assesstimefinish) {
-            if ($entry->timecreated < $ratings->assesstimestart or $entry->timecreated > $ratings->assesstimefinish) {
-                $useratings = false;
-            }
-        }
-        if ($useratings) {
-            if (has_capability('mod/glossary:viewrating', $context)) {
-                glossary_print_ratings_mean($entry->id, $ratings->scale);
-                if ($USER->id != $entry->userid) {
-                     glossary_print_rating_menu($entry->id, $USER->id, $ratings->scale);
-                     $ratingsmenuused = true;
-                }
-            } else if ($USER->id == $entry->userid) {
-                glossary_print_ratings_mean($entry->id, $ratings->scale);
-            } else if (!empty($ratings->allow) ) {
-                glossary_print_rating_menu($entry->id, $USER->id, $ratings->scale);
-                $ratingsmenuused = true;
-            }
-        }
-    }
-    return $ratingsmenuused;
-    */
     global $OUTPUT;
     if( !empty($entry->rating) ){
         echo $OUTPUT->render($entry->rating);
@@ -2127,10 +2103,17 @@ function glossary_count_unrated_entries($glossaryid, $userid) {
                                           FROM {glossary_entries}
                                          WHERE glossaryid = ? AND userid <> ?", array($glossaryid, $userid))) {
 
+        if (!$cm = get_coursemodule_from_instance('glossary', $glossaryid)) {
+            return 0;
+        }
+        $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        
         if ($rated = $DB->get_record_sql("SELECT count(*) as num
-                                            FROM {glossary_entries} e, {glossary_ratings} r
-                                           WHERE e.glossaryid = ? AND e.id = r.entryid
-                                                 AND r.userid = ?", array($glossaryid, $userid))) {
+                                            FROM {glossary_entries} e, {ratings} r
+                                           WHERE e.glossaryid = :glossaryid AND e.id = r.itemid
+                                                 AND r.userid = :userid and r.contextid = :contextid", 
+                array('glossaryid'=>$glossaryid, 'userid'=>$userid, 'contextid'=>$context->id))) {
+
             $difference = $entries->num - $rated->num;
             if ($difference > 0) {
                 return $difference;
@@ -2391,9 +2374,8 @@ function glossary_reset_userdata($data) {
     if (!empty($data->reset_glossary_all)
          or (!empty($data->reset_glossary_types) and in_array('main', $data->reset_glossary_types) and in_array('secondary', $data->reset_glossary_types))) {
 
-        //$DB->delete_records_select('glossary_ratings', "entryid IN ($allentriessql)", $params);
-        // TODO: delete comments
-        //$DB->delete_records_select('comments', "entryid IN ($allentriessql)", array());
+        $params[] = 'glossary_entry';
+        $DB->delete_records_select('comments', "itemid IN ($allentriessql) AND commentarea=?", $params);
         $DB->delete_records_select('glossary_entries', "glossaryid IN ($allglossariessql)", $params);
 
         // now get rid of all attachments
@@ -2426,8 +2408,8 @@ function glossary_reset_userdata($data) {
         $secondaryglossariessql = "$allglossariessql AND g.mainglossary=0";
 
         if (in_array('main', $data->reset_glossary_types)) {
-            //$DB->delete_records_select('glossary_ratings', "entryid IN ($mainentriessql)", $params);
-            $DB->delete_records_select('glossary_comments', "entryid IN ($mainentriessql)", $params);
+            $params[] = 'glossary_entry';
+            $DB->delete_records_select('comments', "itemid IN ($mainentriessql) AND commentarea=?", $params);
             $DB->delete_records_select('glossary_entries', "glossaryid IN ($mainglossariessql)", $params);
 
             if ($glossaries = $DB->get_records_sql($mainglossariessql, $params)) {
@@ -2452,8 +2434,8 @@ function glossary_reset_userdata($data) {
             $status[] = array('component'=>$componentstr, 'item'=>get_string('resetglossaries', 'glossary'), 'error'=>false);
 
         } else if (in_array('secondary', $data->reset_glossary_types)) {
-            $DB->delete_records_select('glossary_ratings', "entryid IN ($secondaryentriessql)", $params);
-            $DB->delete_records_select('glossary_comments', "entryid IN ($secondaryentriessql)", $params);
+            $params[] = 'glossary_entry';
+            $DB->delete_records_select('comments', "itemid IN ($secondaryentriessql) AND commentarea=?", $params);
             $DB->delete_records_select('glossary_entries', "glossaryid IN ($secondaryglossariessql)", $params);
             // remove exported source flag from entries in main glossary
             $DB->execute("UPDATE {glossary_entries
@@ -2497,13 +2479,16 @@ function glossary_reset_userdata($data) {
             foreach ($rs as $entry) {
                 if (array_key_exists($entry->userid, $notenrolled) or !$entry->userexists or $entry->userdeleted
                   or !is_enrolled($course_context , $entry->userid)) {
-                    $DB->delete_records('glossary_ratings', array('entryid'=>$entry->id));
-                    $DB->delete_records('glossary_comments', array('entryid'=>$entry->id));
+                    $DB->delete_records('comments', array('commentarea'=>'glossary_entry', 'itemid'=>$entry->id));
                     $DB->delete_records('glossary_entries', array('id'=>$entry->id));
 
                     if ($cm = get_coursemodule_from_instance('glossary', $entry->glossaryid)) {
                         $context = get_context_instance(CONTEXT_MODULE, $cm->id);
                         $fs->delete_area_files($context->id, 'glossary_attachment', $entry->id);
+
+                        //delete ratings
+                        $ratingdeloptions->contextid = $context->id;
+                        $rm->delete_ratings($ratingdeloptions);
                     }
                 }
             }
@@ -2514,7 +2499,20 @@ function glossary_reset_userdata($data) {
 
     // remove all ratings
     if (!empty($data->reset_glossary_ratings)) {
-        $DB->delete_records_select('glossary_ratings', "entryid IN ($allentriessql)", $params);
+        //remove ratings
+        if ($glossaries = $DB->get_records_sql($allglossariessql, $params)) {
+            foreach ($glossaries as $glossaryid=>$unused) {
+                if (!$cm = get_coursemodule_from_instance('glossary', $glossaryid)) {
+                    continue;
+                }
+                $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+
+                //delete ratings
+                $ratingdeloptions->contextid = $context->id;
+                $rm->delete_ratings($ratingdeloptions);
+            }
+        }
+
         // remove all grades from gradebook
         if (empty($data->reset_gradebook_grades)) {
             glossary_reset_gradebook($data->courseid);
@@ -2522,9 +2520,10 @@ function glossary_reset_userdata($data) {
         $status[] = array('component'=>$componentstr, 'item'=>get_string('deleteallratings'), 'error'=>false);
     }
 
-    // TODO: remove all comments
+    // remove comments
     if (!empty($data->reset_glossary_comments)) {
-        $DB->delete_records_select('glossary_comments', "entryid IN ($allentriessql)", $params);
+        $params[] = 'glossary_entry';
+        $DB->delete_records_select('comments', "itemid IN ($allentriessql) AND commentarea= ? ", $params);
         $status[] = array('component'=>$componentstr, 'item'=>get_string('deleteallcomments'), 'error'=>false);
     }
 

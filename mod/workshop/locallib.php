@@ -170,12 +170,12 @@ class workshop {
      */
     public function __construct(stdclass $dbrecord, stdclass $cm, stdclass $course, stdclass $context=null) {
         foreach ($dbrecord as $field => $value) {
-            $this->{$field} = $value;
+            if (property_exists('workshop', $field)) {
+                $this->{$field} = $value;
+            }
         }
         $this->cm           = $cm;
-        $this->course       = $course;  // beware - this replaces the standard course field in the instance table
-                                        // this is intentional - IMO there should be no such field as it violates
-                                        // 3rd normal form with no real performance gain
+        $this->course       = $course;
         if (is_null($context)) {
             $this->context = get_context_instance(CONTEXT_MODULE, $this->cm->id);
         } else {
@@ -311,6 +311,44 @@ class workshop {
      */
     public static function lcm($a, $b) {
         return ($a / self::gcd($a,$b)) * $b;
+    }
+
+    /**
+     * Returns an object suitable for strings containing dates/times
+     *
+     * The returned object contains properties date, datefullshort, datetime, ... containing the given
+     * timestamp formatted using strftimedate, strftimedatefullshort, strftimedatetime, ... from the
+     * current lang's langconfig.php
+     * This allows translators and administrators customize the date/time format.
+     *
+     * @param int $timestamp the timestamp in UTC
+     * @return stdclass
+     */
+    public static function timestamp_formats($timestamp) {
+        $formats = array('date', 'datefullshort', 'dateshort', 'datetime',
+                'datetimeshort', 'daydate', 'daydatetime', 'dayshort', 'daytime',
+                'monthyear', 'recent', 'recentfull', 'time');
+        $a = new stdclass();
+        foreach ($formats as $format) {
+            $a->{$format} = userdate($timestamp, get_string('strftime'.$format, 'langconfig'));
+        }
+        $day = userdate($timestamp, '%Y%m%d', 99, false);
+        $today = userdate(time(), '%Y%m%d', 99, false);
+        $tomorrow = userdate(time() + DAYSECS, '%Y%m%d', 99, false);
+        $yesterday = userdate(time() - DAYSECS, '%Y%m%d', 99, false);
+        $distance = (int)round(abs(time() - $timestamp) / DAYSECS);
+        if ($day == $today) {
+            $a->distanceday = get_string('daystoday', 'workshop');
+        } elseif ($day == $yesterday) {
+            $a->distanceday = get_string('daysyesterday', 'workshop');
+        } elseif ($day < $today) {
+            $a->distanceday = get_string('daysago', 'workshop', $distance);
+        } elseif ($day == $tomorrow) {
+            $a->distanceday = get_string('daystomorrow', 'workshop');
+        } elseif ($day > $today) {
+            $a->distanceday = get_string('daysleft', 'workshop', $distance);
+        }
+        return $a;
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -673,15 +711,23 @@ class workshop {
      *
      * @param stdclass $submission Submission object with at least id property
      * @param int $reviewerid User ID
-     * @param bool $bulk repeated inserts into DB expected
      * @param int $weight of the new assessment, from 0 to 16
+     * @param bool $bulk repeated inserts into DB expected
      * @return int ID of the new assessment or an error code
      */
-    public function add_allocation(stdclass $submission, $reviewerid, $bulk=false, $weight=1) {
+    public function add_allocation(stdclass $submission, $reviewerid, $weight=1, $bulk=false) {
         global $DB;
 
         if ($DB->record_exists('workshop_assessments', array('submissionid' => $submission->id, 'reviewerid' => $reviewerid))) {
             return self::ALLOCATION_EXISTS;
+        }
+
+        $weight = (int)$weight;
+        if ($weight < 0) {
+            $weight = 0;
+        }
+        if ($weight > 16) {
+            $weight = 16;
         }
 
         $now = time();
@@ -1679,7 +1725,9 @@ class workshop_user_plan implements renderable {
 
         $this->workshop = $workshop;
 
-        // Prepare tasks for the setup phase
+        //---------------------------------------------------------
+        // * SETUP | submission | assessment | evaluation | closed
+        //---------------------------------------------------------
         $phase = new stdclass();
         $phase->title = get_string('phasesetup', 'workshop');
         $phase->tasks = array();
@@ -1728,7 +1776,9 @@ class workshop_user_plan implements renderable {
         }
         $this->phases[workshop::PHASE_SETUP] = $phase;
 
-        // Prepare tasks for the submission phase
+        //---------------------------------------------------------
+        // setup | * SUBMISSION | assessment | evaluation | closed
+        //---------------------------------------------------------
         $phase = new stdclass();
         $phase->title = get_string('phasesubmission', 'workshop');
         $phase->tasks = array();
@@ -1794,9 +1844,23 @@ class workshop_user_plan implements renderable {
                 $phase->tasks['allocateinfo'] = $task;
             }
         }
+        if ($this->workshop->submissionstart) {
+            $task = new stdclass();
+            $task->title = get_string('submissionstartdatetime', 'workshop', workshop::timestamp_formats($this->workshop->submissionstart));
+            $task->completed = 'info';
+            $phase->tasks['submissionstartdatetime'] = $task;
+        }
+        if ($this->workshop->submissionend) {
+            $task = new stdclass();
+            $task->title = get_string('submissionenddatetime', 'workshop', workshop::timestamp_formats($this->workshop->submissionend));
+            $task->completed = 'info';
+            $phase->tasks['submissionenddatetime'] = $task;
+        }
         $this->phases[workshop::PHASE_SUBMISSION] = $phase;
 
-        // Prepare tasks for the peer-assessment phase (includes eventual self-assessments)
+        //---------------------------------------------------------
+        // setup | submission | * ASSESSMENT | evaluation | closed
+        //---------------------------------------------------------
         $phase = new stdclass();
         $phase->title = get_string('phaseassessment', 'workshop');
         $phase->tasks = array();
@@ -1824,7 +1888,7 @@ class workshop_user_plan implements renderable {
             $task = new stdclass();
             if ($numofpeerstodo == 0) {
                 $task->completed = true;
-            } elseif ($this->workshop->phase > self::PHASE_ASSESSMENT) {
+            } elseif ($this->workshop->phase > workshop::PHASE_ASSESSMENT) {
                 $task->completed = false;
             }
             $a = new stdclass();
@@ -1839,15 +1903,29 @@ class workshop_user_plan implements renderable {
             $task = new stdclass();
             if ($numofselftodo == 0) {
                 $task->completed = true;
-            } elseif ($this->workshop->phase > self::PHASE_ASSESSMENT) {
+            } elseif ($this->workshop->phase > workshop::PHASE_ASSESSMENT) {
                 $task->completed = false;
             }
             $task->title = get_string('taskassessself', 'workshop');
             $phase->tasks['assessself'] = $task;
         }
+        if ($this->workshop->assessmentstart) {
+            $task = new stdclass();
+            $task->title = get_string('assessmentstartdatetime', 'workshop', workshop::timestamp_formats($this->workshop->assessmentstart));
+            $task->completed = 'info';
+            $phase->tasks['assessmentstartdatetime'] = $task;
+        }
+        if ($this->workshop->assessmentend) {
+            $task = new stdclass();
+            $task->title = get_string('assessmentenddatetime', 'workshop', workshop::timestamp_formats($this->workshop->assessmentend));
+            $task->completed = 'info';
+            $phase->tasks['assessmentenddatetime'] = $task;
+        }
         $this->phases[workshop::PHASE_ASSESSMENT] = $phase;
 
-        // Prepare tasks for the grading evaluation phase
+        //---------------------------------------------------------
+        // setup | submission | assessment | * EVALUATION | closed
+        //---------------------------------------------------------
         $phase = new stdclass();
         $phase->title = get_string('phaseevaluation', 'workshop');
         $phase->tasks = array();
@@ -1892,7 +1970,9 @@ class workshop_user_plan implements renderable {
         }
         $this->phases[workshop::PHASE_EVALUATION] = $phase;
 
-        // Prepare tasks for the "workshop closed" phase - todo
+        //---------------------------------------------------------
+        // setup | submission | assessment | evaluation | * CLOSED
+        //---------------------------------------------------------
         $phase = new stdclass();
         $phase->title = get_string('phaseclosed', 'workshop');
         $phase->tasks = array();

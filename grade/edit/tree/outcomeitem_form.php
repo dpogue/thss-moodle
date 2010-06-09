@@ -34,7 +34,7 @@ class edit_outcomeitem_form extends moodleform {
         $mform->addRule('itemname', get_string('required'), 'required', null, 'client');
 
         $mform->addElement('text', 'iteminfo', get_string('iteminfo', 'grades'));
-        $mform->setHelpButton('iteminfo', array('iteminfo', get_string('iteminfo', 'grades'), 'grade'), true);
+        $mform->addHelpButton('iteminfo', 'iteminfo', 'grades');
 
         $mform->addElement('text', 'idnumber', get_string('idnumbermod'));
         $mform->addHelpButton('idnumber', 'idnumbermod');
@@ -60,22 +60,20 @@ class edit_outcomeitem_form extends moodleform {
             }
         }
         $mform->addElement('select', 'cmid', get_string('linkedactivity', 'grades'), $options);
-        $mform->setHelpButton('cmid', array('linkedactivity', get_string('linkedactivity', 'grades'), 'grade'), true);
+        $mform->addHelpButton('cmid', 'linkedactivity', 'grades');
         $mform->setDefault('cmid', 0);
 
         /// hiding
         /// advcheckbox is not compatible with disabledIf !!
         $mform->addElement('checkbox', 'hidden', get_string('hidden', 'grades'));
-        $mform->setHelpButton('hidden', array('hidden', get_string('hidden', 'grades'), 'grade'));
+        $mform->addHelpButton('hidden', 'hidden', 'grades');
         $mform->addElement('date_time_selector', 'hiddenuntil', get_string('hiddenuntil', 'grades'), array('optional'=>true));
-        $mform->setHelpButton('hiddenuntil', array('hiddenuntil', get_string('hiddenuntil', 'grades'), 'grade'));
         $mform->disabledIf('hidden', 'hiddenuntil[off]', 'notchecked');
 
         //locking
         $mform->addElement('advcheckbox', 'locked', get_string('locked', 'grades'));
-        $mform->setHelpButton('locked', array('locked', get_string('locked', 'grades'), 'grade'));
+        $mform->addHelpButton('locked', 'locked', 'grades');
         $mform->addElement('date_time_selector', 'locktime', get_string('locktime', 'grades'), array('optional'=>true));
-        $mform->setHelpButton('locktime', array('lockedafter', get_string('locktime', 'grades'), 'grade'));
 
 /// parent category related settings
         $mform->addElement('header', 'headerparent', get_string('parentcategory', 'grades'));

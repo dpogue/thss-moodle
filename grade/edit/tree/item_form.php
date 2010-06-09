@@ -36,7 +36,7 @@ class edit_item_form extends moodleform {
 
         $mform->addElement('text', 'itemname', get_string('itemname', 'grades'));
         $mform->addElement('text', 'iteminfo', get_string('iteminfo', 'grades'));
-        $mform->setHelpButton('iteminfo', array('iteminfo', get_string('iteminfo', 'grades'), 'grade'), true);
+        $mform->addHelpButton('iteminfo', 'iteminfo', 'grades');
 
         $mform->addElement('text', 'idnumber', get_string('idnumbermod'));
         $mform->addHelpButton('idnumber', 'idnumbermod');
@@ -138,17 +138,15 @@ class edit_item_form extends moodleform {
         /// hiding
         // advcheckbox is not compatible with disabledIf!
         $mform->addElement('checkbox', 'hidden', get_string('hidden', 'grades'));
-        $mform->setHelpButton('hidden', array('hidden', get_string('hidden', 'grades'), 'grade'));
+        $mform->addHelpButton('hidden', 'hidden', 'grades');
         $mform->addElement('date_time_selector', 'hiddenuntil', get_string('hiddenuntil', 'grades'), array('optional'=>true));
-        $mform->setHelpButton('hiddenuntil', array('hiddenuntil', get_string('hiddenuntil', 'grades'), 'grade'));
         $mform->disabledIf('hidden', 'hiddenuntil[off]', 'notchecked');
 
         /// locking
         $mform->addElement('advcheckbox', 'locked', get_string('locked', 'grades'));
-        $mform->setHelpButton('locked', array('locked', get_string('locked', 'grades'), 'grade'));
+        $mform->addHelpButton('locked', 'locked', 'grades');
 
         $mform->addElement('date_time_selector', 'locktime', get_string('locktime', 'grades'), array('optional'=>true));
-        $mform->setHelpButton('locktime', array('lockedafter', get_string('locktime', 'grades'), 'grade'));
         $mform->disabledIf('locktime', 'gradetype', 'eq', GRADE_TYPE_NONE);
 
 /// parent category related settings
@@ -224,7 +222,11 @@ class edit_item_form extends moodleform {
             } else {
                 if ($grade_item->is_external_item()) {
                     // following items are set up from modules and should not be overrided by user
-                    $mform->hardFreeze('itemname,idnumber,gradetype,grademax,grademin,scaleid');
+                    $mform->hardFreeze('itemname,gradetype,grademax,grademin,scaleid');
+                    if ($grade_item->itemnumber == 0) {
+                        // the idnumber of grade itemnumber 0 is synced with course_modules
+                        $mform->hardFreeze('idnumber');
+                    }
                     //$mform->removeElement('calculation');
                 }
             }

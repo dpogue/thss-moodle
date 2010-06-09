@@ -82,6 +82,11 @@ class feedback_item_multichoicerated extends feedback_item_base {
             return false;
         }
         
+        if($item->clone_item) {
+            $item->id = ''; //to clone this item
+            $item->position++;
+        }
+        
         $this->set_ignoreempty($item, $item->ignoreempty);        
         $this->set_hidenoselect($item, $item->hidenoselect);
         
@@ -582,6 +587,8 @@ class feedback_item_multichoicerated extends feedback_item_base {
         return false;
     }
     
+    function can_switch_require() {
+        return true;
+    }
 
 }
-?>

@@ -554,7 +554,7 @@ abstract class moodleform {
 
         $element = $this->_form->getElement($elname);
 
-        if ($element instanceof MoodleQuickForm_filepicker) {
+        if ($element instanceof MoodleQuickForm_filepicker || $element instanceof MoodleQuickForm_filemanager) {
             $values = $this->_form->exportValues($elname);
             if (empty($values[$elname])) {
                 return false;
@@ -604,7 +604,7 @@ abstract class moodleform {
 
         $element = $this->_form->getElement($elname);
 
-        if ($element instanceof MoodleQuickForm_filepicker) {
+        if ($element instanceof MoodleQuickForm_filepicker || $element instanceof MoodleQuickForm_filemanager) {
             $values = $this->_form->exportValues($elname);
             if (empty($values[$elname])) {
                 return false;
@@ -624,6 +624,33 @@ abstract class moodleform {
         }
 
         return false;
+    }
+
+    /**
+     * Dispose form element draft files
+     *
+     * @global object $USER
+     * @param string $elname name of element
+     */
+    function dispose($elname) {
+        global $USER;
+
+        if (!$this->is_submitted() or !$this->is_validated()) {
+            return false;
+        }
+
+        $element = $this->_form->getElement($elname);
+
+        if ($element instanceof MoodleQuickForm_filepicker || $element instanceof MoodleQuickForm_filemanager) {
+            $values = $this->_form->exportValues($elname);
+            if (empty($values[$elname])) {
+                return false;
+            }
+            $draftid = $values[$elname];
+            $fs = get_file_storage();
+            $context = get_context_instance(CONTEXT_USER, $USER->id);
+            $fs->delete_area_files($context->id, 'user_draft', $draftid);
+        }
     }
 
     /**
@@ -716,7 +743,7 @@ abstract class moodleform {
 
         $element = $this->_form->getElement($elname);
 
-        if ($element instanceof MoodleQuickForm_filepicker) {
+        if ($element instanceof MoodleQuickForm_filepicker || $element instanceof MoodleQuickForm_filemanager) {
             $values = $this->_form->exportValues($elname);
             if (empty($values[$elname])) {
                 return false;
@@ -2285,8 +2312,6 @@ MoodleQuickForm::registerElementType('button', "$CFG->libdir/form/button.php", '
 MoodleQuickForm::registerElementType('cancel', "$CFG->libdir/form/cancel.php", 'MoodleQuickForm_cancel');
 MoodleQuickForm::registerElementType('searchableselector', "$CFG->libdir/form/searchableselector.php", 'MoodleQuickForm_searchableselector');
 MoodleQuickForm::registerElementType('checkbox', "$CFG->libdir/form/checkbox.php", 'MoodleQuickForm_checkbox');
-MoodleQuickForm::registerElementType('choosecoursefile', "$CFG->libdir/form/choosecoursefile.php", 'MoodleQuickForm_choosecoursefile');
-MoodleQuickForm::registerElementType('choosecoursefileorimsrepo', "$CFG->libdir/form/choosecoursefileorimsrepo.php", 'MoodleQuickForm_choosecoursefileorimsrepo');
 MoodleQuickForm::registerElementType('date_selector', "$CFG->libdir/form/dateselector.php", 'MoodleQuickForm_date_selector');
 MoodleQuickForm::registerElementType('date_time_selector', "$CFG->libdir/form/datetimeselector.php", 'MoodleQuickForm_date_time_selector');
 MoodleQuickForm::registerElementType('duration', "$CFG->libdir/form/duration.php", 'MoodleQuickForm_duration');

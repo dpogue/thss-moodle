@@ -33,7 +33,7 @@ class feedback_item_textfield extends feedback_item_base {
         $item->presentation = empty($item->presentation) ? '' : $item->presentation;
         
         $sizeAndLength = explode('|',$item->presentation);
-        $itemsize = isset($sizeAndLength[0]) ? $sizeAndLength[0] : 30;
+        $itemsize = (isset($sizeAndLength[0]) AND $sizeAndLength[0] >= 5) ? $sizeAndLength[0] : 30;
         $itemlength = isset($sizeAndLength[1]) ? $sizeAndLength[1] : 5;
         $item->itemsize = $itemsize;
         $item->itemmaxlength = $itemlength;
@@ -71,6 +71,11 @@ class feedback_item_textfield extends feedback_item_base {
         
         if(!$item = $this->item_form->get_data()) {
             return false;
+        }
+        
+        if($item->clone_item) {
+            $item->id = ''; //to clone this item
+            $item->position++;
         }
         
         $item->hasvalue = $this->get_hasvalue();
@@ -264,5 +269,8 @@ class feedback_item_textfield extends feedback_item_base {
     function get_hasvalue() {
         return 1;
     }
+
+    function can_switch_require() {
+        return true;
+    }
 }
-?>

@@ -85,7 +85,7 @@ class edit_category_form extends moodleform {
         }
 
         $mform->addElement('select', 'keephigh', get_string('keephigh', 'grades'), $options);
-        $mform->setHelpButton('keephigh', array('keephigh', get_string('keephigh', 'grades'), 'grade'), true);
+        $mform->addHelpButton('keephigh', 'keephigh', 'grades');
         if ((int)$CFG->grade_keephigh_flag & 2) {
             $mform->setAdvanced('keephigh');
         }
@@ -105,7 +105,7 @@ class edit_category_form extends moodleform {
 
         $mform->addElement('text', 'grade_item_itemname', get_string('itemname', 'grades'));
         $mform->addElement('text', 'grade_item_iteminfo', get_string('iteminfo', 'grades'));
-        $mform->setHelpButton('grade_item_iteminfo', array('iteminfo', get_string('iteminfo', 'grades'), 'grade'), true);
+        $mform->addHelpButton('grade_item_iteminfo', 'iteminfo', 'grades');
 
         $mform->addElement('text', 'grade_item_idnumber', get_string('idnumbermod'));
         $mform->addHelpButton('grade_item_idnumber', 'idnumbermod');
@@ -200,17 +200,15 @@ class edit_category_form extends moodleform {
         /// hiding
         // advcheckbox is not compatible with disabledIf!
         $mform->addElement('checkbox', 'grade_item_hidden', get_string('hidden', 'grades'));
-        $mform->setHelpButton('grade_item_hidden', array('hidden', get_string('hidden', 'grades'), 'grade'));
+        $mform->addHelpButton('grade_item_hidden', 'hidden', 'grades');
         $mform->addElement('date_time_selector', 'grade_item_hiddenuntil', get_string('hiddenuntil', 'grades'), array('optional'=>true));
-        $mform->setHelpButton('grade_item_hiddenuntil', array('hiddenuntil', get_string('hiddenuntil', 'grades'), 'grade'));
         $mform->disabledIf('grade_item_hidden', 'grade_item_hiddenuntil[off]', 'notchecked');
 
         /// locking
         $mform->addElement('checkbox', 'grade_item_locked', get_string('locked', 'grades'));
-        $mform->setHelpButton('grade_item_locked', array('locked', get_string('locked', 'grades'), 'grade'));
+        $mform->addHelpButton('grade_item_locked', 'locked', 'grades');
 
         $mform->addElement('date_time_selector', 'grade_item_locktime', get_string('locktime', 'grades'), array('optional'=>true));
-        $mform->setHelpButton('grade_item_locktime', array('lockedafter', get_string('locktime', 'grades'), 'grade'));
         $mform->disabledIf('grade_item_locktime', 'grade_item_gradetype', 'eq', GRADE_TYPE_NONE);
 
 /// parent category related settings

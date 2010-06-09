@@ -33,7 +33,7 @@ class feedback_item_textarea extends feedback_item_base {
         $item->presentation = empty($item->presentation) ? '' : $item->presentation;
         
         $widthAndHeight = explode('|',$item->presentation);
-        $itemwidth = isset($widthAndHeight[0]) ? $widthAndHeight[0] : 30;
+        $itemwidth = (isset($widthAndHeight[0]) AND $widthAndHeight[0] >= 5) ? $widthAndHeight[0] : 30;
         $itemheight = isset($widthAndHeight[1]) ? $widthAndHeight[1] : 5;
         $item->itemwidth = $itemwidth;
         $item->itemheight = $itemheight;
@@ -73,6 +73,11 @@ class feedback_item_textarea extends feedback_item_base {
             return false;
         }
         
+        if($item->clone_item) {
+            $item->id = ''; //to clone this item
+            $item->position++;
+        }
+        
         $item->hasvalue = $this->get_hasvalue();
         if(!$item->id) {
             $item->id = $DB->insert_record('feedback_item', $item);
@@ -85,7 +90,7 @@ class feedback_item_textarea extends feedback_item_base {
 
 
     //liefert eine Struktur ->name, ->data = array(mit Antworten)
-    function get_analysed($item, $groupid, $courseid = false) {
+    function get_analysed($item, $groupid = false, $courseid = false) {
         global $DB;
 
         $aVal = null;
@@ -270,5 +275,8 @@ class feedback_item_textarea extends feedback_item_base {
     function get_hasvalue() {
         return 1;
     }
+    
+    function can_switch_require() {
+        return true;
+    }
 }
-?>
