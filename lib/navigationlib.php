@@ -893,6 +893,7 @@ class global_navigation extends navigation_node {
         if ($this->initialised || during_initial_install()) {
             return true;
         }
+        $this->initialised = true;
 
         // Set up the five base root nodes. These are nodes where we will put our
         // content and are as follows:
@@ -1084,8 +1085,6 @@ class global_navigation extends navigation_node {
                 $this->children->add($child);
             }
         }
-
-        $this->initialised = true;
         return true;
     }
     /**
@@ -1482,7 +1481,7 @@ class global_navigation extends navigation_node {
                 $usersnode->action = new moodle_url('/user/index.php', array('id'=>$course->id));
             }
             // Add a branch for the current user
-            $usernode = $usersnode->add(fullname($user, true));
+            $usernode = $usersnode->add(fullname($user, true), null, self::TYPE_USER, null, $user->id);
         }
 
         if ($this->page->context->contextlevel == CONTEXT_USER && $user->id == $this->page->context->instanceid) {
@@ -1636,7 +1635,15 @@ class global_navigation extends navigation_node {
      */
     public function extend_for_user($user) {
         $this->extendforuser[] = $user;
-        $this->page->settingsnav->extend_for_user($user->id);
+    }
+
+    /**
+     * Returns all of the users the navigation is being extended for
+     *
+     * @return array
+     */
+    public function get_extending_users() {
+        return $this->extendforuser;
     }
     /**
      * Adds the given course to the navigation structure.
@@ -1868,6 +1875,16 @@ class global_navigation extends navigation_node {
             }
         }
         return true;
+    }
+
+    public function get($key, $type = null) {
+        $this->initialise();
+        return parent::get($key, $type);
+    }
+
+    public function find($key, $type) {
+        $this->initialise();
+        return parent::find($key, $type);
     }
 }
 
@@ -2942,10 +2959,24 @@ class settings_navigation extends navigation_node {
             return false;
         }
 
-        if (count($this->userstoextendfor) > 0) {
+        $navusers = $this->page->navigation->get_extending_users();
+
+        if (count($this->userstoextendfor) > 0 || count($navusers) > 0) {
             $usernode = null;
             foreach ($this->userstoextendfor as $userid) {
+                if ($userid == $USER->id) {
+                    continue;
+                }
                 $node = $this->generate_user_settings($courseid, $userid, 'userviewingsettings');
+                if (is_null($usernode)) {
+                    $usernode = $node;
+                }
+            }
+            foreach ($navusers as $user) {
+                if ($user->id == $USER->id) {
+                    continue;
+                }
+                $node = $this->generate_user_settings($courseid, $user->id, 'userviewingsettings');
                 if (is_null($usernode)) {
                     $usernode = $node;
                 }
@@ -3030,8 +3061,13 @@ class settings_navigation extends navigation_node {
 
         $fullname = fullname($user, has_capability('moodle/site:viewfullnames', $this->page->context));
 
+        $key = $gstitle;
+        if ($gstitle != 'usercurrentsettings') {
+            $key .= $userid;
+        }
+
         // Add a user setting branch
-        $usersetting = $this->add(get_string($gstitle, 'moodle', $fullname), null, self::TYPE_CONTAINER, null, $gstitle);
+        $usersetting = $this->add(get_string($gstitle, 'moodle', $fullname), null, self::TYPE_CONTAINER, null, $key);
         $usersetting->id = 'usersettings';
 
         // Check if the user has been deleted
