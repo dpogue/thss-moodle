@@ -51,6 +51,10 @@ if ($id) { // submission is specified
         $submission = new stdclass();
         $submission->id = null;
         $submission->authorid = $USER->id;
+        $submission->grade = null;
+        $submission->gradeover = null;
+        $submission->feedbackauthor = null;
+        $submission->feedbackauthorformat = FORMAT_HTML;
     }
 }
 
@@ -60,7 +64,7 @@ $cansubmit      = has_capability('mod/workshop:submit', $workshop->context);
 $canallocate    = has_capability('mod/workshop:allocate', $workshop->context);
 $canoverride    = (($workshop->phase == workshop::PHASE_EVALUATION) and has_capability('mod/workshop:overridegrades', $workshop->context));
 $isreviewer     = $DB->record_exists('workshop_assessments', array('submissionid' => $submission->id, 'reviewerid' => $USER->id));
-$editable       = $cansubmit and $ownsubmission and $workshop->submitting_allowed();
+$editable       = ($cansubmit and $ownsubmission and $workshop->submitting_allowed());
 if ($editable and $workshop->useexamples and $workshop->examplesmode == workshop::EXAMPLES_BEFORE_SUBMISSION
         and !has_capability('mod/workshop:manageexamples', $workshop->context)) {
     // check that all required examples have been assessed by the user

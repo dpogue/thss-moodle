@@ -1878,12 +1878,16 @@ class global_navigation extends navigation_node {
     }
 
     public function get($key, $type = null) {
-        $this->initialise();
+        if (!$this->initialised) {
+            $this->initialise();
+        }
         return parent::get($key, $type);
     }
 
     public function find($key, $type) {
-        $this->initialise();
+        if (!$this->initialised) {
+            $this->initialise();
+        }
         return parent::find($key, $type);
     }
 }
@@ -1912,14 +1916,11 @@ class global_navigation_for_ajax extends global_navigation {
     /**
      * Constructs the navigation for use in AJAX request
      */
-    public function __construct($page) {
-        global $SITE;
+    public function __construct($page, $branchtype, $id) {
         $this->page = $page;
         $this->cache = new navigation_cache(NAVIGATION_CACHE_NAME);
         $this->children = new navigation_node_collection();
-        $this->rootnodes = array();
-        $this->rootnodes['site']      = $this->add_course($SITE);
-        $this->rootnodes['courses'] = $this->add(get_string('courses'), null, self::TYPE_ROOTNODE, null, 'courses');
+        $this->initialise($branchtype, $id);
     }
     /**
      * Initialise the navigation given the type and id for the branch to expand.
@@ -1929,11 +1930,16 @@ class global_navigation_for_ajax extends global_navigation {
      * @return array The expandable nodes
      */
     public function initialise($branchtype, $id) {
-        global $CFG, $DB, $PAGE;
+        global $CFG, $DB, $PAGE, $SITE;
 
         if ($this->initialised || during_initial_install()) {
             return $this->expandable;
         }
+        $this->initialised = true;
+
+        $this->rootnodes = array();
+        $this->rootnodes['site']      = $this->add_course($SITE);
+        $this->rootnodes['courses'] = $this->add(get_string('courses'), null, self::TYPE_ROOTNODE, null, 'courses');
 
         // Branchtype will be one of navigation_node::TYPE_*
         switch ($branchtype) {
@@ -1999,6 +2005,10 @@ class global_navigation_for_ajax extends global_navigation {
                 return $this->expandable;
         }
         $this->find_expandable($this->expandable);
+        return $this->expandable;
+    }
+
+    public function get_expandable() {
         return $this->expandable;
     }
 }
@@ -2589,82 +2599,8 @@ class settings_navigation extends navigation_node {
             $coursenode->add($editstring, $url, self::TYPE_SETTING, null, null, new pix_icon('i/edit', ''));
 
             if ($this->page->user_is_editing()) {
-                // Add `add` resources|activities branches
-                $structurefile = $CFG->dirroot.'/course/format/'.$course->format.'/lib.php';
-                if (file_exists($structurefile)) {
-                    require_once($structurefile);
-                    $formatstring = call_user_func('callback_'.$course->format.'_definition');
-                    $formatidentifier = optional_param(call_user_func('callback_'.$course->format.'_request_key'), 0, PARAM_INT);
-                } else {
-                    $formatstring = get_string('topic');
-                    $formatidentifier = optional_param('topic', 0, PARAM_INT);
-                }
-                
-                $sections = get_all_sections($course->id);
-
-                $addresource = $this->add(get_string('addresource'));
-                $addactivity = $this->add(get_string('addactivity'));
-                if ($formatidentifier!==0) {
-                    $addresource->force_open();
-                    $addactivity->force_open();
-                }
-
-                if (!$this->cache->cached('course'.$course->id.'resources')) {
-                    $this->get_course_modules($course);
-                }
-                $resources = $this->cache->{'course'.$course->id.'resources'};
-                $activities = $this->cache->{'course'.$course->id.'activities'};
-
-                $textlib = textlib_get_instance();
-
-                foreach ($sections as $section) {
-                    if ($formatidentifier !== 0 && $section->section != $formatidentifier) {
-                        continue;
-                    }
-                    $sectionurl = new moodle_url('/course/view.php', array('id'=>$course->id, $formatstring=>$section->section));
-                    if ($section->section == 0) {
-                        $sectionresources = $addresource->add(get_string('course'), $sectionurl, self::TYPE_SETTING);
-                        $sectionactivities = $addactivity->add(get_string('course'), $sectionurl, self::TYPE_SETTING);
-                    } else {
-                        $sectionresources = $addresource->add($formatstring.' '.$section->section, $sectionurl, self::TYPE_SETTING);
-                        $sectionactivities = $addactivity->add($formatstring.' '.$section->section, $sectionurl, self::TYPE_SETTING);
-                    }
-                    foreach ($resources as $value=>$resource) {
-                        $url = new moodle_url('/course/mod.php', array('id'=>$course->id, 'sesskey'=>sesskey(), 'section'=>$section->section));
-                        $pos = strpos($value, '&type=');
-                        if ($pos!==false) {
-                            $url->param('add', $textlib->substr($value, 0,$pos));
-                            $url->param('type', $textlib->substr($value, $pos+6));
-                        } else {
-                            $url->param('add', $value);
-                        }
-                        $sectionresources->add($resource, $url, self::TYPE_SETTING);
-                    }
-                    $subbranch = false;
-                    foreach ($activities as $activityname=>$activity) {
-                        if ($activity==='--') {
-                            $subbranch = false;
-                            continue;
-                        }
-                        if (strpos($activity, '--')===0) {
-                            $subbranch = $sectionactivities->add(trim($activity, '-'));
-                            continue;
-                        }
-                        $url = new moodle_url('/course/mod.php', array('id'=>$course->id, 'sesskey'=>sesskey(), 'section'=>$section->section));
-                        $pos = strpos($activityname, '&type=');
-                        if ($pos!==false) {
-                            $url->param('add', $textlib->substr($activityname, 0,$pos));
-                            $url->param('type', $textlib->substr($activityname, $pos+6));
-                        } else {
-                            $url->param('add', $activityname);
-                        }
-                        if ($subbranch !== false) {
-                            $subbranch->add($activity, $url, self::TYPE_SETTING);
-                        } else {
-                            $sectionactivities->add($activity, $url, self::TYPE_SETTING);
-                        }
-                    }
-                }
+                // Removed as per MDL-22732
+                // $this->add_course_editing_links($course);
             }
 
             // Add the course settings link
@@ -2857,6 +2793,91 @@ class settings_navigation extends navigation_node {
         }
         // Return we are done
         return $coursenode;
+    }
+
+    /**
+     * Adds branches and links to the settings navigaiton to add course activities
+     * and resources.
+     *
+     * @param stdClass $course
+     */
+    protected function add_course_editing_links($course) {
+        // Add `add` resources|activities branches
+        $structurefile = $CFG->dirroot.'/course/format/'.$course->format.'/lib.php';
+        if (file_exists($structurefile)) {
+            require_once($structurefile);
+            $formatstring = call_user_func('callback_'.$course->format.'_definition');
+            $formatidentifier = optional_param(call_user_func('callback_'.$course->format.'_request_key'), 0, PARAM_INT);
+        } else {
+            $formatstring = get_string('topic');
+            $formatidentifier = optional_param('topic', 0, PARAM_INT);
+        }
+
+        $sections = get_all_sections($course->id);
+
+        $addresource = $this->add(get_string('addresource'));
+        $addactivity = $this->add(get_string('addactivity'));
+        if ($formatidentifier!==0) {
+            $addresource->force_open();
+            $addactivity->force_open();
+        }
+
+        if (!$this->cache->cached('course'.$course->id.'resources')) {
+            $this->get_course_modules($course);
+        }
+        $resources = $this->cache->{'course'.$course->id.'resources'};
+        $activities = $this->cache->{'course'.$course->id.'activities'};
+
+        $textlib = textlib_get_instance();
+
+        foreach ($sections as $section) {
+            if ($formatidentifier !== 0 && $section->section != $formatidentifier) {
+                continue;
+            }
+            $sectionurl = new moodle_url('/course/view.php', array('id'=>$course->id, $formatstring=>$section->section));
+            if ($section->section == 0) {
+                $sectionresources = $addresource->add(get_string('course'), $sectionurl, self::TYPE_SETTING);
+                $sectionactivities = $addactivity->add(get_string('course'), $sectionurl, self::TYPE_SETTING);
+            } else {
+                $sectionresources = $addresource->add($formatstring.' '.$section->section, $sectionurl, self::TYPE_SETTING);
+                $sectionactivities = $addactivity->add($formatstring.' '.$section->section, $sectionurl, self::TYPE_SETTING);
+            }
+            foreach ($resources as $value=>$resource) {
+                $url = new moodle_url('/course/mod.php', array('id'=>$course->id, 'sesskey'=>sesskey(), 'section'=>$section->section));
+                $pos = strpos($value, '&type=');
+                if ($pos!==false) {
+                    $url->param('add', $textlib->substr($value, 0,$pos));
+                    $url->param('type', $textlib->substr($value, $pos+6));
+                } else {
+                    $url->param('add', $value);
+                }
+                $sectionresources->add($resource, $url, self::TYPE_SETTING);
+            }
+            $subbranch = false;
+            foreach ($activities as $activityname=>$activity) {
+                if ($activity==='--') {
+                    $subbranch = false;
+                    continue;
+                }
+                if (strpos($activity, '--')===0) {
+                    $subbranch = $sectionactivities->add(trim($activity, '-'));
+                    continue;
+                }
+                $url = new moodle_url('/course/mod.php', array('id'=>$course->id, 'sesskey'=>sesskey(), 'section'=>$section->section));
+                $pos = strpos($activityname, '&type=');
+                if ($pos!==false) {
+                    $url->param('add', $textlib->substr($activityname, 0,$pos));
+                    $url->param('type', $textlib->substr($activityname, $pos+6));
+                } else {
+                    $url->param('add', $activityname);
+                }
+                if ($subbranch !== false) {
+                    $subbranch->add($activity, $url, self::TYPE_SETTING);
+                } else {
+                    $sectionactivities->add($activity, $url, self::TYPE_SETTING);
+                }
+            }
+        }
     }
 
     /**
