@@ -137,9 +137,7 @@ case workshop::PHASE_SUBMISSION:
         print_collapsible_region_end();
     }
 
-    if ($workshop->submitting_allowed()
-                and has_capability('mod/workshop:submit', $PAGE->context)
-                        and $examplesdone) {
+    if (has_capability('mod/workshop:submit', $PAGE->context) and $examplesdone) {
         print_collapsible_region_start('', 'workshop-viewlet-ownsubmission', get_string('yoursubmission', 'workshop'));
         echo $output->box_start('generalbox ownsubmission');
         if ($submission = $workshop->get_submission_by_author($USER->id)) {
@@ -261,16 +259,16 @@ case workshop::PHASE_ASSESSMENT:
                 $submission->authorlastname     = $assessment->authorlastname;
                 $submission->authorpicture      = $assessment->authorpicture;
                 $submission->authorimagealt     = $assessment->authorimagealt;
-
                 if (is_null($assessment->grade)) {
-                    $class      = ' notgraded';
-                    $status     = get_string('nogradeyet', 'workshop');
+                    $class = ' notgraded';
+                    $submission->status = 'notgraded';
                     $buttontext = get_string('assess', 'workshop');
                 } else {
-                    $class      = ' graded';
-                    $status     = get_string('alreadygraded', 'workshop');
+                    $class = ' graded';
+                    $submission->status = 'graded';
                     $buttontext = get_string('reassess', 'workshop');
                 }
+
                 echo $output->box_start('generalbox assessment-summary' . $class);
                 echo $output->submission_summary($submission, $shownames);
                 $aurl = $workshop->assess_url($assessment->id);
@@ -319,8 +317,102 @@ case workshop::PHASE_EVALUATION:
             echo $output->render($pagingbar);
         }
     }
+    if (has_capability('mod/workshop:submit', $PAGE->context)) {
+        print_collapsible_region_start('', 'workshop-viewlet-ownsubmission', get_string('yoursubmission', 'workshop'));
+        echo $output->box_start('generalbox ownsubmission');
+        if ($submission = $workshop->get_submission_by_author($USER->id)) {
+            echo $output->submission_summary($submission, true);
+        } else {
+            echo $output->container(get_string('noyoursubmission', 'workshop'));
+        }
+        echo $output->box_end();
+        print_collapsible_region_end();
+    }
+    if ($assessments = $workshop->get_assessments_by_reviewer($USER->id)) {
+        print_collapsible_region_start('', 'workshop-viewlet-assignedassessments', get_string('assignedassessments', 'workshop'));
+        $shownames = has_capability('mod/workshop:viewauthornames', $PAGE->context);
+        foreach ($assessments as $assessment) {
+            $submission                     = new stdclass();
+            $submission->id                 = $assessment->submissionid;
+            $submission->title              = $assessment->submissiontitle;
+            $submission->timecreated        = $assessment->submissioncreated;
+            $submission->timemodified       = $assessment->submissionmodified;
+            $submission->authorid           = $assessment->authorid;
+            $submission->authorfirstname    = $assessment->authorfirstname;
+            $submission->authorlastname     = $assessment->authorlastname;
+            $submission->authorpicture      = $assessment->authorpicture;
+            $submission->authorimagealt     = $assessment->authorimagealt;
+
+            if (is_null($assessment->grade)) {
+                $class = ' notgraded';
+                $submission->status = 'notgraded';
+                $buttontext = get_string('assess', 'workshop');
+            } else {
+                $class = ' graded';
+                $submission->status = 'graded';
+                $buttontext = get_string('reassess', 'workshop');
+            }
+            echo $output->box_start('generalbox assessment-summary' . $class);
+            echo $output->submission_summary($submission, $shownames);
+            echo $output->box_end();
+        }
+        print_collapsible_region_end();
+    }
     break;
 case workshop::PHASE_CLOSED:
+    if (has_capability('mod/workshop:viewallassessments', $PAGE->context)) {
+        $page       = optional_param('page', 0, PARAM_INT);
+        $sortby     = optional_param('sortby', 'lastname', PARAM_ALPHA);
+        $sorthow    = optional_param('sorthow', 'ASC', PARAM_ALPHA);
+        $perpage    = 10;           // todo let the user modify this
+        $groups     = '';           // todo let the user choose the group
+        $PAGE->set_url($PAGE->url, compact('sortby', 'sorthow', 'page')); // TODO: this is suspicious
+        $data = $workshop->prepare_grading_report($USER->id, $groups, $page, $perpage, $sortby, $sorthow);
+        if ($data) {
+            $showauthornames    = has_capability('mod/workshop:viewauthornames', $workshop->context);
+            $showreviewernames  = has_capability('mod/workshop:viewreviewernames', $workshop->context);
+
+            // prepare paging bar
+            $pagingbar = new paging_bar($data->totalcount, $page, $perpage, $PAGE->url, 'page');
+
+            // grading report display options
+            $reportopts                         = new stdclass();
+            $reportopts->showauthornames        = $showauthornames;
+            $reportopts->showreviewernames      = $showreviewernames;
+            $reportopts->sortby                 = $sortby;
+            $reportopts->sorthow                = $sorthow;
+            $reportopts->showsubmissiongrade    = true;
+            $reportopts->showgradinggrade       = true;
+
+            print_collapsible_region_start('', 'workshop-viewlet-gradereport', get_string('gradesreport', 'workshop'));
+            echo $output->render($pagingbar);
+            echo $output->grading_report($data, $reportopts);
+            echo $output->render($pagingbar);
+            print_collapsible_region_end();
+        }
+    }
+    if (has_capability('mod/workshop:submit', $PAGE->context)) {
+        print_collapsible_region_start('', 'workshop-viewlet-ownsubmission', get_string('yoursubmission', 'workshop'));
+        echo $output->box_start('generalbox ownsubmission');
+        if ($submission = $workshop->get_submission_by_author($USER->id)) {
+            echo $output->submission_summary($submission, true);
+        } else {
+            echo $output->container(get_string('noyoursubmission', 'workshop'));
+        }
+        echo $output->box_end();
+        print_collapsible_region_end();
+    }
+    if (has_capability('mod/workshop:viewpublishedsubmissions', $workshop->context)) {
+        if ($submissions = $workshop->get_published_submissions()) {
+            print_collapsible_region_start('', 'workshop-viewlet-publicsubmissions', get_string('publishedsubmissions', 'workshop'));
+            foreach ($submissions as $submission) {
+                echo $output->box_start('generalbox submission-summary');
+                echo $output->submission_summary($submission, true);
+                echo $output->box_end();
+            }
+            print_collapsible_region_end();
+        }
+    }
     break;
 default:
 }

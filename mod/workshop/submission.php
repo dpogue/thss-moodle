@@ -62,8 +62,10 @@ $ownsubmission  = $submission->authorid == $USER->id;
 $canviewall     = has_capability('mod/workshop:viewallsubmissions', $workshop->context);
 $cansubmit      = has_capability('mod/workshop:submit', $workshop->context);
 $canallocate    = has_capability('mod/workshop:allocate', $workshop->context);
+$canpublish     = has_capability('mod/workshop:publishsubmissions', $workshop->context);
 $canoverride    = (($workshop->phase == workshop::PHASE_EVALUATION) and has_capability('mod/workshop:overridegrades', $workshop->context));
-$isreviewer     = $DB->record_exists('workshop_assessments', array('submissionid' => $submission->id, 'reviewerid' => $USER->id));
+$userassessment = $workshop->get_assessment_of_submission_by_user($submission->id, $USER->id);
+$isreviewer     = !empty($userassessment);
 $editable       = ($cansubmit and $ownsubmission and $workshop->submitting_allowed());
 if ($editable and $workshop->useexamples and $workshop->examplesmode == workshop::EXAMPLES_BEFORE_SUBMISSION
         and !has_capability('mod/workshop:manageexamples', $workshop->context)) {
@@ -143,17 +145,26 @@ if ($edit) {
     }
 }
 
-// load the form to override gradinggrade and process the submitted data eventually
-if (!$edit and $canoverride) {
-    $feedbackform = $workshop->get_feedbackauthor_form($PAGE->url, $submission);
+// load the form to override grade and/or publish the submission and process the submitted data eventually
+if (!$edit and ($canoverride or $canpublish)) {
+    $options = array(
+        'editable' => true,
+        'editablepublished' => $canpublish,
+        'overridablegrade' => $canoverride);
+    $feedbackform = $workshop->get_feedbackauthor_form($PAGE->url, $submission, $options);
     if ($data = $feedbackform->get_data()) {
         $data = file_postupdate_standard_editor($data, 'feedbackauthor', array(), $workshop->context);
         $record = new stdclass();
         $record->id = $submission->id;
-        $record->gradeover = $workshop->raw_grade_value($data->gradeover, $workshop->grade);
-        $record->gradeoverby = $USER->id;
-        $record->feedbackauthor = $data->feedbackauthor;
-        $record->feedbackauthorformat = $data->feedbackauthorformat;
+        if ($canoverride) {
+            $record->gradeover = $workshop->raw_grade_value($data->gradeover, $workshop->grade);
+            $record->gradeoverby = $USER->id;
+            $record->feedbackauthor = $data->feedbackauthor;
+            $record->feedbackauthorformat = $data->feedbackauthorformat;
+        }
+        if ($canpublish) {
+            $record->published = !empty($data->published);
+        }
         $DB->update_record('workshop_submissions', $record);
         redirect($workshop->view_url());
     }
@@ -203,28 +214,62 @@ if ($submission->id and !$edit and !$isreviewer and $canallocate and $workshop->
 
 // and possibly display the submission's review(s)
 
-$canviewallassessments  = false;
-if (has_capability('mod/workshop:viewallassessments', $PAGE->context)) {
-    $canviewallassessments = true;
-} elseif ($ownsubmission and $workshop->assessments_available()) {
-    $canviewallassessments = true;
-}
-
-$canviewgrades = false;
 if ($isreviewer) {
-    $canviewgrades = true;  // reviewers can always see the grades they gave even they are not available yet
-} elseif ($ownsubmission or $canviewallassessments) {
-    $canviewgrades = $workshop->grades_available(); // bool|null, see the function phpdoc
+    $strategy = $workshop->grading_strategy_instance();
+    $mform = $strategy->get_assessment_form($PAGE->url, 'assessment', $userassessment, false);
+    echo $OUTPUT->heading(get_string('assessmentbyyourself', 'workshop'), 2);
+    // reviewers can always see the grades they gave even they are not available yet
+    if (is_null($userassessment->grade)) {
+        echo $OUTPUT->heading(get_string('notassessed', 'workshop'), 3);
+        if ($workshop->assessing_allowed()) {
+            echo $OUTPUT->single_button($workshop->assess_url($userassessment->id), get_string('assess', 'workshop'), 'get');
+        }
+    } else {
+        $a = new stdclass();
+        $a->max = $workshop->real_grade(100);
+        $a->received = $workshop->real_grade($userassessment->grade);
+        echo $OUTPUT->heading(get_string('gradeinfo', 'workshop', $a), 3);
+        if ($userassessment->weight != 1) {
+            echo $OUTPUT->heading(get_string('weightinfo', 'workshop', $userassessment->weight), 3);
+        }
+        if ($workshop->assessing_allowed()) {
+            echo $OUTPUT->single_button($workshop->assess_url($userassessment->id), get_string('reassess', 'workshop'), 'get');
+        }
+        $mform->display();
+    }
 }
 
-if ($isreviewer) {
-    // display own assessment - todo
+if (has_capability('mod/workshop:viewallassessments', $workshop->context) or ($ownsubmission and $workshop->assessments_available())) {
     $strategy = $workshop->grading_strategy_instance();
-}
-
-if ($canviewallassessments) {
-    // display all assessments (except the eventual own one - that has been already displayed) - todo
-    $strategy = $workshop->grading_strategy_instance();
+    $assessments = $workshop->get_assessments_of_submission($submission->id);
+    $canviewreviewernames = has_capability('mod/workshop:viewreviewernames', $workshop->context);
+    foreach ($assessments as $assessment) {
+        if ($assessment->reviewerid == $USER->id) {
+            // own assessment has been displayed already
+            continue;
+        }
+        if (is_null($assessment->grade)) {
+            // not graded assessment are not displayed
+            continue;
+        }
+        if ($canviewreviewernames) {
+            $reviewer = new stdclass();
+            $reviewer->firstname = $assessment->reviewerfirstname;
+            $reviewer->lastname = $assessment->reviewerlastname;
+            echo $OUTPUT->heading(get_string('assessmentbyknown', 'workshop', fullname($reviewer)), 2);
+        } else {
+            echo $OUTPUT->heading(get_string('assessmentbyunknown', 'workshop'), 2);
+        }
+        $a = new stdclass();
+        $a->max = $workshop->real_grade(100);
+        $a->received = $workshop->real_grade($assessment->grade);
+        echo $OUTPUT->heading(get_string('gradeinfo', 'workshop', $a), 3);
+        if ($assessment->weight != 1) {
+            echo $OUTPUT->heading(get_string('weightinfo', 'workshop', $assessment->weight), 3);
+        }
+        $mform = $strategy->get_assessment_form($PAGE->url, 'assessment', $assessment, false);
+        $mform->display();
+    }
 }
 
 if (!$edit and $canoverride) {

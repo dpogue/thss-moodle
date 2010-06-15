@@ -96,7 +96,8 @@ class mod_workshop_renderer extends plugin_renderer_base {
      * Display a short summary of the submission
      *
      * The passed submission object must define at least: id, title, timecreated, timemodified,
-     * authorid, authorfirstname, authorlastname, authorpicture and authorimagealt
+     * authorid, authorfirstname, authorlastname, authorpicture and authorimagealt. Optional
+     * property is status (graded, notgraded).
      *
      * @param stdclass $submission     The submission record
      * @param bool     $showauthorname Should the author name be displayed
@@ -139,6 +140,14 @@ class mod_workshop_renderer extends plugin_renderer_base {
             $modified = get_string('userdatemodified', 'workshop', userdate($submission->timemodified));
             $o .= $this->output->container($modified, 'userdate modified');
         }
+        if (!empty($submission->status)) {
+            if ($submission->status == 'notgraded') {
+                $o .= $this->output->container(get_string('nogradeyet', 'workshop'), 'grade-status notgraded');
+            } else {
+                $o .= $this->output->container(get_string('alreadygraded', 'workshop'), 'grade-status graded');
+            }
+        }
+
         $o .= $this->output->container_end(); // end of the main wrapper
 
         return $o;
@@ -302,7 +311,7 @@ class mod_workshop_renderer extends plugin_renderer_base {
         if ($summary->status == 'notgraded') {
             $o .= $this->output->container(get_string('nogradeyet', 'workshop'), 'example-info nograde');
         } else {
-            $o .= $this->output->container(get_string('examplegrade', 'workshop' , $summary->gradeinfo), 'example-info grade');
+            $o .= $this->output->container(get_string('gradeinfo', 'workshop' , $summary->gradeinfo), 'example-info grade');
         }
 
         // button to assess
@@ -478,6 +487,7 @@ class mod_workshop_renderer extends plugin_renderer_base {
         foreach ($grades as $participant) {
             $numofreceived  = count($participant->reviewedby);
             $numofgiven     = count($participant->reviewerof);
+            $published      = $participant->submissionpublished;
 
             // compute the number of <tr> table rows needed to display this participant
             if ($numofreceived > 0 and $numofgiven > 0) {
@@ -500,6 +510,9 @@ class mod_workshop_renderer extends plugin_renderer_base {
 
             for ($tr = 0; $tr < $numoftrs; $tr++) {
                 $row = new html_table_row();
+                if ($published) {
+                    $row->attributes['class'] = 'published';
+                }
                 // column #1 - participant - spans over all rows
                 if ($tr == 0) {
                     $cell = new html_table_cell();
