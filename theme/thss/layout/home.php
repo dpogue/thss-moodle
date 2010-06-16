@@ -21,12 +21,6 @@
 <?php echo tabmenu_nav(true); ?>
 		</nav>
 		<canvas id="rotate" height="201" width="305">
-			<ul>
-				<li>Haney Happenings</li>
-				<li>Newsletter</li>
-				<li>Mobile Site</li>
-				<li>Twitter</li>
-			</ul>
 		</canvas>
 		<div id="welcome">
 			<p>
