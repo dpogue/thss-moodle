@@ -377,6 +377,8 @@ class grade_edit_tree {
         }
     }
 
+    //Trim's trailing zeros. Used on the 'categories and items' page for grade items settings like aggregation co-efficient
+    //Grader report has its own decimal place settings so they are handled elsewhere
     function format_number($number) {
         return rtrim(rtrim(format_float($number, 4),'0'),'.');
     }
@@ -1005,7 +1007,7 @@ class grade_edit_tree_column_multfactor extends grade_edit_tree_column {
     public function get_header_cell() {
         global $OUTPUT;
         $headercell = clone($this->headercell);
-        $headercell->text = get_string('multfactor', 'grades').$OUTPUT->old_help_icon('multfactor', 'multfactor', 'grade');
+        $headercell->text = get_string('multfactor', 'grades').$OUTPUT->help_icon('multfactor', 'grades');
         return $headercell;
     }
 
@@ -1046,7 +1048,7 @@ class grade_edit_tree_column_plusfactor extends grade_edit_tree_column {
     public function get_header_cell() {
         global $OUTPUT;
         $headercell = clone($this->headercell);
-        $headercell->text = get_string('plusfactor', 'grades').$OUTPUT->old_help_icon('plusfactor', 'plusfactor', 'grade');
+        $headercell->text = get_string('plusfactor', 'grades').$OUTPUT->help_icon('plusfactor', 'grades');
         return $headercell;
     }
 

@@ -25,7 +25,7 @@ $settings->add(new admin_setting_configtext('grade_report_studentsperpage', get_
                                         get_string('configstudentsperpage', 'grades'), 100));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_quickgrading', get_string('quickgrading', 'grades'),
-                                            get_string('configquickgrading', 'grades'), 1));
+                                            get_string('quickgrading_help', 'grades'), 1));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showquickfeedback', get_string('quickfeedback', 'grades'),
                                             get_string('configshowquickfeedback', 'grades'), 0));
@@ -34,7 +34,7 @@ $settings->add(new admin_setting_configcheckbox('grade_report_fixedstudents', ge
                                             get_string('configfixedstudents', 'grades'), 0));
 
 $settings->add(new admin_setting_configselect('grade_report_meanselection', get_string('meanselection', 'grades'),
-                                          get_string('configmeanselection', 'grades'), GRADE_REPORT_MEAN_GRADED,
+                                          get_string('meanselection_help', 'grades'), GRADE_REPORT_MEAN_GRADED,
                                           array(GRADE_REPORT_MEAN_ALL => get_string('meanall', 'grades'),
                                                 GRADE_REPORT_MEAN_GRADED => get_string('meangraded', 'grades'))));
 
@@ -42,13 +42,13 @@ $settings->add(new admin_setting_configcheckbox('grade_report_enableajax', get_s
                                             get_string('enableajax_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showcalculations', get_string('showcalculations', 'grades'),
-                                            get_string('configshowcalculations', 'grades'), 0));
+                                            get_string('showcalculations_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showeyecons', get_string('showeyecons', 'grades'),
-                                            get_string('configshoweyecons', 'grades'), 0));
+                                            get_string('showeyecons_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showaverages', get_string('showaverages', 'grades'),
-                                            get_string('configshowaverages', 'grades'), 1));
+                                            get_string('showaverages_help', 'grades'), 1));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showlocks', get_string('showlocks', 'grades'),
                                             get_string('configshowlocks', 'grades'), 0));
@@ -63,7 +63,7 @@ $settings->add(new admin_setting_configcheckbox('grade_report_showuseridnumber',
                                             get_string('configshowuseridnumber', 'grades'), 0));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showactivityicons', get_string('showactivityicons', 'grades'),
-                                            get_string('configshowactivityicons', 'grades'), 1));
+                                            get_string('showactivityicons_help', 'grades'), 1));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_shownumberofgrades', get_string('shownumberofgrades', 'grades'),
                                             get_string('configshownumberofgrades', 'grades'), 0));
@@ -76,7 +76,7 @@ $settings->add(new admin_setting_configselect('grade_report_averagesdisplaytype'
                                                 GRADE_DISPLAY_TYPE_LETTER => $strletter)));
 
 $settings->add(new admin_setting_configselect('grade_report_rangesdisplaytype', get_string('rangesdisplaytype', 'grades'),
-                                          get_string('configrangesdisplaytype', 'grades'), GRADE_REPORT_PREFERENCE_INHERIT,
+                                          get_string('rangesdisplaytype_help', 'grades'), GRADE_REPORT_PREFERENCE_INHERIT,
                                           array(GRADE_REPORT_PREFERENCE_INHERIT => $strinherit,
                                                 GRADE_DISPLAY_TYPE_REAL => $strreal,
                                                 GRADE_DISPLAY_TYPE_PERCENTAGE => $strpercentage,
@@ -92,7 +92,7 @@ $settings->add(new admin_setting_configselect('grade_report_averagesdecimalpoint
                                                  '4' => '4',
                                                  '5' => '5')));
 $settings->add(new admin_setting_configselect('grade_report_rangesdecimalpoints', get_string('rangesdecimalpoints', 'grades'),
-                                          get_string('configrangesdecimalpoints', 'grades'), GRADE_REPORT_PREFERENCE_INHERIT,
+                                          get_string('rangesdecimalpoints_help', 'grades'), GRADE_REPORT_PREFERENCE_INHERIT,
                                           array(GRADE_REPORT_PREFERENCE_INHERIT => $strinherit,
                                                  '0' => '0',
                                                  '1' => '1',
