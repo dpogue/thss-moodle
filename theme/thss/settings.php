@@ -16,18 +16,23 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'theme_thss', language 'en', branch 'MOODLE_20_STABLE'
+ * The customisable settings for the thss theme.
  *
- * @package   theme_thss
- * @copyright 2010 onwards Darryl Pogue
+ * @copyright 2010 Darryl Pogue
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
  */
 
-$string['pluginname'] = 'thss';
+$admsettings = new admin_settingpage('theme_thss',
+   get_string('admsettings_title', 'theme_thss'));
 
-$string['admsettings_title'] = 'THSS settings';
-$string['region-centre-top'] = 'Centre Top';
-$string['region-side-post'] = 'Right';
-$string['region-side-pre'] = 'Left';
-$string['welcomecolour'] = 'Welcome background colour';
-$string['welcomecolour_desc'] = 'This sets the background colour of the home tab and welcome message on the main page.';
+// Colour of the highlighted tab on the main page
+$name = 'theme_thss/welcomecolour';
+$title = get_string('welcomecolour', 'theme_thss');
+$description = get_string('welcomecolour_desc', 'theme_thss');
+$default = '#800000';
+$setting = new admin_setting_configtext($name, $title, $description, 
+    $default, PARAM_CLEAN, 12);
+$admsettings->add($setting);
+
+$ADMIN->add('themes', $admsettings);

@@ -40,18 +40,24 @@ aside.collapsible header {
 
 aside header h1 {
 	font-size: 1.1em;
-	margin: 0 0.3em;
+	margin: 0;
+    margin-right: -16px;
 	width: auto;
 	text-align: center;
     display: inline-block;
 }
 
-aside header .hide-show-image {
+aside header .btnclose {
 	float: right;
-	height: 11px;
-	width: 11px;
+	height: 16px;
+	width: 16px;
 	margin-top: 0.25em;
-    display: inline-block;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+aside header .btnclose:hover {
+    opacity: 1;
 }
 
 .block .title {
@@ -71,7 +77,7 @@ aside header .hide-show-image {
 	margin: 0px 2px;
 }
 
-.block section {
+.block div {
 	background: transparent;
 	padding: 4px;
 	line-height: 1.2em;
@@ -86,9 +92,12 @@ aside header .hide-show-image {
 	position: inherit;
 }
 
-aside.hidden section,
+aside.hidden div,
 aside.hidden footer {
-	display: none;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
 }
 
 .sideblock li
@@ -113,8 +122,8 @@ aside.hidden footer {
 #content .block .title,
 #content .block .title h2,
 #content .block .title a,
-#content .block section,
-#content .block section p
+#content .block div,
+#content .block div p
 {
 	width: auto;
 	text-align: center;

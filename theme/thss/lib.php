@@ -15,6 +15,68 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * General purpose functions for the thss theme.
+ *
+ * @copyright 2010 Darryl Pogue
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+
+function thss_process_css($css, $theme) {
+    if (!empty($theme->settings->welcomecolour)) {
+        $welcomecol = $theme->settings->welcomecolour;
+    } else {
+        $welcomecol = null;
+    }
+    $css = thss_set_welcomecolour($css, $welcomecol);
+
+    return $css;
+}
+
+/**
+ * Sets the background colour of the welcome message and home tab in CSS.
+ *
+ * @param string $css
+ * @param mixed $colour
+ * @return string
+ */
+function thss_set_welcomecolour($css, $colour) {
+    $tag = '[[setting:welcomecolour]]';
+    $tag_grad = '[[setting:welcomecolourfade]]';
+
+    if (is_null($colour)) {
+        $rgb = Hex2RGB('#800000');
+    } else {
+        $rgb = Hex2RGB($colour);
+    }
+    $replacement = 'rgb('.$rgb[0].','.$rgb[1].','.$rgb[2].')';
+    $css = str_replace($tag, $replacement, $css);
+    $replacement = 'rgba('.$rgb[0].','.$rgb[1].','.$rgb[2].',0.4)';
+    $css = str_replace($tag_grad, $replacement, $css);
+    return $css;
+}
+
+
+/**
+ * Converts a hex colour to an array of RGB values.
+ *
+ * @params string $colour
+ * @returns array
+ *
+ * @copyright 2006 Jonas John
+ * http://www.jonasjohn.de/snippets/php/hex2rgb.htm
+ */
+function Hex2RGB($colour) {
+    $colour = str_replace('#', '', $colour);
+    if (strlen($colour) != 6){ return array(0,0,0); }
+    $rgb = array();
+    for ($x=0;$x<3;$x++){
+        $rgb[$x] = hexdec(substr($colour,(2*$x),2));
+    }
+    return $rgb;
+}
+
 function tabmenu_nav($index=false) {
     global $USER, $CFG, $SITE, $DB;
     

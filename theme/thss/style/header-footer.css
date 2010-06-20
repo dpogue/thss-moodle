@@ -78,7 +78,7 @@ header nav ul#tabbar li a {
 header nav ul#tabbar li a em {
 	border: solid darkgray;
 	border-width: 1px 0 0;
-	cursor: hand;
+	cursor: pointer;
 	padding: 0.25em .75em;
 	left: 0;
 	right: 0;
@@ -109,8 +109,8 @@ header nav ul#tabbar li.selected {
 header nav ul#tabbar li.selected a,
 header nav ul#tabbar li.selected a:focus, /* no focus effect for selected */
 header nav ul#tabbar li.selected:hover a { /* no hover effect for selected */
-	background: #800000 none;
-	border-color: #800000;
+	background: [[setting:welcomecolour]] none;
+	border-color: [[setting:welcomecolour]];
 	color: white;
 	top: 1px;
 	z-index: 201;
@@ -119,7 +119,7 @@ header nav ul#tabbar li.selected:hover a { /* no hover effect for selected */
 
 header nav ul#tabbar li.selected a em {
 	padding: 0.40em 0.75em; /* raise selected tab */
-	border-color: #800000;
+	border-color: [[setting:welcomecolour]];
 }
 
 header nav ul#tabbar li ul {
@@ -190,7 +190,7 @@ header canvas#rotate {
 
 header div#welcome {
 	background: white url([[pix:theme|schoolbg]]);
-	border-left: 1px solid #800000;
+	border-left: 1px solid [[setting:welcomecolour]];
 	margin-right: 305px;
 	height: 201px;
 	clear: left;
@@ -199,12 +199,12 @@ header div#welcome {
 }
 
 header div#welcome p {
-	background: #800000;
+	background: [[setting:welcomecolour]];
 	position: absolute;
 	top: 0;
 	width: auto;
 	height: 191px;
-	border-bottom: 1px solid #800000;
+	border-bottom: 1px solid [[setting:welcomecolour]];
 	color: white;
 	font-size: 123.1%;
 	text-align: center;
@@ -213,16 +213,12 @@ header div#welcome p {
 	text-shadow: rgba(0, 0, 0, .5) 0.1em 0.15em 0.5em;
 }
 
-.opera header div#welcome p {
-	background: transparent url([[pix:theme|welcomebg]]);
-}
-
 .gecko19 header div#welcome p {
-	background: transparent -moz-linear-gradient(top, rgba(128,0,0,1), rgba(128,0,0,0.4));
+	background: transparent -moz-linear-gradient(top, [[setting:welcomecolour]], rgba(128,0,0,0.4));
 }
 
 .safari header div#welcome p {
-	background: transparent -webkit-gradient(linear, left top, left bottom, from(rgba(128,0,0,1)), to(rgba(128,0,0,0.4)));
+	background: transparent -webkit-gradient(linear, left top, left bottom, from([[setting:welcomecolour]]), to(rgba(128,0,0,0.4)));
 }
 
 header div#welcome p b {

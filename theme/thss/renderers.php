@@ -18,30 +18,33 @@
 /**
  * The render implementation for the thss theme.
  *
- * @copyright 2009 Darryl Pogue
+ * @copyright 2010 Darryl Pogue
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since     Moodle 2.0
  */
 class theme_thss_core_renderer extends core_renderer {
 
     /**
-     * Get the DOCTYPE declaration that should be used with this page. Designed to
-     * be called in theme layout.php files.
-     * @return string the DOCTYPE declaration (and any XML prologue) that should be used.
+     * Get the DOCTYPE declaration that should be used with this page.
+     * Designed to be called in theme layout.php files.
+     *
+     * @return string the DOCTYPE declaration (and any XML prologue) that
+     *  should be used.
      */
     public function doctype() {
         global $CFG;
 
         $doctype = '<!DOCTYPE html>' . "\n";
-        $this->contenttype = 'text/html; charset=utf-8';
+        $this->contenttype = 'text/html; charset=UTF-8';
 
         return $doctype;
     }
     
     /**
-     * The standard tags (meta tags, links to stylesheets and JavaScript, etc.)
-     * that should be included in the <head> tag. Designed to be called in theme
-     * layout.php files.
+     * The standard tags (meta tags, links to stylesheets and JavaScript,
+     * etc.) that should be included in the <head> tag. Designed to be
+     * called in theme layout.php files.
+     *
      * @return string HTML fragment.
      */
     public function standard_head_html() {
@@ -61,6 +64,8 @@ class theme_thss_core_renderer extends core_renderer {
         if ($this->metarefreshtag=='' && $this->page->periodicrefreshdelay!==null) {
             $output .= '<meta http-equiv="refresh" content="'.$this->page->periodicrefreshdelay.';url='.$this->page->url->out().'" />';
         }
+
+        $output .= '<title>'.$this->page->title.'</title>'."\n";
         
         $output .= '<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script>'."\n";
         $output .= '<script type="text/javascript">WebFont.load({ google: { families: [ \'droid sans:n,b\', \'droid serif:n,i,b,bi\' ]}});</script>'."\n";
@@ -208,9 +213,9 @@ class theme_thss_core_renderer extends core_renderer {
             $output .= html_writer::tag('header', $title.$controlshtml, null);
         }
 
-        $output .= html_writer::start_tag('section', null);
+        $output .= html_writer::start_tag('div', null);
         $output .= $bc->content;
-        $output .= html_writer::end_tag('section');
+        $output .= html_writer::end_tag('div');
 
         if ($bc->footer) {
             $output .= html_writer::tag('footer', $bc->footer, null);
@@ -226,21 +231,46 @@ class theme_thss_core_renderer extends core_renderer {
         return $output;
     }
 
+
     /**
      * Calls the JS require function to hide a block.
      * @param block_contents $bc A block_contents object
      * @return void
      */
     protected function init_block_title_js($bc) {
-        /*if ($bc->collapsible != block_contents::NOT_HIDEABLE) {
+        if ($bc->collapsible != block_contents::NOT_HIDEABLE) {
             $userpref = 'block' . $bc->blockinstanceid . 'hidden';
             user_preference_allow_ajax_update($userpref, PARAM_BOOL);
-            $this->page->requires->yui2_lib('dom');
+
+            $module = array('name'=>'block_controls', 'fullpath'=>'/theme/thss/javascript/blocks.js', 'requires'=>array('node'));
+            $this->page->requires->js_init_call('M.block_controls.init', array(array('blockid' => $bc->blockinstanceid, 'state' => 'visible')), false, $module);
+            /*$this->page->requires->yui2_lib('dom');
             $this->page->requires->yui2_lib('event');
             $plaintitle = strip_tags($bc->title);
             $this->page->requires->js_function_call('new block_title_controls', array($bc->id, $userpref,
                     get_string('hideblocka', 'access', $plaintitle), get_string('showblocka', 'access', $plaintitle),
-                    $this->pix_url('t/switch_minus')->out(false, array(), false), $this->pix_url('t/switch_plus')->out(false, array(), false)));
-        }*/
+                    $this->pix_url('t/switch_minus')->out(false, array(), false), $this->pix_url('t/switch_plus')->out(false, array(), false)));*/
+        }
+    }
+
+    /**
+     * Output all the blocks in a particular region.
+     * @param string $region the name of a region on this page.
+     * @return string the HTML to be output.
+     */
+    public function blocks_for_region($region) {
+        $blockcontents = $this->page->blocks->get_content_for_region($region, $this);
+
+        $output = '';
+        foreach ($blockcontents as $bc) {
+            if ($bc instanceof block_contents) {
+                $output .= $this->block($bc, $region);
+            } else if ($bc instanceof block_move_target) {
+                $output .= $this->block_move_target($bc);
+            } else {
+                throw new coding_exception('Unexpected type of thing (' . get_class($bc) . ') found in list of block contents.');
+            }
+        }
+        return $output;
     }
 }

@@ -1,7 +1,6 @@
 <?php echo $OUTPUT->doctype() ?>
 <html lang="en-ca">
 <head>
-	<title><?php echo $PAGE->title ?></title>
 <?php echo $OUTPUT->standard_head_html() ?>
 </head>
 <body id="<?php echo $PAGE->pagetype ?>" class="<?php echo $PAGE->bodyclasses ?>">
@@ -77,7 +76,6 @@
 			<?php echo $OUTPUT->login_info(); ?>
 		</span>
 	</footer>
-	<script type="text/javascript" src=""></script>
 <?php echo $OUTPUT->standard_end_of_body_html() ?>
 </body>
 </html>

@@ -8,6 +8,7 @@ html {
 
 body {
 	background: transparent;
+	min-width: 1000px;
 }
 
 .wf-inactive {
@@ -70,6 +71,8 @@ h6.main {
 	padding: 15px 10px 0;
     width: auto;
 	background: transparent;
+	max-width: 1445px;
+    margin: 0 auto;
 }
 
 #leftside {
@@ -98,6 +101,12 @@ h6.main {
 
 .blocksright {
 	margin-right: 225px;
+}
+
+.clearfix:after {
+    clear: none;
+    display: inline;
+    height: auto;
 }
 
 a img {
@@ -166,6 +175,13 @@ a.skip-block, a.skip {
 
 .copyright {
 	text-align: center;
+}
+
+.unlist {
+    background: white;
+    margin: 0.5em 20px;
+    border: 1px solid #a3a3a3;
+    border-radius: 2px;
 }
 
 .categorybox {

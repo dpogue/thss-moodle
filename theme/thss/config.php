@@ -21,14 +21,15 @@ $THEME->sheets = array(
     'blocks',
     'course',
     'fixesIE',
-    'projector',
+    'projector'
     
-    'block_login'
 );
 
 $THEME->editor_sheets = array();
 
 $THEME->rendererfactory = 'theme_overridden_renderer_factory';
+
+$THEME->csspostprocess = 'thss_process_css';
 
 $THEME->layouts = array(
     // Most backwards compatible layout without the blocks - this is the layout used by default
@@ -130,3 +131,4 @@ $THEME->layouts = array(
 );
 
 /** List of javascript files that need to included on each page */
+//$THEME->javascripts_footer = array('blocks');

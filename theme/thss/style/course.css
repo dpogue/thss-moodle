@@ -1,3 +1,41 @@
+.coursebox {
+    background: white;
+    position: relative;
+    margin: 0;
+}
+
+.coursebox .info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40%;
+    padding: 0.5em;
+}
+
+.coursebox .summary {
+    margin-left: 45%;
+    min-height: 2em;
+    width: 55%;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #courseguides {
 	overflow: auto;
 }

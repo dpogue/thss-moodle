@@ -1,7 +1,6 @@
 <?php echo $OUTPUT->doctype() ?>
 <html lang="en-ca">
 <head>
-	<title><?php echo $PAGE->title ?></title>
 <?php echo $OUTPUT->standard_head_html() ?>
 </head>
 <body id="<?php echo $PAGE->pagetype ?>" class="<?php echo $PAGE->bodyclasses ?>">
