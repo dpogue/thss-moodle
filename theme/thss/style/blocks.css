@@ -34,13 +34,19 @@ aside {
     -o-transition: height 1s linear;
 }
 
+aside.noanimhack,
+.gecko aside.noanimhack,
+.safari aside.noanimhack,
+.opera aside.noanimhack {
+    -moz-transition: none;
+    -webkit-transition: none;
+    -o-transition: none;
+    transition: none;
+}
+
 #leftside>aside,
 #rightside>aside {
 	width: 100%;
-}
-
-aside.collapsible {
-    visibility: hidden;
 }
 
 aside.collapsible header {

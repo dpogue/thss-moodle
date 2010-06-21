@@ -33,8 +33,8 @@ M.block_controls = {
         Y.extend(BlockControls, Y.Base, {
             initializer: function(args) {
                 this.block_inst = args.blockid;
-                this.block_height = 0;
-                this.block_heigh_collapse = 0;
+                this.block_height = 'auto';
+                this.block_heigh_collapse = 'auto';
                 this.userpref = args.userpref;
 
                 //this.render();
@@ -44,26 +44,38 @@ M.block_controls = {
             add_buttons: function() {
                 var blk = Y.one('#inst'+this.block_inst);
                 var header = Y.one('#inst'+this.block_inst+' header');
-                this.block_height = blk.getComputedStyle('height');
-                this.block_height_collapse = header.getComputedStyle('height');
                 var btnclose = Y.Node.create('<img>');
                 btnclose.setAttribute('src', M.util.image_url('blockclose', 'theme'));
                 btnclose.addClass('btnclose');
-                Y.on('click', function(e) {
-                    var block = Y.one('#inst'+this.block_inst);
-                    block.toggleClass('hidden');
-                    var ishidden = block.hasClass('hidden');
-                    block.setStyle('height',
-                        ishidden ?
-                        this.block_height_collapse :
-                        this.block_height);
-                    M.util.set_user_preference(this.userpref, ishidden);
-                }, btnclose, this);
+                Y.on('click', this.show_hide, btnclose, this);
                 header.prepend(btnclose);
+            },
+            show_hide: function() {
+                var blck = Y.one('#inst'+this.block_inst);
+                var ishidden = blck.hasClass('hidden');
 
-                blk.setStyle('height', blk.hasClass('hidden') ?
-                        this.block_height_collapse : this.block_height);
-                blk.setStyle('visibility', 'visible');
+                if (!ishidden) {
+                    if (!blck.hasClass('noanimhack')) {
+                        blck.addClass('noanimhack');
+                    }
+                    this.block_height = blck.getComputedStyle('height');
+                    blck.setStyle('height', this.block_height);
+
+                    this.block_height_collapse = Y.one('#inst'+this.block_inst+' header').getComputedStyle('height');
+                    blck.removeClass('noanimhack');
+                }
+
+                ishidden = !ishidden;
+                blck.toggleClass('hidden');
+                blck.setStyle('height',
+                    ishidden ?
+                    this.block_height_collapse :
+                    this.block_height);
+                M.util.set_user_preference(this.userpref, ishidden);
+
+                if (!ishidden) {
+                    setTimeout(function() { blck.addClass('noanimhack');  blck.setStyle('height', 'auto'); }, 1100);
+                }
             }
         });
 
