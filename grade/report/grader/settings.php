@@ -28,7 +28,7 @@ $settings->add(new admin_setting_configcheckbox('grade_report_quickgrading', get
                                             get_string('quickgrading_help', 'grades'), 1));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showquickfeedback', get_string('quickfeedback', 'grades'),
-                                            get_string('configshowquickfeedback', 'grades'), 0));
+                                            get_string('showquickfeedback_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_fixedstudents', get_string('fixedstudents', 'grades'),
                                             get_string('configfixedstudents', 'grades'), 0));
@@ -51,10 +51,10 @@ $settings->add(new admin_setting_configcheckbox('grade_report_showaverages', get
                                             get_string('showaverages_help', 'grades'), 1));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showlocks', get_string('showlocks', 'grades'),
-                                            get_string('configshowlocks', 'grades'), 0));
+                                            get_string('showlocks_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showranges', get_string('showranges', 'grades'),
-                                            get_string('configshowranges', 'grades'), 0));
+                                            get_string('showranges_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showuserimage', get_string('showuserimage', 'grades'),
                                             get_string('configshowuserimage', 'grades'), 1));
@@ -66,7 +66,7 @@ $settings->add(new admin_setting_configcheckbox('grade_report_showactivityicons'
                                             get_string('showactivityicons_help', 'grades'), 1));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_shownumberofgrades', get_string('shownumberofgrades', 'grades'),
-                                            get_string('configshownumberofgrades', 'grades'), 0));
+                                            get_string('shownumberofgrades_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configselect('grade_report_averagesdisplaytype', get_string('averagesdisplaytype', 'grades'),
                                           get_string('averagesdisplaytype_help', 'grades'), GRADE_REPORT_PREFERENCE_INHERIT,

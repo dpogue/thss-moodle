@@ -129,12 +129,6 @@ $string['confighiddenasdate'] = 'If user can not see hidden grades show date of 
 $string['confighideforcedsettings'] = 'Do not show forced settings in grading UI.';
 $string['configincludescalesinaggregation'] = 'You can change whether scales are to be included as numbers in all aggregated grades across all gradebooks in all courses. CAUTION: changing this setting will force all aggregated grades to be recalculated.';
 $string['configprofilereport'] = 'Grade report used on user profile page.';
-$string['configshowhiddenitems'] = 'Specifies how hidden grade items are shown. If Hide is selected, they are hidden completely. If Show is selected, the hidden grade item row is shown in grey with the grade hidden completely. If "Only hidden until" is selected, grade items with a "hide until" date set are shown in grey with the grades hidden completely until the set date, after which the whole item is shown.';
-$string['configshowlocks'] = 'Whether to show a lock/unlock icon near each grade.';
-$string['configshownumberofgrades'] = 'Whether to show the number of grades used when calculating the mean in brackets after each average, for example 45 (34).';
-$string['configshowpercentage'] = 'Whether to show the percentage value of each grade item.';
-$string['configshowquickfeedback'] = 'Quick Feedback adds a text input element in each grade cell on the grader report, allowing you to edit the feedback for many grades at once. You can then click the Update button to perform all these changes at once, instead of one at a time.';
-$string['configshowranges'] = 'Whether to show the range of grades for each column in an additional row.';
 $string['configshowrank'] = 'Whether to show the position of the user in relation to the rest of the class, for each grade item.';
 $string['configshowuseridnumber'] = 'Whether to show user ID numbers in an additional column.';
 $string['configshowuserimage'] = 'Whether to show the user\'s profile image next to the name in the grader report.';
@@ -476,7 +470,6 @@ $string['overridden'] = 'Overridden';
 $string['overridden_help'] = 'If ticked, the grade can no longer be changed from within the related activity.
 
 When a grade is edited in the grader report, the overridden checkbox is ticked automatically. However it may be un-ticked to allow the grade to be changed via the related activity.';
-$string['overriddenhelp'] = 'When on, the overridden flag prevents any future attempts to automatically adjust the value of the grade. This flag is often set internally by the gradebook, but can be switched on and off manually using this form element.';
 $string['overriddennotice'] = 'Your final grade from this activity was manually adjusted.';
 $string['overridesitedefaultgradedisplaytype'] = 'Override site defaults';
 $string['overridesitedefaultgradedisplaytype_help'] = 'If ticked, grade letters and boundaries for the course may be set, rather than using the site defaults.';

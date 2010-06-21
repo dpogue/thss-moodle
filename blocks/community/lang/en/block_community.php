@@ -28,7 +28,7 @@ $string['activities'] = 'Activities';
 $string['add'] = 'Add';
 $string['addtocommunityblock'] = 'Add to community block';
 $string['addcommunitycourse'] = 'Add community course';
-$string['additionalcoursedesc'] = 'Creator: {$a->creatorname} - Publisher: {$a->publishername} - Subject: {$a->subject}
+$string['additionalcoursedesc'] = '{$a->lang} Creator: {$a->creatorname} - Publisher: {$a->publishername} - Subject: {$a->subject}
     - Audience: {$a->audience} - Educational level: {$a->educationallevel}';
 $string['addcourse'] = 'Search';
 $string['audience'] = 'Designed for';
@@ -51,11 +51,14 @@ $string['enroldownload_help'] = 'Some courses listed in the selected hub are bei
 
 Others are course templates provided for you to download and use on your own Moodle site.';
 $string['enrollable'] = 'courses I can enrol in';
+$string['errorcourselisting'] = 'An error occured when retrieving the course listing from the selected hub, please try again later. ({$a})';
+$string['errorhublisting'] = 'An error occured when retrieving the hub listing from Moodle.org, please try again later. ({$a})';
 $string['hub'] = 'hub';
 $string['hubnottrusted'] = 'Not trusted';
 $string['hubtrusted'] = 'This hub is trusted by Moodle.org';
 $string['keywords'] = 'Keywords';
 $string['keywords_help'] = 'You can search for courses containing specific text in the name, description and other fields of the database.';
+$string['langdesc'] = 'Language: {$a} - ';
 $string['language'] = 'Language';
 $string['language_help'] = 'You can search for courses written in a specific language.';
 $string['licence'] = 'License';

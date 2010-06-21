@@ -94,6 +94,7 @@ class mysql_sql_generator extends sql_generator {
         return array("ALTER TABLE $this->prefix$tablename AUTO_INCREMENT = $value");
     }
 
+
     /**
      * Given one correct xmldb_table, returns the SQL statements
      * to create temporary table (inside one array)

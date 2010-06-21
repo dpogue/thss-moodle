@@ -71,6 +71,8 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
               172800 => get_string('numdays', '', 2),
               604800 => get_string('numdays', '', 7))));
     $temp->add(new admin_setting_configtext('maxexternalblogsperuser', get_string('maxexternalblogsperuser','blog'), get_string('configmaxexternalblogsperuser', 'blog'), 1));
+    $temp->add(new admin_setting_configcheckbox('blogusecomments', get_string('enablecomments', 'admin'), get_string('configenablecomments', 'admin'), 1));
+    $temp->add(new admin_setting_configcheckbox('blogshowcommentscount', get_string('showcommentscount', 'admin'), get_string('configshowcommentscount', 'admin'), 1));
     $ADMIN->add('appearance', $temp);
 
     // Navigation settings
@@ -133,9 +135,9 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
     $temp = new admin_externalpage('profilepage', get_string('myprofile', 'admin'), $CFG->wwwroot . '/user/profilesys.php');
     $ADMIN->add('appearance', $temp);
 
-    // coursemanager is the person responsible for course - usually manages enrolments, receives notification, etc.
-    $temp = new admin_settingpage('coursemanager', get_string('coursemanager', 'admin'));
-    $temp->add(new admin_setting_special_coursemanager());
+    // coursecontact is the person responsible for course - usually manages enrolments, receives notification, etc.
+    $temp = new admin_settingpage('coursecontact', get_string('coursecontact', 'admin'));
+    $temp->add(new admin_setting_special_coursecontact());
     $ADMIN->add('appearance', $temp);
 
     $temp = new admin_settingpage('ajax', get_string('ajaxuse'));
