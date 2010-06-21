@@ -8,6 +8,8 @@ aside {
 	border-top-left-radius:5px;
 	border-top-right-radius:5px;
 	box-shadow: 1px 1px 5px rgba(0,0,0,0.5);
+    overflow: hidden;
+    transition: height 1s linear;
 }
 
 .gecko aside {
@@ -16,6 +18,7 @@ aside {
 	-moz-border-radius-topleft:5px;
 	-moz-border-radius-topright:5px;
 	-moz-box-shadow: 1px 1px 5px rgba(0,0,0,0.5);
+    -moz-transition: height 1s linear;
 }
 
 .safari aside {
@@ -24,11 +27,20 @@ aside {
 	-webkit-border-top-left-radius:5px;
 	-webkit-border-top-right-radius:5px;
 	-webkit-box-shadow: 2px 2px 3px rgba(0,0,0,0.5);
+    -webkit-transition: height 1s linear;
+}
+
+.opera aside {
+    -o-transition: height 1s linear;
 }
 
 #leftside>aside,
 #rightside>aside {
 	width: 100%;
+}
+
+aside.collapsible {
+    visibility: hidden;
 }
 
 aside.collapsible header {
@@ -40,7 +52,7 @@ aside.collapsible header {
 
 aside header h1 {
 	font-size: 1.1em;
-	margin: 0;
+	margin: 0 auto;
     margin-right: -16px;
 	width: auto;
 	text-align: center;
@@ -54,10 +66,39 @@ aside header .btnclose {
 	margin-top: 0.25em;
     opacity: 0.5;
     cursor: pointer;
+    transition: transform 0.5s;
 }
 
 aside header .btnclose:hover {
     opacity: 1;
+}
+
+.safari aside header .btnclose {
+    -webkit-transition: -webkit-transform 0.5s;
+}
+
+.gecko aside header .btnclose {
+    -moz-transition: -moz-transform 0.5s;
+}
+
+.opera aside header .btnclose {
+    -o-transition: -o-transform 0.5s;
+}
+
+aside.hidden .btnclose {
+    transform: rotate(-45deg) scale(0.72);
+}
+
+.safari aside.hidden .btnclose {
+    -webkit-transform: rotate(-45deg) scale(0.72);
+}
+
+.gecko aside.hidden .btnclose {
+    -moz-transform: rotate(-45deg) scale(0.72);
+}
+
+.opera aside.hidden .btnclose {
+    -o-transform: rotate(-45deg) scale(0.72);
 }
 
 .block .title {
@@ -77,10 +118,10 @@ aside header .btnclose:hover {
 	margin: 0px 2px;
 }
 
-.block div {
-	background: transparent;
-	padding: 4px;
-	line-height: 1.2em;
+.block > div {
+    background: transparent;
+    padding: 4px;
+    line-height: 1.2em;
 }
 
 .block footer {
@@ -90,14 +131,6 @@ aside header .btnclose:hover {
 	background: transparent;
 	height: auto;
 	position: inherit;
-}
-
-aside.hidden div,
-aside.hidden footer {
-    height: 0;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
 }
 
 .sideblock li

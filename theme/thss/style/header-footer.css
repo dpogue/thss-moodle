@@ -140,7 +140,6 @@ header nav ul#tabbar li a:focus + ul {
 }
 
 header nav ul#tabbar li ul li {
-	position: auto;
 	margin: 0;
 	padding: 0;
 }
@@ -211,14 +210,15 @@ header div#welcome p {
 	padding: 0 15px;
 	padding-top: 10px;
 	text-shadow: rgba(0, 0, 0, .5) 0.1em 0.15em 0.5em;
+    background: transparent linear-gradient(top, [[setting:welcomecolour]], [[setting:welcomecolourfade]]);
 }
 
 .gecko19 header div#welcome p {
-	background: transparent -moz-linear-gradient(top, [[setting:welcomecolour]], rgba(128,0,0,0.4));
+	background: transparent -moz-linear-gradient(top, [[setting:welcomecolour]], [[setting:welcomecolourfade]]);
 }
 
 .safari header div#welcome p {
-	background: transparent -webkit-gradient(linear, left top, left bottom, from([[setting:welcomecolour]]), to(rgba(128,0,0,0.4)));
+	background: transparent -webkit-gradient(linear, left top, left bottom, from([[setting:welcomecolour]]), to([[setting:welcomecolourfade]]));
 }
 
 header div#welcome p b {
@@ -230,7 +230,6 @@ header div#menubar {
 	border-left: 1px solid darkgrey;
 	width: 985px;
 	clear: left;
-	overflow: auto;
 	line-height: 2em;
 	padding: 0;
 	padding-left: 10px;

@@ -33,21 +33,37 @@ M.block_controls = {
         Y.extend(BlockControls, Y.Base, {
             initializer: function(args) {
                 this.block_inst = args.blockid;
-                this.block_state = args.state;
+                this.block_height = 0;
+                this.block_heigh_collapse = 0;
+                this.userpref = args.userpref;
 
                 //this.render();
                 this.add_buttons();
             },
             destructor: function() { },
             add_buttons: function() {
+                var blk = Y.one('#inst'+this.block_inst);
                 var header = Y.one('#inst'+this.block_inst+' header');
+                this.block_height = blk.getComputedStyle('height');
+                this.block_height_collapse = header.getComputedStyle('height');
                 var btnclose = Y.Node.create('<img>');
                 btnclose.setAttribute('src', M.util.image_url('blockclose', 'theme'));
                 btnclose.addClass('btnclose');
-                /*btnclose.setStyle('-webkit-transform', 'rotate(45deg)');
-                btnclose.setStyle('-moz-transform', 'rotate(45deg)');
-                btnclose.setStyle('-o-transform', 'rotate(45deg)');*/
-                header.append(btnclose);
+                Y.on('click', function(e) {
+                    var block = Y.one('#inst'+this.block_inst);
+                    block.toggleClass('hidden');
+                    var ishidden = block.hasClass('hidden');
+                    block.setStyle('height',
+                        ishidden ?
+                        this.block_height_collapse :
+                        this.block_height);
+                    M.util.set_user_preference(this.userpref, ishidden);
+                }, btnclose, this);
+                header.prepend(btnclose);
+
+                blk.setStyle('height', blk.hasClass('hidden') ?
+                        this.block_height_collapse : this.block_height);
+                blk.setStyle('visibility', 'visible');
             }
         });
 

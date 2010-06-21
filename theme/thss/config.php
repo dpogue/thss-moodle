@@ -1,9 +1,9 @@
 <?php
 
-////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
 /// This file contains a few configuration variables that control
 /// how Moodle uses this theme.
-////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
 
 $THEME->name = 'thss';
 
@@ -54,8 +54,8 @@ $THEME->layouts = array(
         'options' => array('langmenu'=>true),
     ),
     'coursecategory' => array(
-        'theme' => 'base',
-        'file' => 'general.php',
+        'theme' => 'thss',
+        'file' => 'normal.php',
         'regions' => array('side-pre', 'side-post'),
         'defaultregion' => 'side-post',
     ),

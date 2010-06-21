@@ -243,7 +243,7 @@ class theme_thss_core_renderer extends core_renderer {
             user_preference_allow_ajax_update($userpref, PARAM_BOOL);
 
             $module = array('name'=>'block_controls', 'fullpath'=>'/theme/thss/javascript/blocks.js', 'requires'=>array('node'));
-            $this->page->requires->js_init_call('M.block_controls.init', array(array('blockid' => $bc->blockinstanceid, 'state' => 'visible')), false, $module);
+            $this->page->requires->js_init_call('M.block_controls.init', array(array('blockid' => $bc->blockinstanceid, 'userpref' => $userpref)), false, $module);
             /*$this->page->requires->yui2_lib('dom');
             $this->page->requires->yui2_lib('event');
             $plaintitle = strip_tags($bc->title);

@@ -9,13 +9,18 @@
     top: 0;
     left: 0;
     width: 40%;
-    padding: 0.5em;
+    padding: 0 0.5em;
+    float: none;
+}
+
+.coursebox .info h3 {
+    margin: 5px 0;
 }
 
 .coursebox .summary {
     margin-left: 45%;
-    min-height: 2em;
     width: 55%;
+    min-height: 1.5em;
 }
 
 
