@@ -121,7 +121,7 @@ function enrol_get_instances($courseid, $enabled) {
 
     $result = $DB->get_records('enrol', array('courseid'=>$courseid, 'status'=>ENROL_INSTANCE_ENABLED), 'sortorder,id');
 
-    $enabled = $enabled = explode(',', $CFG->enrol_plugins_enabled);
+    $enabled = explode(',', $CFG->enrol_plugins_enabled);
     foreach ($result as $key=>$instance) {
         if (!in_array($instance->enrol, $enabled)) {
             unset($result[$key]);
@@ -493,7 +493,7 @@ function enrol_get_users_courses($userid, $onlyactive = false, $fields = NULL, $
     global $DB;
 
     // Guest account does not have any courses
-    if (isguestuser($userid) or !empty($userid)) {
+    if (isguestuser($userid) or empty($userid)) {
         return(array());
     }
 
@@ -558,7 +558,7 @@ function enrol_get_users_courses($userid, $onlyactive = false, $fields = NULL, $
            $ccjoin
            $wheres
           $orderby";
-    $params['userid']  = $USER->id;
+    $params['userid']  = $userid;
 
     $courses = $DB->get_records_sql($sql, $params);
 
