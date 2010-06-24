@@ -51,20 +51,23 @@ class mod_scorm_mod_form extends moodleform_mod {
             $options[SCORM_TYPE_IMSREPOSITORY] = get_string('typeimsrepository', 'scorm');
         }
 
-        $mform->addElement('select', 'scormtype', get_string('scormtype', 'scorm'), $options);
-
 // Reference
         if (count($options) > 1) {
-            $mform->addElement('text', 'packageurl', get_string('url', 'scorm'), array('size'=>60));
+            $mform->addElement('select', 'scormtype', get_string('scormtype', 'scorm'), $options);
+            $mform->addHelpButton('scormtype', 'scormtype', 'scorm');
+            $mform->addElement('text', 'packageurl', get_string('packageurl', 'scorm'), array('size'=>60));
             $mform->setType('packageurl', PARAM_RAW);
-            $mform->addHelpButton('packageurl', 'package', 'scorm');
+            $mform->addHelpButton('packageurl', 'packageurl', 'scorm');
             $mform->disabledIf('packageurl', 'scormtype', 'eq', SCORM_TYPE_LOCAL);
+        } else {
+            $mform->addElement('hidden', 'scormtype', SCORM_TYPE_LOCAL);
         }
 
 // New local package upload
         $maxbytes = get_max_upload_file_size($CFG->maxbytes, $COURSE->maxbytes);
         $mform->setMaxFileSize($maxbytes);
         $mform->addElement('filepicker', 'packagefile', get_string('package','scorm'));
+        $mform->addHelpButton('packagefile', 'package', 'scorm');
         $mform->disabledIf('packagefile', 'scormtype', 'noteq', SCORM_TYPE_LOCAL);
 
 //-------------------------------------------------------------------------------

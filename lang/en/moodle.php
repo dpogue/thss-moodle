@@ -1818,3 +1818,5 @@ $string['yourself'] = 'yourself';
 $string['yourteacher'] = 'your {$a}';
 $string['yourwordforx'] = 'Your word for \'{$a}\'';
 $string['zippingbackup'] = 'Zipping backup';
+$string['tocreatenewaccount'] = 'Skip to create new account';
+$string['pagepath'] = 'Page path:';

@@ -71,6 +71,7 @@ $string['displaycoursestructure_help'] = 'If enabled, the table of contents is d
 $string['displaycoursestructuredesc'] = 'This preference sets the default value for the display course structure on entry page setting';
 $string['displaydesc'] = 'This preference sets the default of whether to display the package or not for an activity';
 $string['domxml'] = 'DOMXML external library';
+$string['duedate'] = 'Due date';
 $string['element'] = 'Element';
 $string['enter'] = 'Enter';
 $string['entercourse'] = 'Enter course';
@@ -186,6 +187,8 @@ $string['package'] = 'Package file';
 $string['package_help'] = 'The package file is a zip (or pif) file containing SCORM/AICC course definition files.';
 $string['packagedir'] = 'Filesystem Error: Can\'t create package directory';
 $string['packagefile'] = 'No package file specified';
+$string['packageurl'] = 'URL';
+$string['packageurl_help'] = 'This setting enables a URL for the SCORM package to be specified, rather than choosing a file via the file picker.';
 $string['passed'] = 'Passed';
 $string['php5'] = 'PHP 5 (DOMXML native library)';
 $string['popup'] = 'New window';
@@ -220,6 +223,12 @@ $string['scormresponsedeleted'] = 'Deleted user attempts';
 $string['scorm:savetrack'] = 'Save tracks';
 $string['scorm:skipview'] = 'Skip overview';
 $string['scormtype'] = 'Type';
+$string['scormtype_help'] = 'This setting determines how the package is included in the course. There are up to 4 options:
+
+* Uploaded package - Enables a SCORM package to be chosen via the file picker
+* External SCORM manifest - Enables an imsmanifest.xml URL to be specified. Note: If the URL has a different domain name than your site, then "Downloaded package" is a better option, since otherwise grades are not saved.
+* Downloaded package - Enables a package URL to be specified. The package will be unzipped and saved locally, and updated when the external SCORM package is updated.
+* Local IMS content repository - Enables a package to be selected from within an IMS repository';
 $string['scorm:viewreport'] = 'View reports';
 $string['scorm:viewscores'] = 'View scores';
 $string['scrollbars'] = 'Allow the window to be scrolled';
@@ -257,7 +266,6 @@ $string['unziperror'] = 'An error occurs during package unzip';
 $string['updatefreq'] = 'Auto-update frequency';
 $string['updatefreqdesc'] = 'This preference sets the default auto-update frequency of an activity';
 $string['updatetime'] = 'Synchronisation time';
-$string['url'] = 'URL';
 $string['validateascorm'] = 'Validate a package';
 $string['validation'] = 'Validation result';
 $string['validationtype'] = 'This preference set the DOMXML library used for validating SCORM Manifest. If you don\'t know leave the selected choice.';
