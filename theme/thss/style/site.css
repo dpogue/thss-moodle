@@ -111,6 +111,12 @@ h6.main {
 
 a img {
 	border:none;
+    text-decoration: none;
+}
+
+a:hover,
+a:visited {
+    color: #426fd9;
 }
 
 .accesshide {
@@ -134,7 +140,7 @@ a.skip-block, a.skip {
 .generalbox {
 	padding: 10px;
 	margin-bottom: 15px;
-	background: white;
+	background: #f9f9f9;
 	border-radius: 10px;
 }
 
@@ -178,14 +184,14 @@ a.skip-block, a.skip {
 }
 
 .unlist {
-    background: white;
+    background: #f9f9f9;
     margin: 0.5em 20px;
     border: 1px solid #a3a3a3;
     border-radius: 2px;
 }
 
 .categorybox {
-	background: white;
+	background: #f9f9f9;
 	margin: 0.5em 20px;
 	border: 1px solid #a3a3a3;
 	border-radius: 2px;
@@ -197,4 +203,19 @@ a.skip-block, a.skip {
 
 .gecko .categorybox {
 	-moz-border-radius: 2px;
+}
+
+.userprofile {
+    background: #f9f9f9;
+    border: 1px solid #a3a3a3;
+    border-radius: 2px;
+    padding: 5px 10px;
+}
+
+.gecko .userprofile {
+    -moz-border-radius: 2px;
+}
+
+.safari .userprofile {
+    -webkit-border-radius: 2px;
 }

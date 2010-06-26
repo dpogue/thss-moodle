@@ -1,5 +1,5 @@
 .coursebox {
-    background: white;
+    background: #f9f9f9;
     position: relative;
     margin: 0;
 }
@@ -21,6 +21,18 @@
     margin-left: 45%;
     width: 55%;
     min-height: 1.5em;
+}
+
+.course-content .weeks .section,
+.course-content .topics .section {
+    background: #f9f9f9;
+    border: 1px solid #a3a3a3;
+    border-radius: 2px;
+    padding: 3px 0px !important;
+}
+
+.course-content .section .section {
+    border: 0 none;
 }
 
 

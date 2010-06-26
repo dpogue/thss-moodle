@@ -1,7 +1,7 @@
 /* Blocks */
 aside {
 	margin-bottom: 1em;
-	background: white url([[pix:theme|blockheader]]) repeat-x top;
+	background: #f9f9f9 url([[pix:theme|blockheader]]) repeat-x top;
 	border: 0 none transparent;
 	border-bottom-left-radius:10px;
 	border-bottom-right-radius:10px;
