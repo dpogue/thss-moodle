@@ -22,7 +22,7 @@ $strletter              = get_string('letter', 'grades');
 
 /// Add settings for this module to the $settings object (it's already defined)
 $settings->add(new admin_setting_configtext('grade_report_studentsperpage', get_string('studentsperpage', 'grades'),
-                                        get_string('configstudentsperpage', 'grades'), 100));
+                                        get_string('studentsperpage_help', 'grades'), 100));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_quickgrading', get_string('quickgrading', 'grades'),
                                             get_string('quickgrading_help', 'grades'), 1));
@@ -31,7 +31,7 @@ $settings->add(new admin_setting_configcheckbox('grade_report_showquickfeedback'
                                             get_string('showquickfeedback_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_fixedstudents', get_string('fixedstudents', 'grades'),
-                                            get_string('configfixedstudents', 'grades'), 0));
+                                            get_string('fixedstudents_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configselect('grade_report_meanselection', get_string('meanselection', 'grades'),
                                           get_string('meanselection_help', 'grades'), GRADE_REPORT_MEAN_GRADED,
@@ -57,10 +57,10 @@ $settings->add(new admin_setting_configcheckbox('grade_report_showranges', get_s
                                             get_string('showranges_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showuserimage', get_string('showuserimage', 'grades'),
-                                            get_string('configshowuserimage', 'grades'), 1));
+                                            get_string('showuserimage_help', 'grades'), 1));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showuseridnumber', get_string('showuseridnumber', 'grades'),
-                                            get_string('configshowuseridnumber', 'grades'), 0));
+                                            get_string('showuseridnumber_help', 'grades'), 0));
 
 $settings->add(new admin_setting_configcheckbox('grade_report_showactivityicons', get_string('showactivityicons', 'grades'),
                                             get_string('showactivityicons_help', 'grades'), 1));

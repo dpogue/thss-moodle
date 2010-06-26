@@ -1,5 +1,38 @@
 <?php
 
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Configuration for Moodle's Canvas theme.
+ *
+ * This theme is special, and implements a minimalist theme with basic styles.
+ * It is intended to be used with Base as a starting point for other themes to build upon.
+ * It is not recommend to actually choose this theme for production sites!
+ *
+ * DO NOT COPY THIS TO START NEW THEMES! 
+ * Start with another theme, like "standard".
+ *
+ * For full information about creating Moodle themes, see:
+ *  http://docs.moodle.org/en/Development:Themes_2.0
+ *
+ * @package   moodlecore
+ * @copyright 2010 Patrick Malley
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 $THEME->name = 'canvas';
 
 ////////////////////////////////////////////////////
@@ -7,7 +40,9 @@ $THEME->name = 'canvas';
 // the directory in which this file resides. 
 ////////////////////////////////////////////////////
 
-$THEME->parents = array('base');
+$THEME->parents = array(
+		'base',
+);
 
 /////////////////////////////////////////////////////
 // Which existing theme(s) in the /theme/ directory
@@ -19,14 +54,29 @@ $THEME->parents = array('base');
 // changes you want to your theme.
 ////////////////////////////////////////////////////
 
-$THEME->sheets = array('pagelayout', 'text', 'core', 'course', 'mods', 'blocks', 'tabs', 'admin', 'tables');
+$THEME->sheets = array(
+		'pagelayout', 
+		'text', 
+		'core', 
+		'course',
+		'mods', 
+		'blocks', 
+		'tabs', 
+		'admin', 
+		'tables',
+);
 
 ////////////////////////////////////////////////////
 // Name of the stylesheet(s) you've including in 
 // this theme's /styles/ directory.
 ////////////////////////////////////////////////////
 
-$THEME->parents_exclude_sheets = array('base'=>array('navigation', 'browser'));
+$THEME->parents_exclude_sheets = array(
+		'base'=>array(
+				'navigation', 
+				'browser',
+		),
+);
 
 ////////////////////////////////////////////////////
 // An array of stylesheets not to inherit from the
