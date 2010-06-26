@@ -8,6 +8,7 @@ nav.blackbar {
 	padding-bottom: 5px;
 	padding-top: 3px;
 	white-space: nowrap;
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#99000000,endColorstr=#99000000)";
 }
 
 nav.blackbar span.left {
@@ -197,7 +198,7 @@ header div#welcome {
 	left: -1px;
 }
 
-header div#welcome p {
+header #welcome p {
 	background: [[setting:welcomecolour]];
 	position: absolute;
 	top: 0;
@@ -213,12 +214,20 @@ header div#welcome p {
     background: transparent linear-gradient(top, [[setting:welcomecolour]], [[setting:welcomecolourfade]]);
 }
 
+.gecko header div#welcome p {
+    background: [[setting:welcomecolour]] none;
+}
+
 .gecko19 header div#welcome p {
 	background: transparent -moz-linear-gradient(top, [[setting:welcomecolour]], [[setting:welcomecolourfade]]);
 }
 
 .safari header div#welcome p {
 	background: transparent -webkit-gradient(linear, left top, left bottom, from([[setting:welcomecolour]]), to([[setting:welcomecolourfade]]));
+}
+
+.ie header #welcome p {
+    background: [[setting:welcomecolour]] none;
 }
 
 header div#welcome p b {

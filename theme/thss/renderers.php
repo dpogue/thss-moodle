@@ -70,6 +70,11 @@ class theme_thss_core_renderer extends core_renderer {
         $output .= '<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script>'."\n";
         $output .= '<script type="text/javascript">WebFont.load({ google: { families: [ \'droid sans:n,b\', \'droid serif:n,i,b,bi\' ]}});</script>'."\n";
 
+        // HTML5 shim for IE
+        $output .= '<!--[if lt IE 9]>';
+        $output .= '<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>';
+        $output .= '<![endif]-->'."\n";
+
         //$this->page->requires->js('lib/javascript-static.js')->in_head(); // contains deprecated stuff too, do not add extre file for that for perf reasons!
         //$this->page->requires->js_function_call('setTimeout', array('fix_column_widths()', 20));
 

@@ -35,4 +35,13 @@ $setting = new admin_setting_configtext($name, $title, $description,
     $default, PARAM_CLEAN, 12);
 $admsettings->add($setting);
 
+// Text displayed in the welcome box
+$name = 'theme_thss/welcometext';
+$title = get_string('welcometext', 'theme_thss');
+$description = get_string('welcometext_desc', 'theme_thss');
+$default = '<b>Welcome to Moodle!</b>';
+$setting = new admin_setting_configtextarea($name, $title,
+    $description, $default, PARAM_CLEANHTML, '50', '10');
+$admsettings->add($setting);
+
 $ADMIN->add('themes', $admsettings);

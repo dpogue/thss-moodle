@@ -23,7 +23,8 @@
 		</canvas>
 		<div id="welcome">
 			<p>
-				<b>Thomas Haney<br />Secondary School</b>
+<?php echo $PAGE->theme->settings->welcometext; ?>
+<?php /*				<b>Thomas Haney<br />Secondary School</b>
 				<br />
 				23000 116<sup>th</sup> Avenue
 				<br />
@@ -34,7 +35,7 @@
 				<br />
 				<i>Phone:</i> 604-463-2001
 				<br />
-				<i>Fax:</i> 604-467-9081
+                <i>Fax:</i> 604-467-9081 */ ?>
 			</p>
 		</div>
 	</header>

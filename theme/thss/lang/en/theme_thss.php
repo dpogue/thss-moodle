@@ -31,3 +31,5 @@ $string['region-side-post'] = 'Right';
 $string['region-side-pre'] = 'Left';
 $string['welcomecolour'] = 'Welcome background colour';
 $string['welcomecolour_desc'] = 'This sets the background colour of the home tab and welcome message on the main page.';
+$string['welcometext'] = 'Welcome message';
+$string['welcometext_desc'] = 'This sets the message displayed as a welcome on the main page.';

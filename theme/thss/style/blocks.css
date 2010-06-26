@@ -107,6 +107,10 @@ aside.hidden .btnclose {
     -o-transform: rotate(-45deg) scale(0.72);
 }
 
+.ie aside.hidden .btnclose {
+    -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678,sizingMethod='auto expand')";
+}
+
 .block .title {
 	text-align: left;
 	font-size: 0.9em;

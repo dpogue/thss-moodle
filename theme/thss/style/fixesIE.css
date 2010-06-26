@@ -1,11 +1,6 @@
-.ie nav.blackbar {
+/*.ie nav.blackbar {
 	background: transparent;
-	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#99000000,endColorstr=#99000000)";
-}
-
-.ie6 nav.blackbar,
-.ie7 nav.blackbar {
-	background: black;
+	filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#99000000,endColorstr=#99000000)";
 }
 
 .ie7 header nav ul#tabbar li {
@@ -18,11 +13,5 @@
 }
 
 .ie header div#welcome p {
-	background: transparent;
-	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(gradientType=0,startColorstr=#FF800000,endColorstr=#66800000)";
-}
-
-.ie6 header div#welcome p,
-.ie7 header div#welcome p {
-	background: transparent url('images/welcomebg.png');
-}
+	background: [[setting:welcomecolour]];
+}*/
