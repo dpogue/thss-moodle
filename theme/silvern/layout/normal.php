@@ -18,7 +18,7 @@
 	<header>
 		<nav>
             <ul id="tabbar">
-                <li><a href="<?php $CFG->wwwroot.'/index.php' ?>"><em>Home</em></a></li>
+                <li><a href="<?php echo $CFG->wwwroot.'/index.php'; ?>"><em>Home</em></a></li>
             </ul>
 			<div id="menubar">
 				<div class="breadcrumb"><?php echo $OUTPUT->navbar(); ?></div>

@@ -18,7 +18,7 @@
 	<header>
 		<nav>
             <ul id="tabbar">
-                <li class="selected"><a href="<?php $CFG->wwwroot.'/index.php' ?>"><em>Home</em></a></li>
+                <li class="selected"><a href="<?php echo $CFG->wwwroot.'/index.php'; ?>"><em>Home</em></a></li>
             </ul>
 		</nav>
 		<canvas id="rotate" height="201" width="305">
