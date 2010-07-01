@@ -205,6 +205,26 @@ a.skip-block, a.skip {
 	-moz-border-radius: 2px;
 }
 
+.course_category_tree {
+    background: #f9f9f9;
+    border: 1px solid #a3a3a3;
+    border-radius: 2px;
+    margin: 0.5em 20px;
+    padding: 10px;
+}
+
+.safari .course_category_tree {
+	-webkit-border-radius: 2px;
+}
+
+.gecko .course_category_tree {
+	-moz-border-radius: 2px;
+}
+
+.course_category_tree .controls {
+    display: none;
+}
+
 .userprofile {
     background: #f9f9f9;
     border: 1px solid #a3a3a3;

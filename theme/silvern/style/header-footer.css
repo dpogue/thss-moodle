@@ -227,6 +227,7 @@ header #welcome p {
 	background: transparent -webkit-gradient(linear, left top, left bottom, from([[setting:welcomecolour]]), to([[setting:welcomecolourfade]]));
 }
 
+.opera header #welcome p,
 .ie header #welcome p {
     background: [[setting:welcomecolour]] none;
 }

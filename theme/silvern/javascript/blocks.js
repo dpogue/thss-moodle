@@ -41,9 +41,14 @@ M.block_controls = {
             destructor: function() { },
             add_buttons: function() {
                 var blk = Y.one('#inst'+this.block_inst);
+                var ishidden = blk.hasClass('hidden');
                 var header = Y.one('#inst'+this.block_inst+' header');
                 var btnclose = Y.Node.create('<img>');
-                btnclose.setAttribute('src', M.util.image_url('blockclose', 'theme'));
+                if (ishidden) {
+                    btnclose.setAttribute('src', M.util.image_url('blockopen', 'theme'));
+                } else {
+                    btnclose.setAttribute('src', M.util.image_url('blockclose', 'theme'));
+                }
                 btnclose.addClass('btnclose');
                 Y.on('click', this.show_hide, btnclose, this);
                 header.prepend(btnclose);

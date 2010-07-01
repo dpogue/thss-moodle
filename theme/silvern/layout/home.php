@@ -59,7 +59,7 @@
 	
 	<footer>
 		<p>
-			Proudly powered by the <a href="http://www.moodle.org/">Moodle Project</a>. Special thanks to our contributors.
+			Proudly powered by the <a href="http://www.moodle.org/">Moodle Project</a>.
 			<br />
 <?php echo $OUTPUT->standard_footer_html(); ?>
 		</p>

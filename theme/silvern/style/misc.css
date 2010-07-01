@@ -1,12 +1,19 @@
 /* Login Page */
 .loginbox {
 	margin: 15px auto;
-	border: 0 none;
+	border: 1px solid #a3a3a3;
 	width: 50%;
 	overflow: hidden;
-	background: white;
-	border-radius: 15px;
-	-moz-border-radius: 15px;
+	background: #f9f9f9;
+	border-radius: 2px;
+}
+
+.gecko .loginbox {
+    -moz-border-radius: 2px;
+}
+
+.safari .loginbox {
+    -webkit-border-radius: 2px;
 }
 
 .loginbox h2,
