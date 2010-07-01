@@ -182,7 +182,7 @@ function get_recent_enrolments($courseid, $timestart) {
 
     $context = get_context_instance(CONTEXT_COURSE, $courseid);
 
-    $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, l.time
+    $sql = "SELECT u.id, u.firstname, u.lastname, MAX(l.time)
               FROM {user} u, {role_assignments} ra, {log} l
              WHERE l.time > ?
                    AND l.course = ?
@@ -191,7 +191,8 @@ function get_recent_enrolments($courseid, $timestart) {
                    AND ".$DB->sql_cast_char2int('l.info')." = u.id
                    AND u.id = ra.userid
                    AND ra.contextid ".get_related_contexts_string($context)."
-          ORDER BY l.time ASC";
+          GROUP BY u.id, u.firstname, u.lastname
+          ORDER BY MAX(l.time) ASC";
     $params = array($timestart, $courseid);
     return $DB->get_records_sql($sql, $params);
 }
@@ -3668,6 +3669,17 @@ function navmenu($course, $cm=NULL, $targetwindow='self') {
     return '';
 }
 
+/**
+ * Returns a little popup menu for switching roles
+ *
+ * @deprecated in Moodle 2.0
+ * @param int $courseid The course  to update by id as found in 'course' table
+ * @return string
+ */
+function switchroles_form($courseid) {
+    debugging('switchroles_form() has been deprecated and replaced by an item in the global settings block');
+    return '';
+}
 
 /**
  * Print header for admin page

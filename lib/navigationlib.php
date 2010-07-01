@@ -1525,7 +1525,7 @@ class global_navigation extends navigation_node {
         if ($USER->id!=$user->id) {
             $messageargs = array('id'=>$user->id);
         }
-        $url = new moodle_url('/message/contacts_messages.php',$messageargs);
+        $url = new moodle_url('/message/index.php',$messageargs);
         $usernode->add(get_string('messages', 'message'), $url, self::TYPE_SETTING, null, 'messages');
 
         // Add a node to view the users notes if permitted
@@ -1665,11 +1665,12 @@ class global_navigation extends navigation_node {
         $issite = ($course->id == SITEID);
         $ismycourse = (array_key_exists($course->id, $this->mycourses) && !$forcegeneric);
         $displaycategories = (!$ismycourse && !$issite && !empty($CFG->navshowcategories));
+        $shortname = $course->shortname;
 
         if ($issite) {
             $parent = $this;
             $url = null;
-            $course->shortname = get_string('sitepages');
+            $shortname = get_string('sitepages');
         } else if ($ismycourse) {
             $parent = $this->rootnodes['mycourses'];
             $url = new moodle_url('/course/view.php', array('id'=>$course->id));
@@ -1719,7 +1720,7 @@ class global_navigation extends navigation_node {
             return $coursenode;
         }
 
-        $coursenode = $parent->add($course->shortname, $url, self::TYPE_COURSE, $course->shortname, $course->id);
+        $coursenode = $parent->add($shortname, $url, self::TYPE_COURSE, $shortname, $course->id);
         $coursenode->nodetype = self::NODETYPE_BRANCH;
         $coursenode->hidden = (!$course->visible);
         $coursenode->title($course->fullname);
@@ -3009,7 +3010,7 @@ class settings_navigation extends navigation_node {
             // Check that the user can view the profile
             $usercontext = get_context_instance(CONTEXT_USER, $user->id);       // User context
             if ($course->id==SITEID) {
-                if ($CFG->forceloginforprofiles && !!has_coursecontact_role($user->id) && !has_capability('moodle/user:viewdetails', $usercontext)) {  // Reduce possibility of "browsing" userbase at site level
+                if ($CFG->forceloginforprofiles && !has_coursecontact_role($user->id) && !has_capability('moodle/user:viewdetails', $usercontext)) {  // Reduce possibility of "browsing" userbase at site level
                     // Teachers can browse and be browsed at site level. If not forceloginforprofiles, allow access (bug #4366)
                     return false;
                 }
@@ -3087,12 +3088,6 @@ class settings_navigation extends navigation_node {
                 $passwordchangeurl->param('id', $course->id);
                 $usersetting->add(get_string("changepassword"), $passwordchangeurl, self::TYPE_SETTING);
             }
-        }
-
-        // Messaging
-        if (has_capability('moodle/user:editownmessageprofile', $systemcontext)) {
-            $url = new moodle_url('/message/edit.php', array('id'=>$user->id, 'course'=>$course->id));
-            $usersetting->add(get_string('editmymessage', 'message'), $url, self::TYPE_SETTING);
         }
 
         // View the roles settings

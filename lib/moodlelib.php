@@ -5704,9 +5704,10 @@ interface string_manager {
      * Load all strings for one component
      * @param string $component The module the string is associated with
      * @param string $lang
+     * @param bool $disablecache Do not use caches, force fetching the strings from sources
      * @return array of all string for given component and lang
      */
-    public function load_component_strings($component, $lang);
+    public function load_component_strings($component, $lang, $disablecache=false);
 
     /**
      * Invalidates all caches, should the implementation use any
@@ -6254,9 +6255,10 @@ class install_string_manager implements string_manager {
      * Load all strings for one component
      * @param string $component The module the string is associated with
      * @param string $lang
+     * @param bool $disablecache Do not use caches, force fetching the strings from sources
      * @return array of all string for given component and lang
      */
-    public function load_component_strings($component, $lang) {
+    public function load_component_strings($component, $lang, $disablecache=false) {
         // not needed in installer
         return array();
     }
@@ -7009,7 +7011,7 @@ function get_plugin_types($fullpaths=true) {
 function get_plugin_list($plugintype) {
     global $CFG;
 
-    $ignored = array('CVS', '_vti_cnf', 'simpletest', 'db');
+    $ignored = array('CVS', '_vti_cnf', 'simpletest', 'db', 'yui');
     if ($plugintype == 'auth') {
         // Historically we have had an auth plugin called 'db', so allow a special case.
         $key = array_search('db', $ignored);
@@ -7105,7 +7107,7 @@ function get_list_of_plugins($directory='mod', $exclude='', $basedir='') {
         $dirhandle = opendir($basedir);
         while (false !== ($dir = readdir($dirhandle))) {
             $firstchar = substr($dir, 0, 1);
-            if ($firstchar == '.' or $dir == 'CVS' or $dir == '_vti_cnf' or $dir == 'simpletest' or $dir == $exclude) {
+            if ($firstchar == '.' or $dir == 'CVS' or $dir == '_vti_cnf' or $dir == 'simpletest' or $dir == 'yui' or $dir == $exclude) {
                 continue;
             }
             if (filetype($basedir .'/'. $dir) != 'dir') {
@@ -8896,18 +8898,21 @@ function moodle_request_shutdown() {
     }
 }
 
-/**
- * If new messages are waiting for the current user, then load the
- * JavaScript required to pop up the messaging window.
- */
+ /**
+  * If new messages are waiting for the current user, then insert
+  * JavaScript to pop up the messaging window into the page
+  *
+  * @global moodle_page $PAGE
+  * @return void
+  */
 function message_popup_window() {
-    global $USER, $DB, $PAGE;
+    global $USER, $DB, $PAGE, $CFG, $SITE;
 
     if (defined('MESSAGE_WINDOW') || empty($CFG->messaging)) {
         return;
     }
 
-    if (!isset($USER->id) || isguestuser()) {
+    if (!isloggedin() || isguestuser()) {
         return;
     }
 
@@ -8915,19 +8920,56 @@ function message_popup_window() {
         $USER->message_lastpopup = 0;
     }
 
-    $popuplimit = 30;     // Minimum seconds between popups
-    if ((time() - $USER->message_lastpopup) <= $popuplimit) {  /// It's been long enough
-        return;
+    $message_users = null;
+
+    $sql = "SELECT m.id, u.firstname, u.lastname FROM {message} m
+JOIN {message_working} mw ON m.id=mw.unreadmessageid
+JOIN {message_processors} p ON mw.processorid=p.id
+JOIN {user} u ON m.useridfrom=u.id
+WHERE m.useridto = :userid AND m.timecreated > :ts AND p.name='popup'";
+    $message_users = $DB->get_records_sql($sql, array('userid'=>$USER->id, 'ts'=>$USER->message_lastpopup));
+    if (empty($message_users)) {
+
+        //if the user was last notified over an hour ago remind them of any new messages regardless of when they were sent
+        $canrenotify = (time() - $USER->message_lastpopup) > 3600;
+        if ($canrenotify) {
+            $sql = "SELECT m.id, u.firstname, u.lastname FROM {message} m
+JOIN {message_working} mw ON m.id=mw.unreadmessageid
+JOIN {message_processors} p ON mw.processorid=p.id
+JOIN {user} u ON m.useridfrom=u.id
+WHERE m.useridto = :userid AND p.name='popup'";
+            $message_users = $DB->get_records_sql($sql, array('userid'=>$USER->id));
+        }
     }
 
-    if (!get_user_preferences('message_showmessagewindow', 1)) {
-        return;
-    }
+    //if we have new messages to notify the user about
+    if (!empty($message_users)) {
 
-    if ($DB->count_records_select('message', 'useridto = ? AND timecreated > ?', array($USER->id, $USER->message_lastpopup))) {
+        $strmessages = '';
+        if (count($message_users)>1) {
+            $strmessages = get_string('unreadnewmessages', 'message', count($message_users));
+        } else {
+            $strmessages = get_string('unreadnewmessage', 'message', fullname(reset($message_users)) );
+        }
+        
+        $strgomessage = get_string('gotomessages', 'message');
+        $strstaymessage = get_string('ignore','admin');
+
+        $url = $CFG->wwwroot.'/message/index.php';
+        $content =  html_writer::start_tag('div', array('id'=>'newmessageoverlay','class'=>'mdl-align')).
+                        html_writer::start_tag('div', array('id'=>'newmessagetext')).
+                            $strmessages.
+                        html_writer::end_tag('div').
+
+                        html_writer::start_tag('div', array('id'=>'newmessagelinks')).
+                            html_writer::link($url, $strgomessage, array('id'=>'notificationyes')).'&nbsp;&nbsp;&nbsp;'.
+                            html_writer::link('', $strstaymessage, array('id'=>'notificationno')).
+                        html_writer::end_tag('div');
+                    html_writer::end_tag('div');
+
+        $PAGE->requires->js_init_call('M.core_message.init_notification', array('', $content, $url));
+
         $USER->message_lastpopup = time();
-        $PAGE->requires->js_function_call('openpopup', array('/message/index.php', 'message',
-                'menubar=0,location=0,scrollbars,status,resizable,width=400,height=500', 0));
     }
 }
 

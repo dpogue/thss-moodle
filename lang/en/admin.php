@@ -376,13 +376,14 @@ $string['courserequestspending'] = 'Pending course requests';
 $string['courses'] = 'Courses';
 $string['coursesperpage'] = 'Courses per page';
 $string['creatornewroleid'] = 'Creators\' role in new courses';
+$string['cron'] = 'Cron';
+$string['cron_help'] = 'The cron.php maintenance script assists some of Moodle\'s modules to perform tasks on a scheduled basis, such as mailing out copies of new forum posts. A mechanism is required to run the script regularly e.g. every 5 minutes.';
+$string['cron_link'] = 'admin/cron';
 $string['cronclionly'] = 'Cron execution via command line only';
 $string['cronerrorclionly'] = 'Sorry, internet access to this page has been disabled by the administrator.';
 $string['cronerrorpassword'] = 'Sorry, you have not provided a valid password to access this page';
 $string['cronremotepassword'] = 'Cron password for remote access';
 $string['cronwarning'] = 'The <a href="cron.php">cron.php maintenance script</a> has not been run for at least 24 hours.';
-$string['cronwarning_help'] = 'The cron.php maintenance script assists some of Moodle\'s modules to perform tasks on a scheduled basis, such as mailing out copies of new forum posts. A mechanism is required to run the script regularly e.g. every 10 minutes.';
-$string['cronwarning_link'] = 'admin/cron';
 $string['csvdelimiter'] = 'CSV delimiter';
 $string['ctyperecommended'] = 'Installing the optional ctype PHP extension is highly recommended in order to improve site performance, particularly if your site is supporting non-latin languages.';
 $string['ctyperequired'] = 'The ctype PHP extension is now required by Moodle, in order to improve site performance and to offer multilingual compatibility.';
@@ -553,7 +554,6 @@ $string['guestroleid'] = 'Role for guest';
 $string['helpadminseesall'] = 'Do admins see all calendar events or just those that apply to themselves?';
 $string['helpcalendarsettings'] = 'Configure various calendar and date/time-related aspects of Moodle';
 $string['helpforcetimezone'] = 'You can allow users to individually select their timezone, or force a timezone for everyone.';
-$string['helpprofilefieldlink'] = 'Create a link from the user data';
 $string['helpsitemaintenance'] = 'For upgrades and other work';
 $string['helpstartofweek'] = 'Which day starts the week in the calendar?';
 $string['helpupcominglookahead'] = 'How many days in the future does the calendar look for upcoming events by default?';
@@ -795,9 +795,7 @@ $string['profileshortnamenotunique'] = 'This short name is already in use';
 $string['profilesignup'] = 'Display on signup page?';
 $string['profilespecificsettings'] = 'Specific settings';
 $string['profilevisible'] = 'Who is this field visible to?';
-$string['profilevisible_help'] = 'There are 3 options:
-
-* Not visible - For private data only viewable by administrators
+$string['profilevisible_help'] = '* Not visible - For private data only viewable by administrators
 * Visible to user - For private data only viewable by the user and by administrators
 * Visible to everyone';
 $string['profilevisibleall'] = 'Visible to everyone';
@@ -1032,7 +1030,7 @@ $string['verifychangedemail'] = 'Restrict domains when changing email';
 $string['warningcurrentsetting'] = 'Invalid current value: {$a}';
 $string['webproxy'] = 'Web proxy';
 $string['webproxyinfo'] = 'Fill in following options if your Moodle server can not access internet directly. Internet access is required for download of environment data, language packs, RSS feeds, timezones, etc.<br /><em>PHP cURL extension is highly recommended.</em>';
-$string['xmlrpcrecommended'] = 'Installing the optional xmlrpc extension is useful for Moodle Networking functionality.';
+$string['xmlrpcrequired'] = 'The xmlrpc extension is needed for hub communication, and useful for web services and Moodle networking';
 $string['xmlstrictheaders'] = 'XML strict headers';
 $string['yuicomboloading'] = 'YUI combo loading';
 $string['ziprequired'] = 'The Zip PHP extension is now required by Moodle, info-ZIP binaries or PclZip library are not used anymore.';

@@ -177,16 +177,17 @@ class course_publish_manager {
     }
 
     /**
-     * Get a publication for a course id on the hub
+     * Get a publication for a course id on a hub
      * (which is either the id of the unique possible enrollable publication of a course,
      * either an id of one of the downloadable publication)
      * @param int $hubcourseid
+     * @param string $huburl
      * @return object publication
      */
-    public function get_publication($hubcourseid) {
+    public function get_publication($hubcourseid, $huburl) {
         global $DB;
         return $DB->get_record('course_published',
-                array('hubcourseid' => $hubcourseid));
+                array('hubcourseid' => $hubcourseid, 'huburl' => $huburl));
     }
 
     /**
@@ -257,6 +258,41 @@ class course_publish_manager {
     public function get_block_instances_by_context($contextid, $sort = '') {
         global $DB;
         return $DB->get_records('block_instances', array('parentcontextid' => $contextid), $sort);
+    }
+
+    /**
+     * Retrieve all the sorted course subjects
+     * @return array $subjects
+     */
+    public function get_sorted_subjects() {
+        $subjects = get_string_manager()->load_component_strings('edufields', current_language());
+
+        //sort the subjects
+        asort($subjects);
+        foreach ($subjects as $key => $option) {
+            $keylength = strlen($key);
+            if ($keylength == 8) {
+                $toplevel[$key] = $option;
+            } else if ($keylength == 10) {
+                $sublevel[substr($key, 0, 8)][$key] = $option;
+            } else if ($keylength == 12) {
+                $subsublevel[substr($key, 0, 8)][substr($key, 0, 10)][$key] = $option;
+            }
+        }
+        
+        //recreate the initial structure returned by get_string_manager()
+        $subjects = array();
+        foreach ($toplevel as $key => $name) {
+            $subjects[$key] = $name;
+            foreach ($sublevel[$key] as $subkey => $subname) {
+                $subjects[$subkey] = $subname;
+                foreach ($subsublevel[$key][$subkey] as $subsubkey => $subsubname) {
+                    $subjects[$subsubkey] = $subsubname;
+                }
+            }
+        }
+
+        return $subjects;
     }
 
 }

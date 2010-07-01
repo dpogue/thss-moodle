@@ -3196,6 +3196,7 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
     $postuser->lastname  = $post->lastname;
     $postuser->imagealt  = $post->imagealt;
     $postuser->picture   = $post->picture;
+    $postuser->email     = $post->email;
 
     echo '<tr class="header"><td class="picture left">';
     echo $OUTPUT->user_picture($postuser, array('courseid'=>$course->id));
@@ -3473,6 +3474,7 @@ function forum_print_discussion_header(&$post, $forum, $group=-1, $datestring=""
     $postuser->lastname = $post->lastname;
     $postuser->imagealt = $post->imagealt;
     $postuser->picture = $post->picture;
+    $postuser->email = $post->email;
 
     echo '<td class="picture">';
     echo $OUTPUT->user_picture($postuser, array('courseid'=>$forum->course));
@@ -3616,10 +3618,11 @@ function forum_shorten_post($message) {
  */
 function forum_print_mode_form($id, $mode, $forumtype='') {
     global $OUTPUT;
-    $select = new single_select(new moodle_url("/mod/forum/view.php", array('f'=>$id)), 'mode', forum_get_layout_modes(), $mode, null, "mode");
-
     if ($forumtype == 'single') {
+        $select = new single_select(new moodle_url("/mod/forum/view.php", array('f'=>$id)), 'mode', forum_get_layout_modes(), $mode, null, "mode");
         $select->class = "forummode";
+    } else {
+        $select = new single_select(new moodle_url("/mod/forum/discuss.php", array('d'=>$id)), 'mode', forum_get_layout_modes(), $mode, null, "mode");
     }
     echo $OUTPUT->render($select);
 }
@@ -3636,7 +3639,7 @@ function forum_search_form($course, $search='') {
     $output  = '<div class="forumsearch">';
     $output .= '<form action="'.$CFG->wwwroot.'/mod/forum/search.php" style="display:inline">';
     $output .= '<fieldset class="invisiblefieldset">';
-    $output .= $OUTPUT->old_help_icon('search', get_string('search'));
+    $output .= $OUTPUT->help_icon('search');
     $output .= '<label class="accesshide" for="search" >'.get_string('search', 'forum').'</label>';
     $output .= '<input id="search" name="search" type="text" size="18" value="'.s($search, true).'" alt="search" />';
     $output .= '<label class="accesshide" for="searchforums" >'.get_string('searchforums', 'forum').'</label>';
@@ -5318,13 +5321,12 @@ function forum_print_discussion($course, $cm, $forum, $discussion, $post, $mode,
  * @param object $discussion
  * @param object $post
  * @param object $mode
- * @param object $ratings
  * @param bool $reply
  * @param bool $forumtracked
  * @param array $posts
  * @return void
  */
-function forum_print_posts_flat($course, &$cm, $forum, $discussion, $post, $mode, $ratings, $reply, $forumtracked, $posts) {
+function forum_print_posts_flat($course, &$cm, $forum, $discussion, $post, $mode, $reply, $forumtracked, $posts) {
     global $USER, $CFG;
 
     $link  = false;
@@ -5344,7 +5346,7 @@ function forum_print_posts_flat($course, &$cm, $forum, $discussion, $post, $mode
 
         $postread = !empty($post->postread);
 
-        forum_print_post($post, $discussion, $forum, $cm, $course, $ownpost, $reply, $link, $ratings,
+        forum_print_post($post, $discussion, $forum, $cm, $course, $ownpost, $reply, $link, 
                              '', '', $postread, true, $forumtracked);
     }
 }
@@ -5377,7 +5379,7 @@ function forum_print_posts_threaded($course, &$cm, $forum, $discussion, $parent,
 
                 $postread = !empty($post->postread);
 
-                forum_print_post($post, $discussion, $forum, $cm, $course, $ownpost, $reply, $link, $ratings,
+                forum_print_post($post, $discussion, $forum, $cm, $course, $ownpost, $reply, $link, 
                                      '', '', $postread, true, $forumtracked);
             } else {
                 if (!forum_user_can_see_post($forum, $discussion, $post, NULL, $cm)) {
@@ -5403,7 +5405,7 @@ function forum_print_posts_threaded($course, &$cm, $forum, $discussion, $parent,
                 echo "</span>";
             }
 
-            forum_print_posts_threaded($course, $cm, $forum, $discussion, $post, $depth-1, $ratings, $reply, $forumtracked, $posts);
+            forum_print_posts_threaded($course, $cm, $forum, $discussion, $post, $depth-1, $reply, $forumtracked, $posts);
             echo "</div>\n";
         }
     }

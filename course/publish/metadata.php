@@ -39,6 +39,11 @@ require_once($CFG->dirroot . '/lib/filelib.php');
 
 //check user access capability to this page
 $id = optional_param('id', 0, PARAM_INT);
+
+if (empty($id)) {
+    throw new moodle_exception('wrongurlformat', 'hub');
+}
+
 $course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
 require_login($course);
 
@@ -172,7 +177,7 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
         }
 
         //save the record into the published course table
-        $publication = $publicationmanager->get_publication($courseids[0]);
+        $publication = $publicationmanager->get_publication($courseids[0], $huburl);
         if (empty($publication)) {
             //if never been published or if we share, we need to save this new publication record
             $publicationmanager->add_course_publication($registeredhub->huburl, $course->id, !$share, $courseids[0]);

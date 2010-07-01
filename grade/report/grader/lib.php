@@ -363,7 +363,9 @@ class grade_report_grader extends grade_report {
             }
 
             $params = array_merge($gbrparams, $this->groupwheresql_params);
-            $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.imagealt, u.picture, u.idnumber
+
+            $userfields = user_picture::fields('u');
+            $sql = "SELECT DISTINCT $userfields, u.idnumber
                       FROM {user} u
                            JOIN {role_assignments} ra ON u.id = ra.userid
                            $this->groupsql
@@ -596,7 +598,7 @@ class grade_report_grader extends grade_report {
         foreach ($this->users as $userid => $user) {
             $userrow = new html_table_row();
             $userrow->id = 'fixed_user_'.$userid;
-            $userrow->attributes['class'] = 'r'.$this->rowcount++ . $rowclasses[$this->rowcount % 2];
+            $userrow->attributes['class'] = 'r'.$this->rowcount++.' '.$rowclasses[$this->rowcount % 2];
 
             $usercell = new html_table_cell();
             $usercell->attributes['class'] = 'user';
