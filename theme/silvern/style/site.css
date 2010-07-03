@@ -141,15 +141,16 @@ a.skip-block, a.skip {
 	padding: 10px;
 	margin-bottom: 15px;
 	background: #f9f9f9;
-	border-radius: 10px;
+	border-radius: 2px;
+    border: 1px solid #a3a3a3;
 }
 
 .gecko .generalbox {
-	-moz-border-radius: 10px;
+	-moz-border-radius: 2px;
 }
 
 .webkit .generalbox {
-	-webkit-border-radius: 10px;
+	-webkit-border-radius: 2px;
 }
 
 .boxaligncenter {
