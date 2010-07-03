@@ -630,26 +630,27 @@ abstract class repository {
         $returntypes   = isset($args['return_types']) ? $args['return_types'] : 3;
 
         $params = array();
-        $sql = 'SELECT i.*, r.type AS repositorytype, r.sortorder, r.visible FROM {repository} r, {repository_instances} i WHERE ';
-        $sql .= 'i.typeid = r.id ';
+        $sql = "SELECT i.*, r.type AS repositorytype, r.sortorder, r.visible
+                  FROM {repository} r, {repository_instances} i
+                 WHERE i.typeid = r.id ";
 
         if (!empty($args['disable_types']) && is_array($args['disable_types'])) {
             list($types, $p) = $DB->get_in_or_equal($args['disable_types'], SQL_PARAMS_QM, 'param0000', false);
-            $sql .= ' AND r.type '.$types;
+            $sql .= " AND r.type $types";
             $params = array_merge($params, $p);
         }
 
         if (!empty($args['userid']) && is_numeric($args['userid'])) {
-            $sql .= ' AND (i.userid = 0 or i.userid = ?)';
+            $sql .= " AND (i.userid = 0 or i.userid = ?)";
             $params[] = $args['userid'];
         }
 
         foreach ($contexts as $context) {
             if (empty($firstcontext)) {
                 $firstcontext = true;
-                $sql .= ' AND ((i.contextid = ?)';
+                $sql .= " AND ((i.contextid = ?)";
             } else {
-                $sql .= ' OR (i.contextid = ?)';
+                $sql .= " OR (i.contextid = ?)";
             }
             $params[] = $context->id;
         }
@@ -659,14 +660,14 @@ abstract class repository {
         }
 
         if ($onlyvisible == true) {
-            $sql .= ' AND (r.visible = 1)';
+            $sql .= " AND (r.visible = 1)";
         }
 
         if (isset($type)) {
-            $sql .= ' AND (r.type = ?)';
+            $sql .= " AND (r.type = ?)";
             $params[] = $type;
         }
-        $sql .= ' order by r.sortorder, i.name';
+        $sql .= " ORDER BY r.sortorder, i.name";
 
         if (!$records = $DB->get_records_sql($sql, $params)) {
             $records = array();
@@ -748,11 +749,12 @@ abstract class repository {
      */
     public static function get_instance($id) {
         global $DB, $CFG;
-        $sql = 'SELECT i.*, r.type AS repositorytype, r.visible FROM {repository} r, {repository_instances} i WHERE ';
-        $sql .= 'i.typeid = r.id AND ';
-        $sql .= 'i.id = '.$id;
+        $sql = "SELECT i.*, r.type AS repositorytype, r.visible
+                  FROM {repository} r
+                  JOIN {repository_instances} i ON i.typeid = r.id
+                 WHERE i.id = ?";
 
-        if(!$instance = $DB->get_record_sql($sql)) {
+        if (!$instance = $DB->get_record_sql($sql, array($id))) {
             return false;
         }
         require_once($CFG->dirroot . '/repository/'. $instance->repositorytype
@@ -830,6 +832,8 @@ abstract class repository {
         $now = time();
 
         $record->contextid = $context->id;
+        $record->component = 'user';
+        $record->filearea  = 'draft';
         $record->timecreated  = $now;
         $record->timemodified = $now;
         $record->userid       = $USER->id;
@@ -838,8 +842,7 @@ abstract class repository {
             $record->itemid = 0;
         }
         $fs = get_file_storage();
-        $browser = get_file_browser();
-        if ($existingfile = $fs->get_file($context->id, $record->filearea, $record->itemid, $record->filepath, $record->filename)) {
+        if ($existingfile = $fs->get_file($context->id, $record->component, $record->filearea, $record->itemid, $record->filepath, $record->filename)) {
             $existingfile->delete();
         }
         if ($file = $fs->create_file_from_pathname($record, $thefile)) {
@@ -847,76 +850,15 @@ abstract class repository {
                 $delete = unlink($thefile);
                 unset($CFG->repository_no_delete);
             }
-            $fileinfo = $browser->get_file_info($context, $file->get_filearea(), $file->get_itemid(), $file->get_filepath(), $file->get_filename());
-            if(!empty($fileinfo)) {
-                return array(
-                    'url'=>$fileinfo->get_url(),
-                    'id'=>$file->get_itemid(),
-                    'file'=>$file->get_filename(),
-                    'icon' => $OUTPUT->pix_url(file_extension_icon($thefile, 32))->out()
-                );
-            } else {
-                return null;
-            }
+            return array(
+                'url'=>file_draftfile_url($file->get_itemid(), $file->get_filepath(), $file->get_filename()),
+                'id'=>$file->get_itemid(),
+                'file'=>$file->get_filename(),
+                'icon' => $OUTPUT->pix_url(file_extension_icon($thefile, 32))->out(),
+            );
         } else {
             return null;
         }
-    }
-
-    /**
-     * Return the user files tree in a format to be returned by the function get_listing
-     * @global object $CFG
-     * @param string $search
-     * @return array
-     */
-    public static function get_user_file_tree($search = ''){
-        global $CFG;
-        $ret = array();
-        $ret['nologin'] = true;
-        $ret['manage'] = $CFG->wwwroot .'/files/index.php'; // temporary
-        $browser = get_file_browser();
-        $itemid = null;
-        $filename = null;
-        $filearea = null;
-        $path = '/';
-        $ret['dynload'] = false;
-
-        if ($fileinfo = $browser->get_file_info(get_system_context(), $filearea, $itemid, $path, $filename)) {
-
-            $ret['path'] = array();
-            $params = $fileinfo->get_params();
-            $filearea = $params['filearea'];
-            $ret['path'][] = repository::encode_path($filearea, $path, $fileinfo->get_visible_name());
-            if ($fileinfo->is_directory()) {
-                $level = $fileinfo->get_parent();
-                while ($level) {
-                    $params = $level->get_params();
-                    $ret['path'][] = repository::encode_path($params['filearea'], $params['filepath'], $level->get_visible_name());
-                    $level = $level->get_parent();
-                }
-            }
-            $filecount = repository::build_tree($fileinfo, $search, $ret['dynload'], $ret['list']);
-            $ret['path'] = array_reverse($ret['path']);
-        }
-
-        if (empty($ret['list'])) {
-            //exit(mnet_server_fault(9016, get_string('emptyfilelist', 'repository_local')));
-            throw new Exception('emptyfilelist');
-        } else {
-            return $ret;
-        }
-
-    }
-
-    /**
-     * Serialize file path
-     * @param string $filearea
-     * @param string $path
-     * @param string $visiblename
-     * @return array
-     */
-    public static function encode_path($filearea, $path, $visiblename) {
-        return array('path'=>serialize(array($filearea, $path)), 'name'=>$visiblename);
     }
 
     /**
@@ -950,7 +892,7 @@ abstract class repository {
                 $level = $child->get_parent();
                 while ($level) {
                     $params = $level->get_params();
-                    $path[] = repository::encode_path($params['filearea'], $params['filepath'], $level->get_visible_name());
+                    $path[] = array($params['filepath'], $level->get_visible_name());
                     $level = $level->get_parent();
                 }
 
@@ -989,7 +931,7 @@ abstract class repository {
                     continue;
                 }
                 $params = $child->get_params();
-                $source = serialize(array($params['contextid'], $params['filearea'], $params['itemid'], $params['filepath'], $params['filename']));
+                $source = serialize(array($params['contextid'], $params['component'], $params['filearea'], $params['itemid'], $params['filepath'], $params['filename']));
                 $list[] = array(
                     'title' => $filename,
                     'size' => $filesize,
@@ -1249,13 +1191,13 @@ abstract class repository {
      * @return object
      */
     final public function get_meta() {
-        global $CFG;
+        global $CFG, $OUTPUT;
         $ft = new filetype_parser;
         $meta = new stdclass;
         $meta->id   = $this->id;
         $meta->name = $this->get_name();
         $meta->type = $this->options['type'];
-        $meta->icon = $CFG->httpswwwroot.'/repository/'.$meta->type.'/icon.png';
+        $meta->icon = $OUTPUT->pix_url('icon', 'repository_'.$meta->type)->out(false);
         $meta->supported_types = $ft->get_extensions($this->supported_filetypes());
         $meta->return_types = $this->supported_returntypes();
         return $meta;
@@ -1710,7 +1652,9 @@ final class repository_instance_form extends moodleform {
         global $DB;
 
         $errors = array();
-        $sql = "SELECT count('x') FROM {repository_instances} i, {repository} r WHERE r.type=:plugin AND r.id=i.typeid AND i.name=:name";
+        $sql = "SELECT count('x')
+                  FROM {repository_instances} i, {repository} r
+                 WHERE r.type=:plugin AND r.id=i.typeid AND i.name=:name";
         if ($DB->count_records_sql($sql, array('name' => $data['name'], 'plugin' => $data['plugin'])) > 1) {
             $errors = array('name' => get_string('err_uniquename', 'repository'));
         }

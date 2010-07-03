@@ -75,10 +75,61 @@ class create_taskbasepath_directory extends backup_execution_step {
 
 /**
  * Abtract tructure step, parent of all the activity structure steps. Used to wrap the
- * activity structure definition within the main <activity ...> tag
+ * activity structure definition within the main <activity ...> tag. Also provides
+ * subplugin support for activities (that must be properly declared)
  */
 abstract class backup_activity_structure_step extends backup_structure_step {
 
+    /**
+     * Add subplugin structure to any element in the activity backup tree
+     *
+     * @param string $subplugintype type of subplugin as defined in activity db/subplugins.php
+     * @param backup_nested_element $element element in the activity backup tree that
+     *                                       we are going to add subplugin information to
+     * @param bool $multiple to define if multiple subplugins can produce information
+     *                       for each instance of $element (true) or no (false)
+     */
+    protected function add_subplugin_structure($subplugintype, $element, $multiple) {
+
+        global $CFG;
+
+        // Check the requested subplugintype is a valid one
+        $subpluginsfile = $CFG->dirroot . '/mod/' . $this->task->get_modulename() . '/db/subplugins.php';
+        if (!file_exists($subpluginsfile)) {
+             throw new backup_step_exception('activity_missing_subplugins_php_file', $this->task->get_modulename());
+        }
+        include($subpluginsfile);
+        if (!array_key_exists($subplugintype, $subplugins)) {
+             throw new backup_step_exception('incorrect_subplugin_type', $subplugintype);
+        }
+
+        // Arrived here, subplugin is correct, let's create the optigroup
+        $optigroupname = $subplugintype . '_' . $element->get_name() . '_subplugin';
+        $optigroup = new backup_optigroup($optigroupname, null, $multiple);
+
+        // Get all the optigroup_elements, looking across al the subplugin dirs
+        $elements = array();
+        $subpluginsdirs = get_plugin_list($subplugintype);
+        foreach ($subpluginsdirs as $name => $subpluginsdir) {
+            $classname = 'backup_' . $subplugintype . '_' . $name . '_subplugin';
+            $backupfile = $subpluginsdir . '/backup/moodle2/' . $classname . '.class.php';
+            if (file_exists($backupfile)) {
+                require_once($backupfile);
+                $backupsubplugin = new $classname($subplugintype, $name);
+                // Add subplugin returned structure to optigroup (must be optigroup_element instance)
+                if ($subpluginstructure = $backupsubplugin->define_subplugin_structure($element->get_name())) {
+                    $optigroup->add_child($subpluginstructure);
+                }
+            }
+        }
+        // Finished, add optigroup to element
+        $element->add_child($optigroup);
+    }
+
+    /**
+     * Wraps any activity backup structure within the common 'activity' element
+     * that will include common to all activities information like id, context...
+     */
     protected function prepare_activity_structure($activitystructure) {
 
         // Create the wrap element
@@ -194,7 +245,7 @@ class backup_section_structure_step extends backup_structure_step {
         $section->set_source_alias('section', 'number');
 
         // Set annotations
-        $section->annotate_files(array('course_section'), 'id');
+        $section->annotate_files('course', 'section', 'id');
 
         return $section;
     }
@@ -273,7 +324,8 @@ class backup_course_structure_step extends backup_structure_step {
 
         $course->annotate_ids('grouping', 'defaultgroupingid');
 
-        $course->annotate_files(array('course_summary', 'course_content'), null);
+        $course->annotate_files('course', 'summary', null);
+        $course->annotate_files('course', 'legacy', null);
 
         // Return root element ($course)
 
@@ -618,8 +670,9 @@ class backup_groups_structure_step extends backup_structure_step {
 
         // Define file annotations
 
-        // TODO: Change "course_group_image" file area to the one finally used for group images
-        $group->annotate_files(array('course_group_description', 'course_group_image'), 'id');
+        //TODO: not implemented yet
+        $group->annotate_files('group', 'description', 'id');
+        $group->annotate_files('group', 'image', 'id');
 
         // Return the root element (groups)
         return $groups;
@@ -942,7 +995,7 @@ class backup_final_files_structure_step extends backup_structure_step {
         $files = new backup_nested_element('files');
 
         $file = new file_nested_element('file', array('id'), array(
-            'contenthash', 'contextid', 'filearea', 'itemid',
+            'contenthash', 'contextid', 'component', 'filearea', 'itemid',
             'filepath', 'filename', 'userid', 'filesize',
             'mimetype', 'status', 'timecreated', 'timemodified',
             'source', 'author', 'license', 'sortorder'));
@@ -1200,9 +1253,8 @@ class backup_annotate_all_user_files extends backup_execution_step {
         global $DB;
 
         // List of fileareas we are going to annotate
-        // TODO: Change "user_image" file area to the one finally used for user images
-        $fileareas = array(
-            'user_private', 'user_profile', 'user_image');
+        // TODO: user image not implemented yet
+        $fileareas = array('private', 'profile', 'image');
 
         // Fetch all annotated (final) users
         $rs = $DB->get_recordset('backup_ids_temp', array(
@@ -1214,7 +1266,7 @@ class backup_annotate_all_user_files extends backup_execution_step {
             foreach ($fileareas as $filearea) {
                 // We don't need to specify itemid ($userid - 4th param) as far as by
                 // context we can get all the associated files. See MDL-22092
-                backup_structure_dbops::annotate_files($this->get_backupid(), $userctxid, $filearea, null);
+                backup_structure_dbops::annotate_files($this->get_backupid(), $userctxid, 'user', $filearea, null);
             }
         }
         $rs->close();

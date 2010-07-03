@@ -6188,7 +6188,6 @@ function print_plugin_tables() {
         'feedback',
         'glossary_random',
         'html',
-        'loancalc',
         'login',
         'mentees',
         'messages',
@@ -7251,7 +7250,7 @@ class admin_setting_managewebservicetokens extends admin_setting {
 
 /**
  * Colour picker
- * 
+ *
  * @copyright 2010 Sam Hemelryk
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -7288,7 +7287,7 @@ class admin_setting_configcolourpicker extends admin_setting {
 
     /**
      * Saves the setting
-     * 
+     *
      * @param string $data
      * @return bool
      */
@@ -7312,8 +7311,10 @@ class admin_setting_configcolourpicker extends admin_setting {
                 $data = '#'.$data;
             }
             return $data;
-        } else if (preg_match('/^[a-zA-Z]{3, 25}$/')) {
+        } else if (preg_match('/^[a-zA-Z]{3, 25}$/', $data)) {
             return $data;
+        } else if (empty($data)) {
+            return $this->defaultsetting;
         } else {
             return false;
         }
