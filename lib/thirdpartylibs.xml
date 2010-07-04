@@ -25,14 +25,14 @@
     <location>dragmath</location>
     <name>DragMath</name>
     <license>GPL</license>
-    <version>0.7.8.1</version>
+    <version>0.7.8.2</version>
     <licenseversion></licenseversion>
   </library>
   <library>
     <location>editor</location>
     <name>TinyMCE</name>
     <license>LGPL</license>
-    <version>3.2.5</version>
+    <version>3.3.8</version>
     <licenseversion>2.1+</licenseversion>
   </library>
   <library>

@@ -3,7 +3,6 @@
 class block_messages extends block_base {
     function init() {
         $this->title = get_string('pluginname', 'block_messages');
-        $this->version = 2007101509;
     }
 
     function get_content() {
@@ -33,11 +32,11 @@ class block_messages extends block_base {
         $action = null; //this was using popup_action() but popping up a fullsize window seems wrong
         $this->content->footer = $OUTPUT->action_link($link, get_string('messages', 'message'), $action);
 
-        $users = $DB->get_records_sql("SELECT m.useridfrom AS id, COUNT(m.useridfrom) AS count,
-                                              u.firstname, u.lastname, u.picture, u.imagealt, u.lastaccess
+        $ufields = user_picture::fields('u', array('lastaccess'));
+        $users = $DB->get_records_sql("SELECT $ufields, COUNT(m.useridfrom) AS count
                                          FROM {user} u, {message} m
                                         WHERE m.useridto = ? AND u.id = m.useridfrom
-                                     GROUP BY m.useridfrom, u.firstname,u.lastname,u.picture,u.lastaccess,u.imagealt", array($USER->id));
+                                     GROUP BY $ufields", array($USER->id));
 
 
         //Now, we have in users, the list of users to show
@@ -52,7 +51,7 @@ class block_messages extends block_base {
 
                 $link = '/message/discussion.php?id='.$user->id;
                 $anchortagcontents = '<img class="iconsmall" src="'.$OUTPUT->pix_url('t/message') . '" alt="" />&nbsp;'.$user->count;
-                
+
                 $action = new popup_action('click', $link, 'message_'.$user->id);
                 $anchortag = $OUTPUT->action_link($link, $anchortagcontents, $action);
 

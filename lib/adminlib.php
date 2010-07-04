@@ -5286,7 +5286,8 @@ class admin_setting_manageeditors extends admin_setting {
 
             // settings link
             if (file_exists($CFG->dirroot.'/lib/editor/'.$editor.'/settings.php')) {
-                $settings = "<a href='$url&amp;editor=$editor&amp;action=edit'>{$txt->settings}</a>";
+                $eurl = new moodle_url('/admin/settings.php', array('section'=>'editorsettingstinymce'));
+                $settings = "<a href='$eurl'>{$txt->settings}</a>";
             } else {
                 $settings = '';
             }
@@ -6541,7 +6542,7 @@ class admin_setting_managerepository extends admin_setting {
                 // Check that it has not already been listed
                 if (!in_array($plugin, $alreadyplugins)) {
                     $select = new single_select($this->repository_action_url($plugin, 'repos'), 'action', $actionchoicesfornew, 'delete', null, 'applyto' . basename($plugin));
-                    $table->data[] = array(get_string('repositoryname', 'repository_'.$plugin), $OUTPUT->render($select), '', '');
+                    $table->data[] = array(get_string('pluginname', 'repository_'.$plugin), $OUTPUT->render($select), '', '');
                 }
             }
         }

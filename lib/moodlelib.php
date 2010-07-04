@@ -3666,20 +3666,13 @@ function validate_internal_user_password(&$user, $password) {
 
     $validated = false;
 
-    // Commented out by Martin as this surely is not necessary now, right?  MDL-22922
-    // get password original encoding in case it was not updated to unicode yet
-    //$textlib = textlib_get_instance();
-    //$convpassword = $textlib->convert($password, 'utf-8', get_string('oldcharset', 'langconfig'));
-    //if ($user->password == md5($password.$CFG->passwordsaltmain) or $user->password == md5($password)
-    //    or $user->password == md5($convpassword.$CFG->passwordsaltmain) or $user->password == md5($convpassword)) {
-
     if ($user->password == md5($password.$CFG->passwordsaltmain) or $user->password == md5($password)) {
         $validated = true;
     } else {
         for ($i=1; $i<=20; $i++) { //20 alternative salts should be enough, right?
             $alt = 'passwordsaltalt'.$i;
             if (!empty($CFG->$alt)) {
-                if ($user->password == md5($password.$CFG->$alt) or $user->password == md5($convpassword.$CFG->$alt)) {
+                if ($user->password == md5($password.$CFG->$alt)) {
                     $validated = true;
                     break;
                 }
@@ -7553,18 +7546,15 @@ function moodle_needs_upgrading() {
         if ($blockname === 'NEWBLOCK') {   // Someone has unzipped the template, ignore it
             continue;
         }
-        if (!is_readable($fullblock.'/block_'.$blockname.'.php')) {
+        if (!is_readable($fullblock.'/version.php')) {
             continue;
         }
-        include_once($fullblock.'/block_'.$blockname.'.php');
-        $classname = 'block_'.$blockname;
-        if (!class_exists($classname)) {
-            continue;
-        }
-        $blockobj = new $classname;
+        $plugin = new object();
+        $plugin->version = NULL;
+        include($fullblock.'/version.php');
         if (empty($installed[$blockname])) {
             return true;
-        } else if ($blockobj->get_version() > $installed[$blockname]->version) {
+        } else if ($plugin->version > $installed[$blockname]->version) {
             return true;
         }
     }

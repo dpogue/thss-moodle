@@ -173,7 +173,7 @@ class repository_type {
      * @return string user-friendly type name
      */
     public function get_readablename() {
-        return get_string('repositoryname','repository_'.$this->_typename);
+        return get_string('pluginname','repository_'.$this->_typename);
     }
 
     /**
@@ -1044,7 +1044,7 @@ abstract class repository {
                 if (!empty($type) && $type->get_visible()) {
                     $instanceoptionnames = repository::static_function($type->get_typename(), 'get_instance_option_names');
                     if (!empty($instanceoptionnames)) {
-                        $instancehtml .= '<li><a href="'.$baseurl.'&amp;new='.$type->get_typename().'">'.get_string('createxxinstance', 'repository', get_string('repositoryname', 'repository_'.$type->get_typename()))
+                        $instancehtml .= '<li><a href="'.$baseurl.'&amp;new='.$type->get_typename().'">'.get_string('createxxinstance', 'repository', get_string('pluginname', 'repository_'.$type->get_typename()))
                             .'</a></li>';
                         $addable++;
                     }
@@ -1814,31 +1814,4 @@ function initialise_filepicker($args) {
         $return->repositories[$repository->id] = $meta;
     }
     return $return;
-}
-
-/**
- * The plugins should be enabled by defaulted once moodle installed
- *
- * @global object $OUTPUT
- *
- * @return boolean
- */
-function repository_setup_default_plugins() {
-    global $OUTPUT;
-    //if the plugin type has no multiple instance (e.g. has no instance option name)
-    //repository_type::create will create an instance automatically
-    $user_plugin = new repository_type('user', array(), true);
-    $user_plugin->create(true);
-
-    $recent_plugin = new repository_type('recent', array(), true);
-    $recent_plugin->create(true);
-
-    $upload_plugin = new repository_type('upload', array(), true);
-    $upload_plugin->create(true);
-
-    $local_plugin = new repository_type('local', array(), true);
-    $local_plugin->create(true);
-
-    echo $OUTPUT->notification(get_string('setupdefaultplugins', 'repository'), 'notifysuccess');
-    return true;
 }
