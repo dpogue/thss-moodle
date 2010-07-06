@@ -43,7 +43,7 @@
     }
 
     $PAGE->set_title(format_string($choice->name));
-    echo $OUTPUT->header();
+    $PAGE->set_heading($course->fullname);
 
 /// Submit any new data if there is any
     if ($form = data_submitted() && is_enrolled($context, NULL, 'mod/choice:choose') && confirm_sesskey()) {
@@ -61,7 +61,10 @@
         } else {
             choice_user_submit_response($answer, $choice, $USER->id, $course->id, $cm);
         }
+        echo $OUTPUT->header();
         echo $OUTPUT->notification(get_string('choicesaved', 'choice'),'notifysuccess');
+    } else {
+        echo $OUTPUT->header();
     }
 
 

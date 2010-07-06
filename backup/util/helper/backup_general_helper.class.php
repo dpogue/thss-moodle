@@ -55,4 +55,142 @@ abstract class backup_general_helper extends backup_helper {
         }
         return $checksum;
     }
+
+    /**
+     * Load and format all the needed information from moodle_backup.xml
+     *
+     * This function loads and process all the moodle_backup.xml
+     * information, composing a big information structure that will
+     * be the used by the plan builder in order to generate the
+     * appropiate tasks / steps / settings
+     */
+    public static function get_backup_information($tempdir) {
+        global $CFG;
+
+        $info = new stdclass(); // Final information goes here
+
+        $moodlefile = $CFG->dataroot . '/temp/backup/' . $tempdir . '/moodle_backup.xml';
+        if (!file_exists($moodlefile)) { // Shouldn't happen ever, but...
+            throw new backup_helper_exception('missing_moodle_backup_xml_file');
+        }
+        // Load the entire file to in-memory array
+        $xmlparser = new progressive_parser();
+        $xmlparser->set_file($moodlefile);
+        $xmlprocessor = new restore_moodlexml_parser_processor();
+        $xmlparser->set_processor($xmlprocessor);
+        $xmlparser->process();
+        $infoarr = $xmlprocessor->get_all_chunks();
+        if (count($infoarr) !== 1) { // Shouldn't happen ever, but...
+            throw new backup_helper_exception('problem_parsing_moodle_backup_xml_file');
+        }
+        $infoarr = $infoarr[0]['tags']; // for commodity
+
+        // Let's build info
+        $info->moodle_version = $infoarr['moodle_version'];
+        $info->moodle_release = $infoarr['moodle_release'];
+        $info->backup_version = $infoarr['backup_version'];
+        $info->backup_release = $infoarr['backup_release'];
+        $info->backup_date    = $infoarr['backup_date'];
+        $info->original_wwwroot         = $infoarr['original_wwwroot'];
+        $info->original_site_identifier = $infoarr['original_site_identifier'];
+        $info->original_course_id       = $infoarr['original_course_id'];
+        $info->type   =  $infoarr['details']['detail'][0]['type'];
+        $info->format =  $infoarr['details']['detail'][0]['format'];
+        $info->mode   =  $infoarr['details']['detail'][0]['mode'];
+
+        // Now the contents
+        $contentsarr = $infoarr['contents'];
+        if (isset($contentsarr['course']) && isset($contentsarr['course'][0])) {
+            $info->course = new stdclass();
+            $info->course = (object)$contentsarr['course'][0];
+            $info->course->settings = array();
+        }
+        if (isset($contentsarr['sections']) && isset($contentsarr['sections']['section'])) {
+            $sectionarr = $contentsarr['sections']['section'];
+            $sections = array();
+            foreach ($sectionarr as $section) {
+                $section = (object)$section;
+                $section->settings = array();
+                $sections[basename($section->directory)] = $section;
+            }
+            $info->sections = $sections;
+        }
+        if (isset($contentsarr['activities']) && isset($contentsarr['activities']['activity'])) {
+            $activityarr = $contentsarr['activities']['activity'];
+            $activities = array();
+            foreach ($activityarr as $activity) {
+                $activity = (object)$activity;
+                $activity->settings = array();
+                $activities[basename($activity->directory)] = $activity;
+            }
+            $info->activities = $activities;
+        }
+        $info->root_settings = array(); // For root settings
+
+        // Now the settings, putting each one under its owner
+        $settingsarr = $infoarr['settings']['setting'];
+        foreach($settingsarr as $setting) {
+            switch ($setting['level']) {
+                case 'root':
+                    $info->root_settings[$setting['name']] = $setting['value'];
+                    break;
+                case 'course':
+                    $info->course->settings[$setting['name']] = $setting['value'];
+                    break;
+                case 'section':
+                    $info->sections[$setting['section']]->settings[$setting['name']] = $setting['value'];
+                    break;
+                case 'activity':
+                    $info->activities[$setting['activity']]->settings[$setting['name']] = $setting['value'];
+                    break;
+                default: // Shouldn't happen
+                    throw new backup_helper_exception('wrong_setting_level_moodle_backup_xml_file', $setting['level']);
+            }
+        }
+
+        return $info;
+    }
+
+    /**
+     * Given one temp/backup/xxx dir, detect its format
+     *
+     * TODO: Move harcoded detection here to delegated classes under backup/format (moodle1, imscc..)
+     *       conversion code will be there too.
+     */
+    public static function detect_backup_format($tempdir) {
+        global $CFG;
+
+        // First look for MOODLE (moodle2) format
+        $filepath = $CFG->dataroot . '/temp/backup/' . $tempdir . '/moodle_backup.xml';
+        if (file_exists($filepath)) { // Looks promising, lets load some information
+            $handle = fopen ($filepath, "r");
+            $first_chars = fread($handle,200);
+            $status = fclose ($handle);
+            // Check if it has the required strings
+            if (strpos($first_chars,'<?xml version="1.0" encoding="UTF-8"?>') !== false &&
+                strpos($first_chars,'<moodle_backup>') !== false &&
+                strpos($first_chars,'<information>') !== false) {
+                    return backup::FORMAT_MOODLE;
+            }
+        }
+
+        // Then look for MOODLE1 (moodle1) format
+        $filepath = $CFG->dataroot . '/temp/backup/' . $tempdir . '/moodle.xml';
+        if (file_exists($filepath)) { // Looks promising, lets load some information
+            $handle = fopen ($filepath, "r");
+            $first_chars = fread($handle,200);
+            $status = fclose ($handle);
+            // Check if it has the required strings
+            if (strpos($first_chars,'<?xml version="1.0" encoding="UTF-8"?>') !== false &&
+                strpos($first_chars,'<MOODLE_BACKUP>') !== false &&
+                strpos($first_chars,'<INFO>') !== false) {
+                    return backup::FORMAT_MOODLE1;
+            }
+        }
+
+        // Other formats
+
+        // Arrived here, unknown format
+        return backup::FORMAT_UNKNOWN;
+    }
 }

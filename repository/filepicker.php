@@ -32,7 +32,7 @@ require_once('lib.php');
 /// Wait as long as it takes for this script to finish
 set_time_limit(0);
 
-die('TODO: sorry, needs to be converted to use new component and security rules');
+debugging('TODO: needs to be converted to use new component and security rules', DEBUG_DEVELOPER);
 
 require_login();
 
@@ -80,8 +80,8 @@ $sql = 'SELECT i.name, i.typeid, r.type FROM {repository} r, {repository_instanc
        'WHERE i.id=? AND i.typeid=r.id';
 if ($repository = $DB->get_record_sql($sql, array($repo_id))) {
     $type = $repository->type;
-    if (file_exists($CFG->dirroot.'/repository/'.$type.'/repository.class.php')) {
-        require_once($CFG->dirroot.'/repository/'.$type.'/repository.class.php');
+    if (file_exists($CFG->dirroot.'/repository/'.$type.'/lib.php')) {
+        require_once($CFG->dirroot.'/repository/'.$type.'/lib.php');
         $classname = 'repository_' . $type;
         try {
             $repo = new $classname($repo_id, $contextid, array('ajax'=>false, 'name'=>$repository->name));

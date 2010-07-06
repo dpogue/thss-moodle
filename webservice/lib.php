@@ -654,7 +654,7 @@ class '.$classname.' {
                         $type = 'string';
                 }
             } else if ($keydesc instanceof external_single_structure) {
-                $type = 'struct';
+                $type = 'object|struct'; //only 'object' is supported by SOAP, 'struct' by XML-RPC MDL-23083
             } else if ($keydesc instanceof external_multiple_structure) {
                 $type = 'array';
             }
@@ -680,7 +680,7 @@ class '.$classname.' {
                         $type = 'string';
                 }
             } else if ($function->returns_desc instanceof external_single_structure) {
-                $type = 'struct';
+                $type = 'object|struct'; //only 'object' is supported by SOAP, 'struct' by XML-RPC MDL-23083
             } else if ($function->returns_desc instanceof external_multiple_structure) {
                 $type = 'array';
             }
@@ -714,7 +714,8 @@ class '.$classname.' {
     protected function service_class_method_body($function, $params){
         $descriptionmethod = $function->methodname.'_returns()';
         $callforreturnvaluedesc = $function->classname.'::'.$descriptionmethod;
-        return '    if ('.$callforreturnvaluedesc.' == null)  {
+        return '    if ('.$callforreturnvaluedesc.' == null)  {'.
+                        $function->classname.'::'.$function->methodname.'('.$params.'); 
                         return null;
                     }
                     return external_api::clean_returnvalue('.$callforreturnvaluedesc.', '.$function->classname.'::'.$function->methodname.'('.$params.'));';
