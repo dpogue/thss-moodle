@@ -109,6 +109,10 @@ h6.main {
     height: auto;
 }
 
+.clearer {
+    clear: none;
+}
+
 a img {
 	border:none;
     text-decoration: none;

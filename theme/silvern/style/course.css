@@ -35,122 +35,76 @@
     border: 0 none;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#courseguides {
-	overflow: auto;
+.modified {
+    font-style: italic;
+    font-size: 0.8em;
 }
 
-#courseguides li {
-	list-style-type: none;
-	margin-bottom: 1em;
+.glossarydisplay {
+    background: #f9f9f9;
+    border: 1px solid #a3a3a3;
+    border-radius: 2px;
+    padding: 5px;
 }
 
-#courseintro {
-	background: white url('[[pix:theme|blockheader]]') repeat-x top;
-	margin: 0.5em 20px;
-	border: 1px solid #a3a3a3;
-	border-radius: 2px;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.forumpost {
+    background: #f9f9f9;
+    border-radius: 2px;
+    border-bottom-right-radius: 5px;
 }
 
-#courseguides .summary {
-	display: block;
-	min-height: 1em;
+.gecko .forumpost {
+    -moz-border-radius: 2px;
+    -moz-border-radius-bottomright: 5px;
 }
 
-#courseguides br.arrowspace {
-	display: block;
-	height: 16px;
+.safari .forumpost {
+    -webkit-border-radius: 2px;
+    -webkit-border-bottom-right-radius: 5px;
 }
 
-.learningguide {
-	min-height: 30px;
-	background: #2647a0;
-	border-radius: 2px;
-	overflow: hidden;
+.forumpost .header,
+.forumpost .header .left {
+    background: #e0e0e0;
+    border-color: #a3a3a3;
+    background-image: linear-gradient(top, #e8f2ff, #e0e0e0);
+    border-right: 0 none;
 }
 
-.safari .learningguide {
-	-webkit-border-radius: 2px;
+.forumpost .topic {
+    border-color: #a3a3a3;
 }
 
-.gecko .learningguide {
-	-moz-border-radius: 2px;
+.safari .forumpost .header,
+.safari .forumpost .header .left{
+    background: #e0e0e0 -webkit-gradient(linear, left top, left bottom, from(#e8f2ff), to(#e0e0e0));
 }
 
-.gecko .guide-left {
-	-moz-border-radius-topleft: 2px;
+.gecko .forumpost .header,
+.gecko .forumpost .header .left {
+    background: #e0e0e0 -moz-linear-gradient(top, #e8f2ff, #e0e0e0);
 }
 
-.gecko .guide-right {
-	-moz-border-radius-topright: 2px;
+.ie .forumpost .header,
+.ie .forumpost .header .left {
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#FFE8F2FF,endColorstr=#FFE0E0E0)";
 }
 
-.learningguide.current {
-	background: #bfdaff;
-}
-
-#courseintro ul,
-.learningguide ul {
-	margin-left: 1em;
-}
-
-.guide-left,
-.guide-right {
-	width: 20px;
-	min-height: 28px;
-	text-align: center;
-	padding-top: 2px;
-	display: block;
-	background: #2647a0 url(http://yui.yahooapis.com/2.8.0/build/assets/skins/sam/sprite.png) repeat-x left -1400px;
-    box-shadow: none;
-}
-
-.safari .guide-left,
-.safari .guide-right {
-    -webkit-box-shadow: none;
-}
-
-.gecko .guide-left,
-.gecko .guide-right {
-    -moz-box-shadow: none;
-}
-
-.learningguide.current .guide-left,
-.learningguide.current .guide-right {
-	background: #bfdaff url(http://yui.yahooapis.com/2.8.0/build/assets/skins/sam/sprite.png) repeat-x left -1300px;
-}
-
-.guide-left {
-	float: left;
-}
-
-.guide-right {
-	float: right;
-}
-
-.guide-content {
-	margin: 0 20px;
-	padding: 0;
-	background: white;
-	display: block;
-	min-height: 30px;
-	height: 100%;
-	border: 1px solid #a3a3a3;
+.forumpost .left {
+    border-right: 1px solid #a3a3a3;
+    background: #e0e0e0;
 }

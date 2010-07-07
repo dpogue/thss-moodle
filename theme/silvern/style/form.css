@@ -24,6 +24,7 @@ form input[type="file"] {
 	-moz-border-radius: 2px;
 }
 
+.mform,
 .settingsform {
     background: #f9f9f9;
     border: 1px solid #a3a3a3;
@@ -32,10 +33,12 @@ form input[type="file"] {
 	margin-bottom: 15px;
 }
 
+.gecko .mform,
 .gecko .settingsform {
     -moz-border-radius: 2px;
 }
 
+.safari .mform,
 .safari .settingsform {
     -webkit-border-radius: 2px;
 }
@@ -43,4 +46,8 @@ form input[type="file"] {
 .form-shortname {
     font-size: 0.7em;
     color: #a3a3a3;
+}
+
+.mform fieldset {
+    border-color: #a3a3a3;
 }
