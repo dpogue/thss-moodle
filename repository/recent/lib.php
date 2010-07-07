@@ -21,8 +21,7 @@
  * @since 2.0
  * @package moodlecore
  * @subpackage repository
- * @copyright 2010 Dongsheng Cai
- * @author Dongsheng Cai <dongsheng@moodle.com>
+ * @copyright 2010 Dongsheng Cai <dongsheng@moodle.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -54,15 +53,6 @@ class repository_recent extends repository {
         return $this->get_listing();
     }
 
-    /**
-     * Not supported by File API yet
-     * @param string $search_text
-     * @return mixed
-     */
-    public function search($search_text) {
-        return array();
-    }
-
     private function get_recent_files($limitfrom = 0, $limit = DEFAULT_RECENT_FILES_NUM) {
         global $USER, $DB;
         // TODO: should exclude user_draft area files?
@@ -80,6 +70,7 @@ class repository_recent extends repository {
             $info['contextid'] = $file_record->contextid;
             $info['itemid'] = $file_record->itemid;
             $info['filearea'] = $file_record->filearea;
+            $info['component'] = $file_record->component;
             $info['filepath'] = $file_record->filepath;
             $info['filename'] = $file_record->filename;
             $result[$file_record->pathnamehash] = $info;
@@ -167,19 +158,21 @@ class repository_recent extends repository {
      * @param string $new_filepath the new path in draft area
      * @return array The information of file
      */
-    public function copy_to_area($encoded, $new_filearea='user_draft', $new_itemid = '', $new_filepath = '/', $new_filename = '') {
+    public function copy_to_area($encoded, $new_filearea='draft', $new_itemid = '', $new_filepath = '/', $new_filename = '') {
         global $USER, $DB;
-        $info = array();
+
+        $user_context = get_context_instance(CONTEXT_USER, $USER->id);
+
         $fs = get_file_storage();
 
         $params = unserialize(base64_decode($encoded));
-        $user_context = get_context_instance(CONTEXT_USER, $USER->id);
 
-        $contextid  = $params['contextid'];
-        $filearea   = $params['filearea'];
-        $filepath   = $params['filepath'];
-        $filename   = $params['filename'];
-        $fileitemid = $params['itemid'];
+        $contextid  = clean_param($params['contextid'], PARAM_INT);
+        $fileitemid = clean_param($params['itemid'], PARAM_INT);
+        $filename = clean_param($params['filename'], PARAM_FILE);
+        $filepath = clean_param($params['filepath'], PARAM_PATH);;
+        $filearea = clean_param($params['filearea'], PARAM_ALPHAEXT);
+        $component = clean_param($params['component'], PARAM_ALPHAEXT);
 
         // XXX:
         // When user try to pick a file from other filearea, normally file api will use file browse to
@@ -188,15 +181,16 @@ class repository_recent extends repository {
         //
         // To get 'recent' plugin working, we need to use lower level file_stoarge class to bypass the
         // capability check, we will use a better workaround to improve it.
-        if ($stored_file = $fs->get_file($contextid, $filearea, $fileitemid, $filepath, $filename)) {
-            $file_record = array('contextid'=>$user_context->id, 'filearea'=>$new_filearea,
+        if ($stored_file = $fs->get_file($contextid, $component, $filearea, $fileitemid, $filepath, $filename)) {
+            $file_record = array('contextid'=>$user_context->id, 'component'=>'user', 'filearea'=>'draft',
                 'itemid'=>$new_itemid, 'filepath'=>$new_filepath, 'filename'=>$new_filename);
-            if ($file = $fs->get_file($user_context->id, $new_filearea, $new_itemid, $new_filepath, $new_filename)) {
+            if ($file = $fs->get_file($user_context->id, 'user', 'draft', $new_itemid, $new_filepath, $new_filename)) {
                 $file->delete();
             }
             $fs->create_file_from_storedfile($file_record, $stored_file);
         }
 
+        $info = array();
         $info['title']  = $new_filename;
         $info['itemid'] = $new_itemid;
         $info['filesize']  = $stored_file->get_filesize();

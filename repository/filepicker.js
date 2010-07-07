@@ -140,8 +140,7 @@ M.core_filepicker.init = function(Y, options) {
                     scope: scope
                 },
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    'User-Agent': 'MoodleFilePicker/3.0'
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
                 },
                 data: build_querystring(params),
                 context: this
@@ -203,6 +202,7 @@ M.core_filepicker.init = function(Y, options) {
                 thumbnail:node.thumbnail,
                 path:node.path?node.path:[]
             };
+            var tmpNode = new YAHOO.widget.TextNode(info, level, false);
             if(node.repo_id) {
                 tmpNode.repo_id=node.repo_id;
             }else{

@@ -9,7 +9,7 @@
 //
 // The upgrade function in this file will attempt
 // to perform all the necessary actions to upgrade
-// your older installtion to the current version.
+// your older installation to the current version.
 //
 // If there's something it cannot do itself, it
 // will tell you what you need to do.
@@ -256,7 +256,6 @@ function xmldb_data_upgrade($oldversion) {
 
     if ($oldversion < 2010042800) {
         //migrate data ratings to the central rating table
-        require_once($CFG->dirroot . '/lib/db/upgradelib.php');
         $table = new xmldb_table('data_ratings');
         if ($dbman->table_exists($table)) {
             //data ratings didnt store time created and modified so Im using the times from the record the rating was attached to
