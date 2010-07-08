@@ -106,6 +106,7 @@ abstract class backup_activity_structure_step extends backup_structure_step {
         // Arrived here, subplugin is correct, let's create the optigroup
         $optigroupname = $subplugintype . '_' . $element->get_name() . '_subplugin';
         $optigroup = new backup_optigroup($optigroupname, null, $multiple);
+        $element->add_child($optigroup); // Add optigroup to stay connected since beginning
 
         // Get all the optigroup_elements, looking across al the subplugin dirs
         $elements = array();
@@ -115,15 +116,11 @@ abstract class backup_activity_structure_step extends backup_structure_step {
             $backupfile = $subpluginsdir . '/backup/moodle2/' . $classname . '.class.php';
             if (file_exists($backupfile)) {
                 require_once($backupfile);
-                $backupsubplugin = new $classname($subplugintype, $name);
-                // Add subplugin returned structure to optigroup (must be optigroup_element instance)
-                if ($subpluginstructure = $backupsubplugin->define_subplugin_structure($element->get_name())) {
-                    $optigroup->add_child($subpluginstructure);
-                }
+                $backupsubplugin = new $classname($subplugintype, $name, $optigroup);
+                // Add subplugin returned structure to optigroup
+                $backupsubplugin->define_subplugin_structure($element->get_name());
             }
         }
-        // Finished, add optigroup to element
-        $element->add_child($optigroup);
     }
 
     /**
@@ -312,7 +309,7 @@ class backup_course_structure_step extends backup_structure_step {
                                 JOIN {tag_instance} ti ON ti.tagid = t.id
                                WHERE ti.itemtype = ?
                                  AND ti.itemid = ?', array(
-                                     $this->is_sqlparam('course'),
+                                     backup_helper::is_sqlparam('course'),
                                      backup::VAR_PARENTID));
 
         $module->set_source_sql('SELECT m.name AS modulename
@@ -798,9 +795,9 @@ class backup_users_structure_step extends backup_structure_step {
                                 WHERE bi.backupid = ?
                                   AND bi.itemname = ?
                                   AND c.contextlevel = ?', array(
-                                      $this->is_sqlparam($this->get_backupid()),
-                                      $this->is_sqlparam('userfinal'),
-                                      $this->is_sqlparam(CONTEXT_USER)));
+                                      backup_helper::is_sqlparam($this->get_backupid()),
+                                      backup_helper::is_sqlparam('userfinal'),
+                                      backup_helper::is_sqlparam(CONTEXT_USER)));
 
         // All the rest on information is only added if we arent
         // in an anonymized backup
@@ -819,7 +816,7 @@ class backup_users_structure_step extends backup_structure_step {
                                     JOIN {tag_instance} ti ON ti.tagid = t.id
                                    WHERE ti.itemtype = ?
                                      AND ti.itemid = ?', array(
-                                         $this->is_sqlparam('user'),
+                                         backup_helper::is_sqlparam('user'),
                                          backup::VAR_PARENTID));
 
             $preference->set_source_table('user_preferences', array('userid' => backup::VAR_PARENTID));
@@ -951,7 +948,7 @@ class backup_inforef_structure_step extends backup_structure_step {
                      FROM {backup_ids_temp}
                     WHERE backupid = ?
                       AND itemname = ?",
-                   array(backup::VAR_BACKUPID, $this->is_sqlparam($itemname)));
+                   array(backup::VAR_BACKUPID, backup_helper::is_sqlparam($itemname)));
             }
         }
 
