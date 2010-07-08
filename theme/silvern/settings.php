@@ -31,8 +31,8 @@ $name = 'theme_silvern/welcomecolour';
 $title = get_string('welcomecolour', 'theme_silvern');
 $description = get_string('welcomecolour_desc', 'theme_silvern');
 $default = '#426fd9';
-$setting = new admin_setting_configtext($name, $title, $description, 
-    $default, PARAM_CLEAN, 12);
+$setting = new admin_setting_configcolourpicker($name, $title,
+    $description, $default, array());
 $admsettings->add($setting);
 
 // Text displayed in the welcome box
