@@ -318,6 +318,33 @@ case workshop::PHASE_EVALUATION:
             echo $output->render($pagingbar);
         }
     }
+    if (has_capability('mod/workshop:overridegrades', $workshop->context)) {
+        print_collapsible_region_start('', 'workshop-viewlet-cleargrades', get_string('toolbox', 'workshop'), false, true);
+        echo $output->box_start('generalbox toolbox');
+
+        // Clear aggregated grades
+        $url = new moodle_url($workshop->toolbox_url('clearaggregatedgrades'));
+        $btn = new single_button($url, get_string('clearaggregatedgrades', 'workshop'), 'post');
+        $btn->add_confirm_action(get_string('clearaggregatedgradesconfirm', 'workshop'));
+        echo $output->container_start('toolboxaction');
+        echo $output->render($btn);
+        echo $output->help_icon('clearaggregatedgrades', 'workshop');
+        echo $output->container_end();
+        // Clear assessments
+        $url = new moodle_url($workshop->toolbox_url('clearassessments'));
+        $btn = new single_button($url, get_string('clearassessments', 'workshop'), 'post');
+        $btn->add_confirm_action(get_string('clearassessmentsconfirm', 'workshop'));
+        echo $output->container_start('toolboxaction');
+        echo $output->render($btn);
+        echo $output->help_icon('clearassessments', 'workshop');
+        echo html_writer::empty_tag('img', array('src' => $output->pix_url('i/risk_dataloss'),
+                                                 'title' => get_string('riskdatalossshort', 'admin'),
+                                                 'alt' => get_string('riskdatalossshort', 'admin')));
+        echo $output->container_end();
+
+        echo $output->box_end();
+        print_collapsible_region_end();
+    }
     if (has_capability('mod/workshop:submit', $PAGE->context)) {
         print_collapsible_region_start('', 'workshop-viewlet-ownsubmission', get_string('yoursubmission', 'workshop'));
         echo $output->box_start('generalbox ownsubmission');
