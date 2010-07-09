@@ -15,36 +15,35 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require_once 'Zend/XmlRpc/Client.php';
-
 /**
- * XML-RPC client class
+ * Moodle REST client class
+ * TODO: XML to PHP
  */
-class webservice_xmlrpc_client extends Zend_XmlRpc_Client {
+class webservice_rest_client {
 
     private $serverurl;
+    private $token;
 
     /**
      * Constructor
-     * @param string $serverurl
+     * @param string $serverurl a Moodle URL
      * @param string $token
      */
     public function __construct($serverurl, $token) {
         $this->serverurl = $serverurl;
-        $serverurl = $serverurl . '?wstoken=' . $token;
-        parent::__construct($serverurl);
+        $this->token = $token;
     }
 
     /**
-     * Set the token used to do the XML-RPC call
+     * Set the token used to do the REST call
      * @param string $token
      */
     public function set_token($token) {
-        $this->_serverAddress = $this->serverurl . '?wstoken=' . $token;
+        $this->token = $token;
     }
 
     /**
-     * Execute client WS request
+     * Execute client WS request with token authentication
      * @param string $functionname
      * @param array $params
      * @return mixed
@@ -52,11 +51,11 @@ class webservice_xmlrpc_client extends Zend_XmlRpc_Client {
     public function call($functionname, $params) {
         global $DB, $CFG;
 
-        //zend expects 0 based array with numeric indexes
-        $params = array_values($params);
+        $result = download_file_content($this->serverurl
+                        . '?wstoken='.$this->token.'&wsfunction='
+                        . $functionname, null, $params);
 
-        //traditional Zend soap client call (integrating the token into the URL)
-        $result = parent::call($functionname, $params);
+        //TODO : transform the XML result into PHP values - MDL-22965
 
         return $result;
     }

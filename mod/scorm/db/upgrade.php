@@ -36,6 +36,18 @@ function xmldb_scorm_upgrade($oldversion) {
         /// Launch add field whatgrade
         if (!$dbman->field_exists($table,$field)) {
             $dbman->add_field($table, $field);
+            $whatgradefixed = get_config('scorm', 'whatgradefixed'); 
+            if (empty($whatgradefixed)) {
+                /// fix bad usage of whatgrade/grading method.
+                $scorms = $DB->get_records('scorm');
+                foreach ($scorms as $scorm) {
+                    $scorm->whatgrade = $scorm->grademethod/10;
+                    $DB->update_record('scorm', $scorm);
+                }
+            }
+        } else {
+            //dump this config var as it isn't needed anymore.
+            unset_config('whatgradefixed', 'scorm');
         }
 
         upgrade_mod_savepoint(true, 2008073000, 'scorm');
@@ -441,7 +453,24 @@ function xmldb_scorm_upgrade($oldversion) {
     /// scorm savepoint reached
         upgrade_mod_savepoint(true, 2009042002, 'scorm');
     }
-
+    if ($oldversion < 2010070800) {
+    //check to see if this has already been tidied up by a 1.9 upgrade.
+        $grademethodfixed = get_config('scorm', 'grademethodfixed');
+        if (empty($grademethodfixed)) {
+            /// fix bad usage of whatgrade/grading method.
+            $scorms = $DB->get_records('scorm');
+            foreach ($scorms as $scorm) {
+                $scorm->grademethod = $scorm->grademethod%10;
+                $DB->update_record('scorm', $scorm);
+            }
+        } else {
+            //dump this config var as it isn't needed anymore.
+            unset_config('grademethodfixed', 'scorm');
+        }
+        
+    /// scorm savepoint reached
+        upgrade_mod_savepoint(true, 2010070800, 'scorm');
+    }
     return true;
 }
 
