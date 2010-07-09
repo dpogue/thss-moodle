@@ -21,8 +21,8 @@
                 <li class="selected"><a href="<?php echo $CFG->wwwroot.'/index.php'; ?>"><em>Home</em></a></li>
             </ul>
 		</nav>
-		<canvas id="rotate" height="201" width="305">
-		</canvas>
+		<div id="logo" height="201" width="305">
+		</div>
 		<div id="welcome">
 			<p>
 <?php echo $PAGE->theme->settings->welcometext; ?>

@@ -100,11 +100,6 @@
     background: #e0e0e0 -moz-linear-gradient(top, #e8f2ff, #e0e0e0);
 }
 
-.ie .forumpost .header,
-.ie .forumpost .header .left {
-	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#FFE8F2FF,endColorstr=#FFE0E0E0)";
-}
-
 .forumpost .left {
     border-right: 1px solid #a3a3a3;
     background: #e0e0e0;

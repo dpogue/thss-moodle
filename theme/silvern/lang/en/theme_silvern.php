@@ -26,6 +26,8 @@
 $string['pluginname'] = 'Silvern';
 
 $string['admsettings_title'] = 'Silvern settings';
+$string['logourl'] = 'Logo URL';
+$string['logourl_desc'] = 'This image will be loaded and displayed as the site logo.';
 $string['region-centre-top'] = 'Centre Top';
 $string['region-side-post'] = 'Right';
 $string['region-side-pre'] = 'Left';

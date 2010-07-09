@@ -9,6 +9,7 @@ nav.blackbar {
 	padding-top: 3px;
 	white-space: nowrap;
 	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#99000000,endColorstr=#99000000)";
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=#99000000,endColorstr=#99000000);
 }
 
 nav.blackbar span.left {
@@ -172,12 +173,12 @@ header nav ul#tabbar li ul li a:focus {
 	color: white;
 }
 
-header #rotate {
+header #logo {
 	float: right;
 	position: relative;
 	height: 201px;
 	background: white;
-	background-image: none;
+	background-image: url([[setting:logourl]]);
 	background-repeat: no-repeat;
 	background-position: 50% 50%;
 	width: 305px;

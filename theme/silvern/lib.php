@@ -31,6 +31,13 @@ function silvern_process_css($css, $theme) {
     }
     $css = silvern_set_welcomecolour($css, $welcomecol);
 
+    if (!empty($theme->settings->logourl)) {
+        $logourl = $theme->settings->logourl;
+    } else {
+        $logourl = $theme->pix_url('moodle_logo', 'theme');
+    }
+    $css = silvern_set_logourl($css, $logourl);
+
     return $css;
 }
 
@@ -54,6 +61,20 @@ function silvern_set_welcomecolour($css, $colour) {
     $css = str_replace($tag, $replacement, $css);
     $replacement = 'rgba('.$rgb[0].','.$rgb[1].','.$rgb[2].',0.4)';
     $css = str_replace($tag_grad, $replacement, $css);
+    return $css;
+}
+
+/**
+ * Sets the logo URL.
+ *
+ * @param string $css
+ * @param mixed $url
+ * @return string
+ */
+function silvern_set_logourl($css, $url) {
+    $tag = '[[setting:logourl]]';
+
+    $css = str_replace($tag, $url, $css);
     return $css;
 }
 

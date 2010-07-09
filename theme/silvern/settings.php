@@ -44,4 +44,11 @@ $setting = new admin_setting_configtextarea($name, $title,
     $description, $default, PARAM_CLEANHTML, '50', '10');
 $admsettings->add($setting);
 
+// Logo URL
+$name = 'theme_silvern/logourl';
+$title = get_string('logourl', 'theme_silvern');
+$description = get_string('logourl_desc', 'theme_silvern');
+$setting = new admin_setting_configtext($name, $title, $description, '', PARAM_URL);
+$admsettings->add($setting);
+
 $ADMIN->add('themes', $admsettings);
