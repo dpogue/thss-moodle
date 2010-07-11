@@ -4701,7 +4701,7 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
 
     /// Launch change of precision for field city
         $dbman->change_field_precision($table, $field);
-        
+
     /// Conditionally launch add index typeitem_ix
         if (!$dbman->index_exists($table, $index)) {
             $dbman->add_index($table, $index);
@@ -4709,6 +4709,26 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
     /// Main savepoint reached
         upgrade_main_savepoint(true, 2010070801);
     }
+
+    if ($oldversion < 2010071000) {
+        //purge unused editor settings
+        unset_config('editorbackgroundcolor');
+        unset_config('editorfontfamily');
+        unset_config('editorfontsize');
+        unset_config('editorkillword');
+        unset_config('editorhidebuttons');
+        unset_config('editorfontlist');
+        unset_config('htmleditor');
+
+        upgrade_main_savepoint(true, 2010071000);
+    }
+
+    if ($oldversion < 2010071001) {
+        // purge obsolete stats settings
+        unset_config('statscatdepth');
+        upgrade_main_savepoint(true, 2010071001);
+    }
+
 
     return true;
 }
