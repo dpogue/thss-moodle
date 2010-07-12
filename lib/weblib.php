@@ -627,7 +627,7 @@ class moodle_url {
      * @param bool $supported usually null, then it depends on $CFG->slasharguments, use true or false for other servers
      * @return void
      */
-    public function set_slashargument($path, $parameter='file', $supported=null) {
+    public function set_slashargument($path, $parameter = 'file', $supported = NULL) {
         global $CFG;
         if (is_null($supported)) {
             $supported = $CFG->slasharguments;
@@ -655,7 +655,7 @@ class moodle_url {
      * @param bool $forcedownload
      * @return moodle_url
      */
-    public static function make_file_url($urlbase, $path, $forcedownload=false) {
+    public static function make_file_url($urlbase, $path, $forcedownload = false) {
         global $CFG;
 
         $params = array();
@@ -674,6 +674,7 @@ class moodle_url {
      * Please note this method can be used only from the plugins to
      * create urls of own files, it must not be used outside of plugins!
      * @param int $contextid
+     * @param string $component
      * @param string $area
      * @param int $itemid
      * @param string $pathname
@@ -681,27 +682,31 @@ class moodle_url {
      * @param bool $forcedownload
      * @return moodle_url
      */
-    public static function make_pluginfile_url($contextid, $area, $itemid, $pathname, $filename, $forcedownload=false) {
+    public static function make_pluginfile_url($contextid, $component, $area, $itemid, $pathname, $filename, $forcedownload = false) {
         global $CFG;
         $urlbase = "$CFG->httpswwwroot/pluginfile.php";
-        return self::make_file_url($urlbase, '/'.$contextid.'/'.$area.'/'.$itemid.$pathname.$filename, $forcedownload);
+        if ($itemid === NULL) {
+            return self::make_file_url($urlbase, "/$contextid/$component/$area".$pathname.$filename, $forcedownload);
+        } else {
+            return self::make_file_url($urlbase, "/$contextid/$component/$area/$itemid".$pathname.$filename, $forcedownload);
+        }
     }
 
     /**
      * Factory method for creation of url pointing to draft
      * file of current user.
-     * @param int $itemid draft item id
+     * @param int $draftid draft item id
      * @param string $pathname
      * @param string $filename
      * @param bool $forcedownload
      * @return moodle_url
      */
-    public static function make_draftfile_url($itemid, $pathname, $filename, $forcedownload=false) {
+    public static function make_draftfile_url($draftid, $pathname, $filename, $forcedownload = false) {
         global $CFG, $USER;
         $urlbase = "$CFG->httpswwwroot/draftfile.php";
         $context = get_context_instance(CONTEXT_USER, $USER->id);
 
-        return self::make_file_url($urlbase, '/'.$context->id.'/user/draft/'.$itemid.$pathname.$filename, $forcedownload);
+        return self::make_file_url($urlbase, "/$context->id/user/draft/$draftid".$pathname.$filename, $forcedownload);
     }
 
     /**
@@ -712,7 +717,7 @@ class moodle_url {
      * @param bool $forcedownload
      * @return moodle_url
      */
-    public static function make_legacyfile_url($courseid, $filepath, $forcedownload=false) {
+    public static function make_legacyfile_url($courseid, $filepath, $forcedownload = false) {
         global $CFG;
 
         $urlbase = "$CFG->wwwroot/file.php";
@@ -2209,9 +2214,7 @@ function print_group_picture($group, $courseid, $large=false, $return=false, $li
         $file = 'f2';
     }
 
-    // Print custom group picture
-    require_once($CFG->libdir.'/filelib.php');
-    $grouppictureurl = get_file_url($group->id.'/'.$file.'.jpg', null, 'usergroup');
+    $grouppictureurl = moodle_url::make_pluginfile_url($context->id, 'group', 'icon', $group->id, '/', $file);
     $output .= '<img class="grouppicture" src="'.$grouppictureurl.'"'.
         ' alt="'.s(get_string('group').' '.$group->name).'" title="'.s($group->name).'"/>';
 
