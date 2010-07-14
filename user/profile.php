@@ -61,7 +61,7 @@ if (!$currentuser &&
     !has_coursecontact_role($userid)) {
     // Course managers can be browsed at site level. If not forceloginforprofiles, allow access (bug #4366)
     $struser = get_string('user');
-    $PAGE->set_title("$SITE->shortname: $struser");
+    $PAGE->set_title("$SITE->shortname: $struser");  // Do not leak the name
     $PAGE->set_heading("$SITE->shortname: $struser");
     $PAGE->set_url('/user/profile.php', array('id'=>$userid));
     $PAGE->navbar->add($struser);
@@ -105,8 +105,8 @@ $params = array('id'=>$userid);
 $PAGE->set_url('/user/profile.php', $params);
 $PAGE->blocks->add_region('content');
 $PAGE->set_subpage($currentpage->id);
-$PAGE->set_title("$SITE->shortname: $strpublicprofile");
-$PAGE->set_heading("$SITE->shortname: $strpublicprofile");
+$PAGE->set_title(fullname($user).": $strpublicprofile");
+$PAGE->set_heading(fullname($user).": $strpublicprofile");
 
 if (!$currentuser) {
     $PAGE->navigation->extend_for_user($user);
@@ -214,6 +214,7 @@ if ($user->description && !isset($hiddenfields['description'])) {
     }
 }
 echo '</div>';
+
 
 // Print all the little details in a list
 
@@ -370,6 +371,14 @@ echo "</table></div></div>";
 
 
 echo $OUTPUT->blocks_for_region('content');
+
+// Print messaging link if allowed
+if (isloggedin() && has_capability('moodle/site:sendmessage', $context)
+    && !empty($CFG->messaging) && !isguestuser() && ($user->username != 'guest') && ($USER->id != $user->id)) {
+    echo '<div class="messagebox">';
+    echo '<a href="'.$CFG->wwwroot.'/message/index.php?id='.$user->id.'">'.get_string('messageselectadd').'</a>';
+    echo '</div>';
+}
 
 if ($CFG->debugdisplay && debugging('', DEBUG_DEVELOPER) && $currentuser) {  // Show user object
     echo '<br /><br /><hr />';

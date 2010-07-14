@@ -328,22 +328,34 @@ class course_enrolment_manager {
      */
     public function unenrol_user($ue) {
         global $DB;
+        list ($instance, $plugin) = $this->get_user_enrolment_components($ue);
+        if ($instance && $plugin && $plugin->allow_unenrol($instance) && has_capability("enrol/$instance->enrol:unenrol", $this->context)) {
+            $plugin->unenrol_user($instance, $ue->userid);
+            return true;
+        }
+        return false;
+    }
 
+    /**
+     * Given a user enrolment record this method returns the plugin and enrolment
+     * instance that relate to it.
+     *
+     * @param stdClass|int $userenrolment
+     * @return array array($instance, $plugin)
+     */
+    public function get_user_enrolment_components($userenrolment) {
+        global $DB;
+        if (is_numeric($userenrolment)) {
+            $userenrolment = $DB->get_record('user_enrolments', array('id'=>(int)$userenrolment));
+        }
         $instances = $this->get_enrolment_instances();
         $plugins = $this->get_enrolment_plugins();
-
-        $user = $DB->get_record('user', array('id'=>$ue->userid), '*', MUST_EXIST);
-
-        if (!isset($instances[$ue->enrolid])) {
-            return false;
+        if (!$userenrolment || !isset($instances[$userenrolment->enrolid])) {
+            return array(false, false);
         }
-        $instance = $instances[$ue->enrolid];
+        $instance = $instances[$userenrolment->enrolid];
         $plugin = $plugins[$instance->enrol];
-        if (!$plugin->allow_unenrol($instance) || !has_capability("enrol/$instance->enrol:unenrol", $this->context)) {
-            return false;
-        }
-        $plugin->unenrol_user($instance, $ue->userid);
-        return true;
+        return array($instance, $plugin);
     }
 
     /**
@@ -356,6 +368,7 @@ class course_enrolment_manager {
      */
     public function unassign_role_from_user($userid, $roleid) {
         global $DB;
+        require_capability('moodle/role:assign', $this->context);
         $user = $DB->get_record('user', array('id'=>$userid), '*', MUST_EXIST);
         try {
             role_unassign($roleid, $user->id, $this->context->id, '', NULL);
@@ -374,6 +387,9 @@ class course_enrolment_manager {
      */
     public function assign_role_to_user($roleid, $userid) {
         require_capability('moodle/role:assign', $this->context);
+        if (!array_key_exists($roleid, $this->get_assignable_roles())) {
+            return false;
+        }
         return role_assign($roleid, $userid, $this->context->id, '', NULL);
     }
 
@@ -433,24 +449,15 @@ class course_enrolment_manager {
      * @return bool
      */
     public function edit_enrolment($userenrolment, $data) {
-        $instances = $this->get_enrolment_instances();
-        if (!array_key_exists($userenrolment->enrolid, $instances)) {
-            return false;
+        list($instance, $plugin) = $this->get_user_enrolment_components($ue);
+        if ($instance && $plugin && $plugin->allow_manage($instance) && has_capability("enrol/$instance->enrol:manage", $this->context)) {
+            if (!isset($data->status)) {
+                $data->status = $userenrolment->status;
+            }
+            $plugin->update_user_enrol($instance, $userenrolment->userid, $data->status, $data->timestart, $data->timeend);
+            return true;
         }
-        $instance = $instances[$userenrolment->enrolid];
-
-        $plugins = $this->get_enrolment_plugins();
-        $plugin = $plugins[$instance->enrol];
-        if (!$plugin->allow_unenrol($instance) || !has_capability("enrol/$instance->enrol:unenrol", $this->context)) {
-            return false;
-        }
-
-        if (!isset($data->status)) {
-            $data->status = $userenrolment->status;
-        }
-
-        $plugin->update_user_enrol($instance, $userenrolment->userid, $data->status, $data->timestart, $data->timeend);
-        return true;
+        return false;
     }
 
     /**
@@ -554,6 +561,113 @@ class course_enrolment_manager {
     }
 
     /**
+     * Gets all the cohorts the user is able to view.
+     *
+     * @global moodle_database $DB
+     * @return array
+     */
+    public function get_cohorts() {
+        global $DB;
+        $context = $this->get_context();
+        $cohorts = array();
+        $instances = $this->get_enrolment_instances();
+        $enrolled = array();
+        foreach ($instances as $instance) {
+            if ($instance->enrol == 'cohort') {
+                $enrolled[] = $instance->customint1;
+            }
+        }
+        list($sqlparents, $params) = $DB->get_in_or_equal(get_parent_contexts($context));
+        $sql = "SELECT id, name, contextid
+                  FROM {cohort}
+                 WHERE contextid $sqlparents
+              ORDER BY name ASC";
+        $rs = $DB->get_recordset_sql($sql, $params);
+        foreach ($rs as $c) {
+            $context = get_context_instance_by_id($c->contextid);
+            if (!has_capability('moodle/cohort:view', $context)) {
+                continue;
+            }
+            $cohorts[$c->id] = array(
+                'cohortid'=>$c->id,
+                'name'=>format_string($c->name),
+                'users'=>$DB->count_records('cohort_members', array('cohortid'=>$c->id)),
+                'enrolled'=>in_array($c->id, $enrolled)
+            );
+        }
+        $rs->close();
+        return $cohorts;
+    }
+
+    /**
+     * Enrols a cohort in a course.
+     *
+     * Essentially this just adds a cohort enrolment plugin instance to the course
+     *
+     * @param int $cohortid
+     * @param int $roleid
+     * @return bool
+     */
+    public function enrol_cohort($cohortid, $roleid) {
+        global $CFG;
+        require_capability('moodle/course:enrolconfig', $this->get_context());
+        require_once($CFG->dirroot.'/enrol/cohort/locallib.php');
+        $roles = $this->get_assignable_roles();
+        $cohorts = $this->get_cohorts();
+        if (!array_key_exists($cohortid, $cohorts) || !array_key_exists($roleid, $roles)) {
+            return false;
+        }
+        $enrol = enrol_get_plugin('cohort');
+        $enrol->add_instance($this->course, array('customint1'=>$cohortid, 'roleid'=>$roleid));
+        enrol_cohort_sync($this->course->id);
+        return true;
+    }
+
+    /**
+     * Enrols all of the users in a cohort within this course.
+     *
+     * Note this is VERY different from creating an enrolment instance for a cohort.
+     *
+     * @global moodle_database $DB
+     * @param int $cohortid
+     * @param int $roleid
+     * @return bool
+     */
+    public function enrol_cohort_users($cohortid, $roleid) {
+        global $DB;
+        require_capability('moodle/course:enrolconfig', $this->get_context());
+        $instance = false;
+        $instances = $this->get_enrolment_instances();
+        foreach ($instances as $i) {
+            if ($i->enrol == 'manual') {
+                $instance = $i;
+                break;
+            }
+        }
+        $plugin = enrol_get_plugin('manual');
+        if (!$instance || !$plugin || !$plugin->allow_enrol($instance) || !has_capability('enrol/'.$plugin->get_name().':enrol', $this->get_context())) {
+            return false;
+        }
+        $sql = "SELECT com.userid
+                FROM {cohort_members} com
+                LEFT JOIN (
+                    SELECT *
+                    FROM {user_enrolments} ue
+                    WHERE ue.enrolid = :enrolid
+                ) ue ON ue.userid=com.userid
+                WHERE com.cohortid = :cohortid AND ue.id IS NULL";
+        $params = array('cohortid'=>$cohortid, 'enrolid'=>$instance->id);
+        $rs = $DB->get_recordset_sql($sql, $params);
+        $count = 0;
+        foreach ($rs as $user) {
+            $count++;
+            $plugin->enrol_user($instance, $user->userid, $roleid);
+        }
+        $rs->close();
+        return $count;
+    }
+
+    /**
      * Gets an array of users for display, this includes minimal user information
      * as well as minimal information on the users roles, groups, and enrolments.
      *
@@ -640,107 +754,6 @@ class course_enrolment_manager {
                 );
             }
             $userdetails[$user->id] = $details;
-        }
-        return $userdetails;
-
-        if (1==2){
-            // get list of roles
-            $roles = $this->get_user_roles($user->id);
-            foreach ($roles as $rid=>$unassignable) {
-                if ($unassignable && isset($assignable[$rid])) {
-                    $icon = html_writer::empty_tag('img', array('alt'=>get_string('unassignarole', 'role', $allroles[$rid]->localname), 'src'=>$iconenrolremove));
-                    $url = new moodle_url($url, array('action'=>'unassign', 'role'=>$rid, 'user'=>$user->id));
-                    $roles[$rid] = html_writer::tag('div', $allroles[$rid]->localname . html_writer::link($url, $icon, array('class'=>'unassignrolelink', 'rel'=>$rid)), array('class'=>'role role_'.$rid));
-                } else {
-                    $roles[$rid] = html_writer::tag('div', $allroles[$rid]->localname, array('class'=>'role unchangeable', 'rel'=>$rid));
-                }
-            }
-            $addrole = '';
-            if ($assignable) {
-                foreach ($assignable as $rid=>$unused) {
-                    if (!isset($roles[$rid])) {
-                        //candidate for role assignment
-                        $url = new moodle_url($url, array('action'=>'assign', 'user'=>$user->id));
-                        $icon = html_writer::empty_tag('img', array('alt'=>get_string('assignroles', 'role', $allroles[$rid]->localname), 'src'=>$iconenroladd));
-                        $addrole .= html_writer::link($url, $icon, array('class'=>'assignrolelink'));
-                        break;
-                    }
-                }
-            }
-            $roles = html_writer::tag('div', implode('', $roles), array('class'=>'roles'));
-            if ($addrole) {
-                $roles = html_writer::tag('div', $addrole, array('class'=>'addrole')).$roles;
-            }
-
-            // Get list of groups
-            $usergroups = $this->get_user_groups($user->id);
-            $groups = array();
-            foreach($usergroups as $gid=>$unused) {
-                $group = $allgroups[$gid];
-                if ($canmanagegroups) {
-                    $icon = html_writer::empty_tag('img', array('alt'=>get_string('removefromgroup', 'group', $group->name), 'src'=>$iconenrolremove));
-                    $url = new moodle_url($url, array('action'=>'removemember', 'group'=>$gid, 'user'=>$user->id));
-                    $groups[] = $group->name . html_writer::link($url, $icon);
-                } else {
-                    $groups[] = $group->name;
-                }
-            }
-            $groups = implode(', ', $groups);
-            if ($canmanagegroups and (count($usergroups) < count($allgroups))) {
-                $icon = html_writer::empty_tag('img', array('alt'=>$straddgroup, 'src'=>$iconenroladd));
-                $url = new moodle_url($url, array('action'=>'addmember', 'user'=>$user->id));
-                $groups .= '<div>'.html_writer::link($url, $icon).'</div>';
-            }
-
-
-            // get list of enrol instances
-            $ues = $this->get_user_enrolments($user->id);
-            $edits = array();
-            foreach ($ues as $ue) {
-                $edit       = $ue->enrolmentinstancename;
-
-                $dimmed = false;
-                if ($ue->timestart and $ue->timeend) {
-                    $edit .= '&nbsp;('.get_string('periodstartend', 'enrol', array('start'=>userdate($ue->timestart), 'end'=>userdate($ue->timeend))).')';
-                    $dimmed = ($now < $ue->timestart and $now > $ue->timeend);
-                } else if ($ue->timestart) {
-                    $edit .= '&nbsp;('.get_string('periodstart', 'enrol', userdate($ue->timestart)).')';
-                    $dimmed = ($now < $ue->timestart);
-                } else if ($ue->timeend) {
-                    $edit .= '&nbsp;('.get_string('periodend', 'enrol', userdate($ue->timeend)).')';
-                    $dimmed = ($now > $ue->timeend);
-                }
-
-                if ($dimmed or $ue->status != ENROL_USER_ACTIVE) {
-                    $edit = html_writer::tag('span', $edit, array('class'=>'dimmed_text'));
-                }
-
-                if ($ue->enrolmentplugin->allow_unenrol($ue->enrolmentinstance) && has_capability("enrol/".$ue->enrolmentinstance->enrol.":unenrol", $context)) {
-                    $icon = html_writer::empty_tag('img', array('alt'=>$strunenrol, 'src'=>$iconenrolremove));
-                    $url = new moodle_url($url, array('action'=>'unenrol', 'ue'=>$ue->id));
-                    $edit .= html_writer::link($url, $icon, array('class'=>'unenrollink', 'rel'=>$ue->id));
-                }
-
-                if ($ue->enrolmentplugin->allow_manage($ue->enrolmentinstance) && has_capability("enrol/".$ue->enrolmentinstance->enrol.":manage", $context)) {
-                    $icon = html_writer::empty_tag('img', array('alt'=>$stredit, 'src'=>$iconedit));
-                    $url = new moodle_url($url, array('action'=>'edit', 'ue'=>$ue->id));
-                    $edit .= html_writer::link($url, $icon, array('class'=>'editenrollink', 'rel'=>$ue->id));
-                }
-
-                $edits[] = html_writer::tag('div', $edit, array('class'=>'enrolment'));
-            }
-            $edits = implode('', $edits);
-
-
-            $userdetails[$user->id] = array(
-                'picture'   => $renderer->user_picture($user, array('courseid'=>$courseid)),
-                'firstname' => html_writer::link(new moodle_url('/user/view.php', array('id'=>$user->id, 'course'=>$courseid)), fullname($user, true)),
-                'email'     => $user->email,
-                'lastseen'  => $strlastaccess,
-                'role'      => $roles,
-                'group'     => $groups,
-                'enrol'     => $edits
-            );
         }
         return $userdetails;
     }

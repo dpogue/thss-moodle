@@ -76,6 +76,8 @@ $string['bookmarkadded'] = 'Bookmark added.';
 $string['bookmarkalreadyexists'] = 'You have already bookmarked this page.';
 $string['bookmarkdeleted'] = 'Bookmark deleted.';
 $string['bookmarkthispage'] = 'bookmark this page';
+$string['cachejs'] = 'Cache javascipt';
+$string['cachejs_help'] = 'Javascript caching and compression greatly improves page loading performance. it is strongly recommended for production sites. Developers will probably want to disable this feature.';
 $string['cachetext'] = 'Text cache lifetime';
 $string['cachetype'] = 'Cache Type';
 $string['calendarexportsalt'] = 'Calendar export salt';
@@ -827,6 +829,8 @@ $string['requiredentrieschanged'] = '<strong>IMPORTANT - PLEASE READ<br/>(This w
 $string['requiredtemplate'] = 'Required. You may use template syntax here (%l = lastname, %f = firstname, %u = username). See help for details and examples.';
 $string['requiremodintro'] = 'Require activity description';
 $string['requires'] = 'Requires';
+$string['purgecaches']= 'Purge all caches';
+$string['purgecachesfinished']= 'All caches were purged.';
 $string['restrictbydefault'] = 'Restrict modules by default';
 $string['restrictmodulesfor'] = 'Restrict modules for';
 $string['reverseproxy'] = 'Reverse proxy';

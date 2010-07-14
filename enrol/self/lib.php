@@ -67,6 +67,10 @@ class enrol_self_plugin extends enrol_plugin {
         return true;
     }
 
+    public function show_enrolme_link(stdClass $instance) {
+        return ($instance->status == ENROL_INSTANCE_ENABLED);
+    }
+
     /**
      * Returns link to page which may be used to add new instance of enrolment plugin in course.
      * @param int $courseid
@@ -116,12 +120,11 @@ class enrol_self_plugin extends enrol_plugin {
         if ($instance->id == $instanceid) {
             if ($data = $form->get_data()) {
                 $enrol = enrol_get_plugin('self');
+                $timestart = time();
                 if ($instance->enrolperiod) {
-                    $timestart = time();
-                    $tineend   = $timestart + $instance->enrolperiod;
+                    $tineend = $timestart + $instance->enrolperiod;
                 } else {
-                    $timestart = 0;
-                    $tineend   = 0;
+                    $tineend = 0;
                 }
 
                 $this->enrol_user($instance, $USER->id, $instance->roleid, $timestart, $tineend);

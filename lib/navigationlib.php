@@ -1479,10 +1479,10 @@ class global_navigation extends navigation_node {
             }
             // Add a branch for the current user
             $usernode = $usersnode->add(fullname($user, true), null, self::TYPE_USER, null, $user->id);
-        }
 
-        if ($this->page->context->contextlevel == CONTEXT_USER && $user->id == $this->page->context->instanceid) {
-            $usernode->force_open();
+            if ($this->page->context->contextlevel == CONTEXT_USER && $user->id == $this->page->context->instanceid) {
+                $usernode->make_active();
+            }
         }
 
         // If the user is the current user or has permission to view the details of the requested
@@ -1521,12 +1521,20 @@ class global_navigation extends navigation_node {
             }
         }
 
-        $messageargs = null;
-        if ($USER->id!=$user->id) {
-            $messageargs = array('id'=>$user->id);
+        if (!empty($CFG->messaging)) {
+            $messageargs = null;
+            if ($USER->id!=$user->id) {
+                $messageargs = array('id'=>$user->id);
+            }
+            $url = new moodle_url('/message/index.php',$messageargs);
+            $usernode->add(get_string('messages', 'message'), $url, self::TYPE_SETTING, null, 'messages');
         }
-        $url = new moodle_url('/message/index.php',$messageargs);
-        $usernode->add(get_string('messages', 'message'), $url, self::TYPE_SETTING, null, 'messages');
+
+        // TODO: Private file capability check
+        if ($iscurrentuser) {
+            $url = new moodle_url('/blocks/private_files/edit.php');
+            $usernode->add(get_string('privatefiles', 'block_private_files'), $url, self::TYPE_SETTING);
+        }
 
         // Add a node to view the users notes if permitted
         if (!empty($CFG->enablenotes) && has_any_capability(array('moodle/notes:manage', 'moodle/notes:view'), $coursecontext)) {
@@ -1597,6 +1605,7 @@ class global_navigation extends navigation_node {
 
         // If the user is the current user add the repositories for the current user
         if ($iscurrentuser) {
+
             require_once($CFG->dirroot . '/repository/lib.php');
             $editabletypes = repository::get_editable_types($usercontext);
             if (!empty($editabletypes)) {
@@ -3044,6 +3053,10 @@ class settings_navigation extends navigation_node {
         // Add a user setting branch
         $usersetting = $this->add(get_string($gstitle, 'moodle', $fullname), null, self::TYPE_CONTAINER, null, $key);
         $usersetting->id = 'usersettings';
+        if ($this->page->context->contextlevel == CONTEXT_USER && $this->page->context->instanceid == $user->id) {
+            // Automatically start by making it active
+            $usersetting->make_active();
+        }
 
         // Check if the user has been deleted
         if ($user->deleted) {
@@ -3127,8 +3140,28 @@ class settings_navigation extends navigation_node {
             require_once($CFG->libdir . '/portfoliolib.php');
             if (portfolio_instances(true, false)) {
                 $portfolio = $usersetting->add(get_string('portfolios', 'portfolio'), null, self::TYPE_SETTING);
-                $portfolio->add(get_string('configure', 'portfolio'), new moodle_url('/user/portfolio.php'), self::TYPE_SETTING);
-                $portfolio->add(get_string('logs', 'portfolio'), new moodle_url('/user/portfoliologs.php'), self::TYPE_SETTING);
+
+                $config  = optional_param('config', 0, PARAM_INT);
+                $hide    = optional_param('hide', 0, PARAM_INT);
+                $url = new moodle_url('/user/portfolio.php', array('courseid'=>$course->id));
+                if ($hide !== 0) {
+                    $url->param('hide', $hide);
+                }
+                if ($config !== 0) {
+                    $url->param('config', $config);
+                }
+                $portfolio->add(get_string('configure', 'portfolio'), $url, self::TYPE_SETTING);
+
+                $page = optional_param('page', 0, PARAM_INT);
+                $perpage = optional_param('perpage', 10, PARAM_INT);
+                $url = new moodle_url('/user/portfoliologs.php', array('courseid'=>$course->id));
+                if ($page !== 0) {
+                    $url->param('page', $page);
+                }
+                if ($perpage !== 0) {
+                    $url->param('perpage', $perpage);
+                }
+                $portfolio->add(get_string('logs', 'portfolio'), $url, self::TYPE_SETTING);
             }
         }
 
@@ -3157,10 +3190,10 @@ class settings_navigation extends navigation_node {
         }
 
         // Messaging
-        // TODO this is adding itself to the messaging settings for other people based on one's own setting
-        if (has_capability('moodle/user:editownmessageprofile', $systemcontext)) {
+        if (($currentuser && has_capability('moodle/user:editownmessageprofile', $systemcontext)) || (!isguestuser($user) && has_capability('moodle/user:editmessageprofile', $usercontext) && !is_primary_admin($user->id))) {
             $url = new moodle_url('/message/edit.php', array('id'=>$user->id, 'course'=>$course->id));
-            $usersetting->add(get_string('editmymessage', 'message'), $url, self::TYPE_SETTING);
+            // Hide the node if messaging disabled
+            $usersetting->add(get_string('editmymessage', 'message'), $url, self::TYPE_SETTING)->display = !empty($CFG->messaging);
         }
 
         // Blogs

@@ -70,7 +70,7 @@ class autogroup_form extends moodleform {
         $mform->setAdvanced('allocateby');
 
         $mform->addElement('text', 'namingscheme', get_string('namingscheme', 'group'));
-        $mform->setHelpButton('namingscheme', array('namingscheme', get_string('namingschemehelp', 'group'), 'group'));
+        $mform->addHelpButton('namingscheme', 'namingscheme', 'group');
         $mform->addRule('namingscheme', get_string('required'), 'required', null, 'client');
         $mform->setType('namingscheme', PARAM_MULTILANG);
         // there must not be duplicate group names in course
@@ -147,10 +147,13 @@ class autogroup_form extends moodleform {
         }
 
        /// Check the naming scheme
-        $matchcnt = preg_match_all('/[#@]{1,1}/', $data['namingscheme'], $matches);
-
-        if ($matchcnt != 1) {
-            $errors['namingscheme'] = get_string('badnamingscheme', 'group');
+        if ($data['groupby'] == 'groups' and $data['number'] == 1) {
+            // we can use the name as is because there will be only one group max
+        } else {
+            $matchcnt = preg_match_all('/[#@]{1,1}/', $data['namingscheme'], $matches);
+            if ($matchcnt != 1) {
+                $errors['namingscheme'] = get_string('badnamingscheme', 'group');
+            }
         }
 
         return $errors;

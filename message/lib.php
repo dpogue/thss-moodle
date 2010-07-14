@@ -380,11 +380,11 @@ function message_print_contacts($onlinecontacts, $offlinecontacts, $strangers, $
         echo $OUTPUT->container_start('messagejsautorefresh note center');
         echo get_string('pagerefreshes', 'message', $CFG->message_contacts_refresh);
         echo $OUTPUT->container_end();
-    }
 
-    echo $OUTPUT->container_start('messagejsmanualrefresh aligncenter');
-    echo $OUTPUT->single_button(message_remove_url_params($PAGE->url), get_string('refresh'));
-    echo $OUTPUT->container_end();
+        echo $OUTPUT->container_start('messagejsmanualrefresh aligncenter');
+        echo $OUTPUT->single_button(message_remove_url_params($PAGE->url), get_string('refresh'));
+        echo $OUTPUT->container_end();
+    }
 }
 
 function message_print_usergroup_selector($usergroup, &$courses, &$coursecontexts, $countunreadtotal, $countblocked, $strunreadmessages) {
@@ -408,7 +408,7 @@ function message_print_usergroup_selector($usergroup, &$courses, &$coursecontext
 
         foreach($courses as $course) {
             if (has_capability('moodle/course:viewparticipants', $coursecontexts[$course->id])) {
-                $courses_options[VIEW_COURSE.$course->id] = $course->fullname;
+                $courses_options[VIEW_COURSE.$course->id] = $course->shortname;
             }
         }
 
@@ -1483,7 +1483,7 @@ function message_print_message_history($user1,$user2,$search='',$messagelimit=0,
 
         echo html_writer::nonempty_tag('div', $tablecontents, array('class'=>'mdl-left messagehistory'));
     } else {
-        echo $OUTPUT->heading(get_string('nomessagesfound', 'message'), 1);
+        echo html_writer::nonempty_tag('div', '('.get_string('nomessagesfound', 'message').')', array('class'=>'mdl-align messagehistory'));
     }
 }
 

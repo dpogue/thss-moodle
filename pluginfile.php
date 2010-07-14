@@ -171,7 +171,7 @@ if ($component === 'blog') {
             require_login();
         }
 
-        $fullpath = "/$context->id/tage/description/".implode('/', $args);
+        $fullpath = "/$context->id/tag/description/".implode('/', $args);
 
         if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
             send_file_not_found();
@@ -406,7 +406,7 @@ if ($component === 'blog') {
 
         $filename = array_pop($args);
         $filepath = $args ? '/'.implode('/', $args).'/' : '/';
-        if (!$file = $fs->get_file($context->id, 'user', 'profile', 0, $filepath, $filename) or $file->is_directory()) {
+        if (!$file = $fs->get_file($usercontext->id, 'user', 'profile', 0, $filepath, $filename) or $file->is_directory()) {
             send_file_not_found();
         }
 

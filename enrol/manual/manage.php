@@ -35,7 +35,9 @@ $course = $DB->get_record('course', array('id'=>$instance->courseid), '*', MUST_
 $context = get_context_instance(CONTEXT_COURSE, $course->id, MUST_EXIST);
 
 require_login($course);
+require_capability('enrol/manual:enrol', $context);
 require_capability('enrol/manual:manage', $context);
+require_capability('enrol/manual:unenrol', $context);
 
 $instance = $DB->get_record('enrol', array('id'=>$enrolid, 'enrol'=>'manual'), '*', MUST_EXIST);
 if ($roleid < 0) {
@@ -107,12 +109,11 @@ if (optional_param('add', false, PARAM_BOOL) && confirm_sesskey()) {
             }
 
             if ($extendperiod <= 0) {
-                $timestart = 0;
                 $timeend = 0;
             } else {
                 $timeend = $timestart + $extendperiod;
             }
-            $enrol_manual->enrol_user($instance, $adduser->id, $roleid, $timestart, $timeend, true);
+            $enrol_manual->enrol_user($instance, $adduser->id, $roleid, $timestart, $timeend);
             add_to_log($course->id, 'course', 'enrol', '../enrol/users.php?id='.$course->id, $course->id); //there should be userid somewhere!
         }
 

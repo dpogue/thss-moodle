@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+require_once($CFG->libdir.'/formslib.php');//putting this is as a safety as i got a class not found error.
 /**
  * @package   mod-assignment
  * @copyright 2010 Dongsheng Cai <dongsheng@moodle.com>
@@ -31,6 +32,8 @@ class mod_assignment_upload_form extends moodleform {
         // hidden params
         $mform->addElement('hidden', 'contextid', $instance['contextid']);
         $mform->setType('contextid', PARAM_INT);
+        $mform->addElement('hidden', 'userid', $instance['userid']);
+        $mform->setType('userid', PARAM_INT);
         $mform->addElement('hidden', 'action', 'uploadfile');
         $mform->setType('action', PARAM_ALPHA);
 
