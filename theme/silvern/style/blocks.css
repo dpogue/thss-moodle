@@ -147,3 +147,8 @@ aside.hidden footer {
 .block_site_main_menu footer select {
 	font-size: 0.8em;
 }
+
+.block .minicalendar th,
+.block .minicalendar td {
+    border-color: #a3a3a3;
+}

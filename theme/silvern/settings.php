@@ -23,32 +23,32 @@
  * @since     Moodle 2.0
  */
 
-$admsettings = new admin_settingpage('theme_silvern',
-   get_string('admsettings_title', 'theme_silvern'));
+defined('MOODLE_INTERNAL') || die;
 
-// Colour of the highlighted tab on the main page
-$name = 'theme_silvern/welcomecolour';
-$title = get_string('welcomecolour', 'theme_silvern');
-$description = get_string('welcomecolour_desc', 'theme_silvern');
-$default = '#426fd9';
-$setting = new admin_setting_configcolourpicker($name, $title,
-    $description, $default, array());
-$admsettings->add($setting);
+if ($ADMIN->fulltree) {
+    // Colour of the highlighted tab on the main page
+    $name = 'theme_silvern/welcomecolour';
+    $title = get_string('welcomecolour', 'theme_silvern');
+    $description = get_string('welcomecolour_desc', 'theme_silvern');
+    $default = '#426fd9';
+    $setting = new admin_setting_configcolourpicker($name, $title,
+        $description, $default, array());
+    $settings->add($setting);
 
-// Text displayed in the welcome box
-$name = 'theme_silvern/welcometext';
-$title = get_string('welcometext', 'theme_silvern');
-$description = get_string('welcometext_desc', 'theme_silvern');
-$default = '<b>Welcome to<br />Moodle 2.0!</b>';
-$setting = new admin_setting_configtextarea($name, $title,
-    $description, $default, PARAM_CLEANHTML, '50', '10');
-$admsettings->add($setting);
+    // Text displayed in the welcome box
+    $name = 'theme_silvern/welcometext';
+    $title = get_string('welcometext', 'theme_silvern');
+    $description = get_string('welcometext_desc', 'theme_silvern');
+    $default = '<b>Welcome to<br />Moodle 2.0!</b>';
+    $setting = new admin_setting_configtextarea($name, $title,
+        $description, $default, PARAM_CLEANHTML, '50', '10');
+    $settings->add($setting);
 
-// Logo URL
-$name = 'theme_silvern/logourl';
-$title = get_string('logourl', 'theme_silvern');
-$description = get_string('logourl_desc', 'theme_silvern');
-$setting = new admin_setting_configtext($name, $title, $description, '', PARAM_URL);
-$admsettings->add($setting);
-
-$ADMIN->add('themes', $admsettings);
+    // Logo URL
+    $name = 'theme_silvern/logourl';
+    $title = get_string('logourl', 'theme_silvern');
+    $description = get_string('logourl_desc', 'theme_silvern');
+    $setting = new admin_setting_configtext($name, $title, $description,
+        '', PARAM_URL);
+    $settings->add($setting);
+}

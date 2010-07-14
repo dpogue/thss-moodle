@@ -53,9 +53,9 @@ function silvern_set_welcomecolour($css, $colour) {
     $tag_grad = '[[setting:welcomecolourfade]]';
 
     if (is_null($colour)) {
-        $rgb = Hex2RGB('#800000');
+        $rgb = silvern_Hex2RGB('#800000');
     } else {
-        $rgb = Hex2RGB($colour);
+        $rgb = silvern_Hex2RGB($colour);
     }
     $replacement = 'rgb('.$rgb[0].','.$rgb[1].','.$rgb[2].')';
     $css = str_replace($tag, $replacement, $css);
@@ -86,9 +86,9 @@ function silvern_set_logourl($css, $url) {
  * @returns array
  *
  * @copyright 2006 Jonas John
- * http://www.jonasjohn.de/snippets/php/hex2rgb.htm
+ * http://www.jonasjohn.de/snippets/php/Hex2RGB.htm
  */
-function Hex2RGB($colour) {
+function silvern_Hex2RGB($colour) {
     $colour = str_replace('#', '', $colour);
     if (strlen($colour) != 6){ return array(0,0,0); }
     $rgb = array();

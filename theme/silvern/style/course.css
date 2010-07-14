@@ -108,3 +108,54 @@
 .forumpost thead .left {
     border-right: 0 none;
 }
+
+.forumheaderlist,
+.path-mod-forum .forumheaderlist {
+    border-color: #a3a3a3;
+    background: #f9f9f9;
+    border-collapse: collapse;
+    border-radius: 2px;
+}
+
+.forumheaderlist thead {
+    background: #e0e0e0;
+}
+
+.forumheaderlist td {
+    border-color: #a3a3a3;
+    border-collapse: collapse;
+}
+
+
+
+
+.que {
+    background: #f9f9f9;
+    border: 1px solid #a3a3a3;
+    border-radius: 2px;
+}
+
+.gecko .que {
+    -moz-border-radius: 2px;
+}
+
+.safari .que {
+    -webkit-border-radius: 2px;
+}
+
+.que .content {
+    float: none;
+    margin-left: 12%;
+    min-height: 100px;
+}
+
+.que .prompt,
+.que .answer {
+    float: none;
+}
+
+.que .answer span {
+    float: none;
+    clear: none;
+    display: block;
+}
