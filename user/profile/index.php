@@ -52,10 +52,10 @@ switch ($action) {
         $fieldcount = $DB->count_records('user_info_field', array('categoryid'=>$id));
         $optionsyes = array ('id'=>$id, 'confirm'=>1, 'action'=>'deletecategory', 'sesskey'=>sesskey());
         echo $OUTPUT->header();
-        echo $OUTPUT->heading('profiledeletecategory', 'admin');
+        echo $OUTPUT->heading(get_string('profiledeletecategory', 'admin'));
 
         $formcontinue = new single_button(new moodle_url($redirect, $optionsyes), get_string('yes'), 'post');
-        $formcancel = new single_button($redirect, get_string('no'), 'get');
+        $formcancel   = new single_button(new moodle_url($redirect), get_string('no'), 'get');
         echo $OUTPUT->confirm(get_string('profileconfirmcategorydeletion', 'admin', $fieldcount), $formcontinue, $formcancel);
         echo $OUTPUT->footer();
         die;
@@ -148,6 +148,11 @@ echo '<div class="profileeditor">';
 $options = profile_list_datatypes();
 $popupurl = new moodle_url('/user/profile/index.php?id=0&action=editfield');
 echo $OUTPUT->single_select($popupurl, 'datatype', $options, '', array(''=>$strcreatefield), 'newfieldform');
+
+//add a div with a class so themers can hide, style or reposition the text
+html_writer::start_tag('div',array('class'=>'adminuseractionhint'));
+echo get_string('or', 'lesson');
+html_writer::end_tag('div');
 
 /// Create a new category link
 $options = array('action'=>'editcategory');
