@@ -76,7 +76,7 @@ YUI.add('moodle-calendar-eventmanager', function(Y) {
                 setter : function(node) {
                     var n = Y.one(node);
                     if (!n) {
-                        Y.fail(UEP.NAME+': invalid event node set');
+                        Y.fail(ENAME+': invalid event node set');
                     }
                     return n;
                 }
@@ -130,4 +130,4 @@ YUI.add('moodle-calendar-eventmanager', function(Y) {
     M.core_calendar = M.core_calendar || {}
     Y.mix(M.core_calendar, EVENTMANAGER);
 
-}, '@VERSION@', {requires:['base', 'node', 'event-mouseenter', 'overlay', 'moodle-calendar-eventmanager-skin']});
+}, '@VERSION@', {requires:['base', 'node', 'event-mouseenter', 'overlay', 'moodle-calendar-eventmanager-skin', 'test']});
