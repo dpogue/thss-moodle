@@ -627,8 +627,7 @@ class page_wiki_comments extends page_wiki {
         }
 
         foreach ($comments as $num) {
-
-            $user = wiki_get_user_info($num->userid);
+            $user = get_complete_user_data('username', $num->username);
 
             $fullname = fullname($user, has_capability('moodle/site:viewfullnames', get_context_instance(CONTEXT_COURSE, $course->id)));
             $by = new stdclass();
@@ -663,7 +662,7 @@ class page_wiki_comments extends page_wiki {
 
             $row2->cells[] = $cell4;
 
-            if ((has_capability('mod/wiki:managecomment', $context)) and ($USER->id == $num->userid)) {
+            if ((has_capability('mod/wiki:managecomment', $context)) and ($USER->id == $user->id)) {
 
                 $urledit = new moodle_url('/mod/wiki/editcomments.php', array('commentid' => $num->id, 'pageid' => $page->id, 'action' => 'edit'));
                 $urldelet = new moodle_url('/mod/wiki/instancecomments.php', array('commentid' => $num->id, 'pageid' => $page->id, 'action' => 'delete'));
@@ -1250,9 +1249,10 @@ class page_wiki_history extends page_wiki {
                 }
 
                 $table = new html_table();
-                $icon = $OUTPUT->help_icon('diff', 'wiki', get_string('diff', 'wiki'));
 
-                $table->head = array($icon, get_string('version'), get_string('user'), get_string('modified'), '');
+                $icon = $OUTPUT->help_icon('diff', 'wiki');
+
+                $table->head = array(get_string('diff', 'wiki') . $icon, get_string('version'), get_string('user'), get_string('modified'), '');
                 $table->data = $contents;
                 $table->attributes['class'] = 'mdl-align';
                 $table->rowclasses = $rowclass;
@@ -1453,7 +1453,7 @@ class page_wiki_map extends page_wiki {
         $swid = $this->subwiki->id;
 
         $table = new html_table();
-        $table->head = array(get_string('contributions', 'wiki'));
+        $table->head = array(get_string('contributions', 'wiki') . $OUTPUT->help_icon('contributions', 'wiki'));
         $table->attributes['class'] = 'wiki_editor generalbox';
         $table->data = array();
         $table->rowclasses = array();
@@ -1628,6 +1628,8 @@ class page_wiki_map extends page_wiki {
      *
      */
     private function print_orphaned_content() {
+        global $OUTPUT;
+
         $page = $this->page;
 
         if ($page->timerendered + WIKI_REFRESH_CACHE_TIME < time()) {
@@ -1638,7 +1640,7 @@ class page_wiki_map extends page_wiki {
         $swid = $this->subwiki->id;
 
         $table = new html_table();
-        $table->head = array(get_string('orphaned', 'wiki'));
+        $table->head = array(get_string('orphaned', 'wiki') . $OUTPUT->help_icon('orphaned', 'wiki'));
         $table->attributes['class'] = 'wiki_editor generalbox';
         $table->data = array();
         $table->rowclasses = array();

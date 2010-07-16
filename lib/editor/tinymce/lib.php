@@ -72,26 +72,23 @@ class tinymce_texteditor extends texteditor {
 
         //TODO: we need to implement user preferences that affect the editor setup too
 
-        //TODO: reimplement rulesets, maybe it would be better to implement it some other way
-        //$xmlruleset     = file_get_contents('extra/xhtml_ruleset.txt');
-
         $directionality = get_string('thisdirection', 'langconfig');
         $strtime        = get_string('strftimetime');
         $strdate        = get_string('strftimedaydate');
         $lang           = current_language();
         $contentcss     = $PAGE->theme->editor_css_url()->out(false);
 
-        $xmedia = '';
         $context = empty($options['context']) ? get_context_instance(CONTEXT_SYSTEM) : $options['context'];
+
+        $xmedia = 'moodlemedia,'; // HQ thinks it should be always on, so it is no matter if it will actually work or not
+        /*
         if (!empty($options['legacy'])) {
             $xmedia = 'moodlemedia,';
         } else {
             if (!empty($options['noclean']) or !empty($options['trusted'])) {
             }
-        }
+        }*/
 
-        // TODO: enabled moodlemedia
-        $xmedia = 'moodlemedia,';
         $filters = filter_get_active_in_context($context);
         if (array_key_exists('filter/tex', $filters)) {
             $xdragmath = 'dragmath,';
@@ -132,6 +129,12 @@ class tinymce_texteditor extends texteditor {
                     'theme_advanced_statusbar_location' => "bottom",
                     'spellchecker_rpc_url' => $CFG->wwwroot."/lib/editor/tinymce/tiny_mce/'.$this->version.'/plugins/spellchecker/rpc.php"
                   );
+        if (empty($CFG->xmlstrictheaders) and (!empty($options['legacy']) or !empty($options['noclean']) or !empty($options['trusted']))) {
+            // now deal somehow with non-standard tags, people scream when we do not make moodle code xtml strict,
+            // but they scream even more when we strip all tags that are not strict :-(
+            $params['valid_elements'] = '*[*]';
+            $params['invalid_elements'] = '';
+        }
 
         if (empty($options['legacy'])) {
             if (isset($options['maxfiles']) and $options['maxfiles'] != 0) {

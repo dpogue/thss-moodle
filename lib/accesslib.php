@@ -3970,84 +3970,32 @@ function get_capability_info($capabilityname) {
  */
 function get_capability_string($capabilityname) {
 
-    // Typical capabilityname is mod/choice:readresponses
+    // Typical capability name is 'plugintype/pluginname:capabilityname'
+    list($type, $name, $capname) = preg_split('|[/:]|', $capabilityname);
 
-    $names = split('/', $capabilityname);
-    $stringname = $names[1];                 // choice:readresponses
-    $components = split(':', $stringname);
-    $componentname = $components[0];               // choice
-
-    switch ($names[0]) {
-        case 'report':
-            $string = get_string($stringname, 'report_'.$componentname);
-        break;
-
-        case 'mod':
-            $string = get_string($stringname, $componentname);
-        break;
-
-        case 'block':
-            $string = get_string($stringname, 'block_'.$componentname);
-        break;
-
-        case 'moodle':
-            if ($componentname == 'local') {
-                $string = get_string($stringname, 'local');
-            } else {
-                $string = get_string($stringname, 'role');
-            }
-        break;
-
-        case 'enrol':
-            $string = get_string($stringname, 'enrol_'.$componentname);
-        break;
-
-        case 'format':
-            $string = get_string($stringname, 'format_'.$componentname);
-        break;
-
-        case 'format':
-            $string = get_string($stringname, 'editor_'.$componentname);
-        break;
-
-        case 'gradeexport':
-            $string = get_string($stringname, 'gradeexport_'.$componentname);
-        break;
-
-        case 'gradeimport':
-            $string = get_string($stringname, 'gradeimport_'.$componentname);
-        break;
-
-        case 'gradereport':
-            $string = get_string($stringname, 'gradereport_'.$componentname);
-        break;
-
-        case 'coursereport':
-            $string = get_string($stringname, 'coursereport_'.$componentname);
-        break;
-
-        case 'quizreport':
-            $string = get_string($stringname, 'quiz_'.$componentname);
-        break;
-
-        case 'repository':
-            $string = get_string($stringname, 'repository_'.$componentname);
-        break;
-
-        case 'local':
-            $string = get_string($stringname, 'local_'.$componentname);
-        break;
-
-        case 'webservice':
-            $string = get_string($stringname, 'webservice_'.$componentname);
-        break;
-
-        default:
-            $string = get_string($stringname);
-        break;
-
+    if ($type === 'moodle') {
+        $component = 'core_role';
+    } else if ($type === 'quizreport') {
+        //ugly hack!!
+        $component = 'quiz_'.$name;
+    } else {
+        $component = $type.'_'.$name;
     }
-    return $string;
+
+    $stringname = $name.':'.$capname;
+
+    if ($component === 'core_role' or get_string_manager()->string_exists($stringname, $component)) {
+        return get_string($stringname, $component);
+    }
+
+    $dir = get_component_directory($component);
+    if (!file_exists($dir)) {
+        // plugin broken or does not exist, do not bother with printing of debug message
+        return $capabilityname.' ???';
+    }
+
+    // something is wrong in plugin, better print debug
+    return get_string($stringname, $component);
 }
 
 
@@ -4060,84 +4008,41 @@ function get_capability_string($capabilityname) {
  */
 function get_component_string($component, $contextlevel) {
 
-    switch ($contextlevel) {
-
-        case CONTEXT_SYSTEM:
-            if (preg_match('|^enrol|', $component)) {
-                $langname = str_replace('/', '_', $component);
-                $string = get_string('pluginname', $langname);
-            } else if (preg_match('|^block|', $component)) {
-                $langname = str_replace('/', '_', $component);
-                $string = get_string('pluginname', $langname);
-            } else if (preg_match('|^local|', $component)) {
-                $langname = str_replace('/', '_', $component);
-                $string = get_string('local');
-            } else if (preg_match('|^repository|', $component)) {
-                $string = get_string('repository', 'repository').': '.get_string('pluginname', $component);
-            } else if (preg_match('|^report|', $component)) {
-                $string = get_string('reports');
-            } else {
-                $string = get_string('coresystem');
-            }
-        break;
-
-        case CONTEXT_USER:
-            $string = get_string('users');
-        break;
-
-        case CONTEXT_COURSECAT:
-            if (preg_match('|^enrol|', $component)) {
-                $langname = str_replace('/', '_', $component);
-                $string = get_string('pluginname', $langname);
-            } else {
-                $string = get_string('categories');
-            }
-        break;
-
-        case CONTEXT_COURSE:
-            if (preg_match('|^enrol|', $component)) {
-                $langname = str_replace('/', '_', $component);
-                $string = get_string('pluginname', $langname);
-            } else if (preg_match('|^gradeimport|', $component)) {
-                $string = get_string('gradeimport', 'grades').': '.get_string('pluginname', $component);
-            } else if (preg_match('|^gradeexport|', $component)) {
-                $string = get_string('gradeexport', 'grades').': '.get_string('pluginname', $component);
-            } else if (preg_match('|^gradereport|', $component)) {
-                $string = get_string('gradereport', 'grades').': '.get_string('pluginname', $component);
-            } else if (preg_match('|^coursereport|', $component)) {
-                $string = get_string('coursereport').': '.get_string('pluginname', $component);
-            } else if (preg_match('|^webservice|', $component)) {
-                $string = get_string('webservice', 'webservice').': '.get_string('pluginname', $component);
-            } else {
-                $string = get_string('course');
-            }
-        break;
-
-        case CONTEXT_MODULE:
-            if (preg_match('|^quiz_([a-z_]*)|', $component, $matches)){
-                $langname = 'quiz_'.$matches[1];
-                $string = get_string($matches[1].':componentname', $langname);
-            } else if (preg_match('|^moodle|', $component)) {
-                $string = get_string('activities');
-            } else {
-                $string = get_string('activity').': '.get_string('modulename', preg_replace('#(\w+_)#', '', basename($component)));
-            }
-        break;
-
-        case CONTEXT_BLOCK:
-            if ($component == 'moodle' ){
-                $string = get_string('block');
-            }else{
-                $string = get_string('block').': '.get_string('pluginname', basename($component));
-            }
-        break;
-
-        default:
-            print_error('unknowncontext');
-        return false;
-
+    if ($component === 'moodle' or $component === 'core') {
+        switch ($contextlevel) {
+            case CONTEXT_SYSTEM:    return get_string('coresystem');
+            case CONTEXT_USER:      return get_string('users');
+            case CONTEXT_COURSECAT: return get_string('categories');
+            case CONTEXT_COURSE:    return get_string('course');
+            case CONTEXT_MODULE:    return get_string('activities');
+            case CONTEXT_BLOCK:     return get_string('block');
+            default:                print_error('unknowncontext');
+        }
     }
-    return $string;
+
+    list($type, $name) = normalize_component($component);
+    $dir = get_plugin_directory($type, $name);
+    if (!file_exists($dir)) {
+        // plugin not installed, bad luck, there is no way to find the name
+        return $component.' ???';
+    }
+
+    switch ($type) {
+        case 'quiz':         return get_string($name.':componentname', $component);// insane hack!!!
+        case 'repository':   return get_string('repository', 'repository').': '.get_string('pluginname', $component);
+        case 'gradeimport':  return get_string('gradeimport', 'grades').': '.get_string('pluginname', $component);
+        case 'gradeexport':  return get_string('gradeexport', 'grades').': '.get_string('pluginname', $component);
+        case 'gradereport':  return get_string('gradereport', 'grades').': '.get_string('pluginname', $component);
+        case 'webservice':   return get_string('webservice', 'webservice').': '.get_string('pluginname', $component);
+        case 'block':        return get_string('block').': '.get_string('pluginname', basename($component));
+        case 'mod':
+            if (get_string_manager()->string_exists('pluginname', $component)) {
+                return get_string('activity').': '.get_string('pluginname', $component);
+            } else {
+                return get_string('activity').': '.get_string('modulename', $component);
+            }
+        default: return get_string('pluginname', $component);
+    }
 }
 
 /**
