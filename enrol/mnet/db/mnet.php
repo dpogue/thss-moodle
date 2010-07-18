@@ -14,21 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  * This file contains the mnet services for the mnet enrolment plugin
  *
- * @since 2.0
- * @package moodlecore
- * @subpackage enrolment
- * @copyright 2010 Penny Leach
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * If we rewrite MNet as proposed in MDL-21993 this file would contain
+ * just a declaration of xml-rpc methods that this plugin publishes.
+ *
+ * @since      2.0
+ * @package    enrol
+ * @subpackage mnet
+ * @copyright  2010 Penny Leach
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 $publishes = array(
     'mnet_enrol' => array(
         'apiversion' => 1,
-        'classname'  => 'enrolment_plugin_mnet',
+        'classname'  => 'enrol_mnet_mnetservice_enrol',
         'filename'   => 'enrol.php',
         'methods'    => array(
             'available_courses',

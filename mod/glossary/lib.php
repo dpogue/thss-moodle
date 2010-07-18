@@ -1648,18 +1648,13 @@ function glossary_print_alphabet_links($cm, $glossary, $mode, $hook, $sortkey, $
 global $CFG;
      if ( $glossary->showalphabet) {
           $alphabet = explode(",", get_string('alphabet', 'langconfig'));
-          $letters_by_line = 14;
           for ($i = 0; $i < count($alphabet); $i++) {
               if ( $hook == $alphabet[$i] and $hook) {
                    echo "<b>$alphabet[$i]</b>";
               } else {
                    echo "<a href=\"$CFG->wwwroot/mod/glossary/view.php?id=$cm->id&amp;mode=$mode&amp;hook=".urlencode($alphabet[$i])."&amp;sortkey=$sortkey&amp;sortorder=$sortorder\">$alphabet[$i]</a>";
               }
-              if ((int) ($i % $letters_by_line) != 0 or $i == 0) {
-                   echo ' | ';
-              } else {
-                   echo '<br />';
-              }
+              echo ' | ';
           }
      }
 }
@@ -1937,6 +1932,7 @@ function glossary_generate_export_file($glossary, $hook = "", $hook = 0) {
     $co .= glossary_start_tag("INFO",1,true);
         $co .= glossary_full_tag("NAME",2,false,$glossary->name);
         $co .= glossary_full_tag("INTRO",2,false,$glossary->intro);
+        $co .= glossary_full_tag("INTROFORMAT",2,false,$glossary->introformat);
         $co .= glossary_full_tag("ALLOWDUPLICATEDENTRIES",2,false,$glossary->allowduplicatedentries);
         $co .= glossary_full_tag("DISPLAYFORMAT",2,false,$glossary->displayformat);
         $co .= glossary_full_tag("SHOWSPECIAL",2,false,$glossary->showspecial);
@@ -1978,7 +1974,7 @@ function glossary_generate_export_file($glossary, $hook = "", $hook = 0) {
                     $co .= glossary_start_tag("ENTRY",3,true);
                     $co .= glossary_full_tag("CONCEPT",4,false,trim($entry->concept));
                     $co .= glossary_full_tag("DEFINITION",4,false,$entry->definition);
-                    $co .= glossary_full_tag("FORMAT",4,false,$entry->definitionformat);
+                    $co .= glossary_full_tag("FORMAT",4,false,$entry->definitionformat); // note: use old name for BC reasons
                     $co .= glossary_full_tag("USEDYNALINK",4,false,$entry->usedynalink);
                     $co .= glossary_full_tag("CASESENSITIVE",4,false,$entry->casesensitive);
                     $co .= glossary_full_tag("FULLMATCH",4,false,$entry->fullmatch);

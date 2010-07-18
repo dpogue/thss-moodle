@@ -32,14 +32,17 @@
 class restore_create_and_clean_temp_stuff extends restore_execution_step {
 
     protected function define_execution() {
-        backup_helper::delete_old_backup_dirs(time() - (4 * 60 * 60));    // Delete > 4 hours temp dirs
-        $exists = restore_controller_dbops::create_backup_ids_temp_table($this->get_restoreid()); // Create temp table conditionally
+        $exists = restore_controller_dbops::create_restore_temp_tables($this->get_restoreid()); // temp tables conditionally
         // If the table already exists, it's because restore_prechecks have been executed in the same
         // request (without problems) and it already contains a bunch of preloaded information (users...)
         // that we aren't going to execute again
         if ($exists) { // Inform plan about preloaded information
             $this->task->set_preloaded_information();
         }
+        // Create the old-course-ctxid to new-course-ctxid mapping, we need that available since the beginning
+        $itemid = $this->task->get_old_contextid();
+        $newitemid = get_context_instance(CONTEXT_COURSE, $this->get_courseid())->id;
+        restore_dbops::set_backup_ids_record($this->get_restoreid(), 'context', $itemid, $newitemid);
     }
 }
 
@@ -51,7 +54,7 @@ class restore_drop_and_clean_temp_stuff extends restore_execution_step {
 
     protected function define_execution() {
         global $CFG;
-        backup_controller_dbops::drop_backup_ids_temp_table($this->get_restoreid()); // Drop ids temp table
+        restore_controller_dbops::drop_restore_temp_tables($this->get_restoreid()); // Drop ids temp table
         backup_helper::delete_old_backup_dirs(time() - (4 * 60 * 60));               // Delete > 4 hours temp dirs
         if (empty($CFG->keeptempdirectoriesonbackup)) { // Conditionally
             backup_helper::delete_backup_dir($this->get_restoreid()); // Empty backup dir
@@ -80,11 +83,41 @@ class restore_load_included_inforef_records extends restore_execution_step {
     }
 }
 
+/*
+ * Execution step that will load all the needed files into backup_files_temp
+ *   - info: contains the whole original object (times, names...)
+ * (all them being original ids as loaded from xml)
+ */
+class restore_load_included_files extends restore_structure_step {
+
+    protected function define_structure() {
+
+        $file = new restore_path_element('file', '/files/file');
+
+        return array($file);
+    }
+
+    // Processing functions go here
+    public function process_file($data) {
+
+        $data = (object)$data; // handy
+
+        // load it if needed:
+        //   - it it is one of the annotated inforef files (course/section/activity/block)
+        //   - it is one "user", "group" or "grade" component file
+        $isfileref   = restore_dbops::get_backup_ids_record($this->get_restoreid(), 'fileref', $data->id);
+        $iscomponent = ($data->component == 'user' || $data->component == 'group' || $data->component == 'grade');
+        if ($isfileref || $iscomponent) {
+            restore_dbops::set_backup_files_record($this->get_restoreid(), $data);
+        }
+    }
+}
+
 /**
  * Execution step that, *conditionally* (if there isn't preloaded information
  * and users have been selected in settings, will load all the needed users
  * to backup_temp_ids. They will be stored with "user" itemname and with
- * their original contextid as paremitemid.
+ * their original contextid as paremitemid
  */
 class restore_load_included_users extends restore_execution_step {
 
@@ -108,7 +141,7 @@ class restore_load_included_users extends restore_execution_step {
  * Note: Any error will cause exception, as far as this is the same processing
  * than the one into restore prechecks (that should have stopped process earlier)
  */
- class restore_process_included_users extends restore_execution_step {
+class restore_process_included_users extends restore_execution_step {
 
     protected function define_execution() {
 
@@ -120,6 +153,105 @@ class restore_load_included_users extends restore_execution_step {
         }
         restore_dbops::process_included_users($this->get_restoreid(), $this->task->get_courseid(), $this->task->get_userid(), $this->task->is_samesite());
     }
+}
+
+/**
+ * Execution step that will create all the needed users as calculated
+ * by @restore_process_included_users (those having newiteind = 0)
+ */
+class restore_create_included_users extends restore_execution_step {
+
+    protected function define_execution() {
+
+        restore_dbops::create_included_users($this->get_basepath(), $this->get_restoreid(), $this->get_setting_value('user_files'));
+    }
+}
+
+/**
+ * Structure step that will create all the needed groups and groupings
+ * by loading them from the groups.xml file performing the required matches.
+ * Note group members only will be added if restoring user info
+ */
+class restore_groups_structure_step extends restore_structure_step {
+
+     protected function define_structure() {
+
+         $paths = array(); // Add paths here
+
+         $paths[] = new restore_path_element('group', '/groups/group');
+         if ($this->get_setting_value('users')) {
+             $paths[] = new restore_path_element('member', '/groups/group/group_members/group_member');
+         }
+         $paths[] = new restore_path_element('grouping', '/groups/groupings/grouping');
+         $paths[] = new restore_path_element('grouping_group', '/groups/groupings/grouping/grouping_groups/grouping_group');
+
+         return $paths;
+     }
+
+     // Processing functions go here
+     public function process_group($data) {
+         global $DB;
+
+         $data = (object)$data; // handy
+         $data->courseid = $this->get_courseid();
+
+         $oldid = $data->id;    // need this saved for later
+
+         $restorefiles = false; // Only if we end creating the group
+
+         // Search if the group already exists (by name & description) in the target course
+         $description_clause = '';
+         $params = array('courseid' => $this->get_courseid(), 'grname' => $data->name);
+         if (!empty($data->description)) {
+             $description_clause = ' AND ' .
+                                   $DB->sql_compare_text('description') . ' = ' . $DB->sql_compare_text(':desc');
+             $params['desc'] = $data->description;
+         }
+         if (!$groupdb = $DB->get_record_sql("SELECT *
+                                                FROM {groups}
+                                               WHERE courseid = :courseid
+                                                 AND name = :grname $description_clause", $params)) {
+             // group doesn't exist, create
+             $newitemid = $DB->insert_record('groups', $data);
+             $restorefiles = true; // We'll restore the files
+         } else {
+             // group exists, use it
+             $newitemid = $groupdb->id;
+         }
+         // Save the id mapping
+         $this->set_mapping('group', $oldid, $newitemid, $restorefiles);
+     }
+
+     public function process_member($data) {
+         global $DB;
+
+         $data = (object)$data; // handy
+
+         // get parent group->id
+         $data->groupid = $this->get_new_parentid('group');
+
+         // map user newitemid and insert if not member already
+         if ($data->userid = $this->get_mappingid('user', $data->userid)) {
+             if (!$DB->record_exists('groups_members', array('groupid' => $data->groupid, 'userid' => $data->userid))) {
+                 $DB->insert_record('groups_members', $data);
+             }
+         }
+     }
+
+     public function process_grouping($data) {
+         debugging('TODO: Grouping restore not implemented. Detected grouping', DEBUG_DEVELOPER);
+     }
+
+     public function process_grouping_group($data) {
+         debugging('TODO: Grouping restore not implemented. Detected grouping group', DEBUG_DEVELOPER);
+     }
+
+     protected function after_execute() {
+         // Add group related files, matching with "group" mappings
+         $this->add_related_files('group', 'icon', 'group');
+         $this->add_related_files('group', 'description', 'group');
+     }
+
 }
 
 /*

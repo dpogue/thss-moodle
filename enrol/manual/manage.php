@@ -39,7 +39,6 @@ require_capability('enrol/manual:enrol', $context);
 require_capability('enrol/manual:manage', $context);
 require_capability('enrol/manual:unenrol', $context);
 
-$instance = $DB->get_record('enrol', array('id'=>$enrolid, 'enrol'=>'manual'), '*', MUST_EXIST);
 if ($roleid < 0) {
     $roleid = $instance->roleid;
 }
@@ -52,7 +51,7 @@ if (!isset($roles[$roleid])) {
 }
 
 if (!$enrol_manual = enrol_get_plugin('manual')) {
-    throw coding_error('Can not instantiate enrol_manual');
+    throw new coding_exception('Can not instantiate enrol_manual');
 }
 
 $instancename = $enrol_manual->get_instance_name($instance);

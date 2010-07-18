@@ -16,28 +16,23 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'enrol_mnet', language 'en', branch 'MOODLE_20_STABLE'
+ * English strings for MNet enrolment plugin
  *
- * @package   enrol_mnet
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    enrol
+ * @subpackage mnet
+ * @copyright  2010 David Mudrak <david@moodle.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['allcategories'] = '{$a} potential categories';
-$string['allcourses'] = '{$a} potential courses';
-$string['allow_allcourses'] = 'Allow enrolment for remote users in all courses on this moodle site.';
-$string['allowedcategories'] = '{$a} allowed categories';
-$string['allowedcourses'] = '{$a} allowed courses';
-$string['allowedcourseslinktext'] = 'Edit allowed courses and categories here.';
-$string['couldnotcreateuser'] = 'An error occurred while trying to create that user!';
-$string['couldnotenrol'] = 'Sorry, could not unenrol that user from that course!';
-$string['coursenotfound'] = 'Sorry, but that course doesn\'t exist';
-$string['courseunavailable'] = 'Sorry, but that course isn\'t available';
-$string['description'] = 'The MNET enrolment plugin allows networked sites to enrol their users on some or all of the courses on this moodle site.';
-$string['enrolname'] = 'Moodle Networking';
+$string['error_multiplehost'] = 'Some instance of MNet enrolment plugin already exists for this host. Only one instance per host and/or one instance for \'All hosts\' is allowed.';
+$string['instancename'] = 'Enrolment method name';
+$string['instancename_help'] = 'You can optionally rename this instance of the MNet enrolment method. If you leave this field empty, the default instance name will be used, containing the name of the remote host and the assigned role for their users.';
 $string['mnet_enrol_description'] = 'Publish this service to allow administrators at {$a} to enrol their students in courses you have created on your server.<br/><ul><li><em>Dependency</em>: You must also <strong>publish</strong> the SSO (Service Provider) service to {$a}.</li><li><em>Dependency</em>: You must also <strong>subscribe</strong> to the SSO (Identity Provider) service on {$a}.</li></ul><br/>Subscribe to this service to be able to enrol your students in courses  on {$a}.<br/><ul><li><em>Dependency</em>: You must also <strong>subscribe</strong> to the SSO (Service Provider) service on {$a}.</li><li><em>Dependency</em>: You must also <strong>publish</strong> the SSO (Identity Provider) service to {$a}.</li></ul><br/>';
-$string['mnet_enrol_name'] = 'Moodle Networked Enrolment';
-$string['mnetlocalforexternal'] = 'Local courses for external users';
-$string['nocategoriesdefined'] = 'No course categories found. Define new categories <a href="{$a}">here</a>.';
-$string['nocoursesdefined'] = 'No courses found. Define new courses <a href="{$a}">here</a>.';
-$string['usernotfound'] = 'Sorry, could not find that user record';
+$string['mnet_enrol_name'] = 'Remote enrolment service';
+$string['pluginname'] = 'MNet remote enrolments';
+$string['pluginname_desc'] = 'Allows remote MNet host to enrol their users into our courses.';
+$string['remotesubscriber'] = 'Remote host';
+$string['remotesubscriber_help'] = 'Select \'All hosts\' to open this course for all MNet peers we are offering the remote enrolment service to. Or choose a single host to make this course available for their users only.';
+$string['remotesubscribersall'] = 'All hosts';
+$string['roleforremoteusers'] = 'Role for their users';
+$string['roleforremoteusers_help'] = 'What role will the remote users from the selected host get.';

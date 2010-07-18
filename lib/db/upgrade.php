@@ -3040,19 +3040,18 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         }
 
         // add roles without archetypes, it may contain weird things, but we can not fix them
+        list($narsql, $params) = $DB->get_in_or_equal(array_keys($defaults), SQL_PARAMS_NAMED, 'ar000', false);
         $sql = "SELECT DISTINCT ra.roleid, con.contextlevel
                   FROM {role_assignments} ra
-                  JOIN {context} con ON ra.contextid = con.id";
-        $existingrolecontextlevels = $DB->get_recordset_sql($sql);
+                  JOIN {context} con ON ra.contextid = con.id
+                  JOIN {role} r ON r.id = ra.roleid
+                 WHERE r.archetype $narsql";
+        $existingrolecontextlevels = $DB->get_recordset_sql($sql, $params);
         foreach ($existingrolecontextlevels as $rcl) {
-            if (isset($roleids[$rcl->roleid])) {
-                continue;
-            }
             if (!isset($rolecontextlevels[$rcl->roleid])) {
-                $rolecontextlevels[$rcl->roleid] = array($rcl->contextlevel);
-            } else if (!in_array($rcl->contextlevel, $rolecontextlevels[$rcl->roleid])) {
-                $rolecontextlevels[$rcl->roleid][] = $rcl->contextlevel;
+                $rolecontextlevels[$rcl->roleid] = array();
             }
+            $rolecontextlevels[$rcl->roleid][] = $rcl->contextlevel;
         }
         $existingrolecontextlevels->close();
 
@@ -4821,6 +4820,48 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         upgrade_main_savepoint(true, 2010071700);
     }
 
+    if ($oldversion < 2010071701) {
+        // Drop legacy core tables that now belongs to mnetservice_enrol plugin
+        // Upgrade procedure not needed as the tables are used for caching purposes only
+        $tables = array('mnet_enrol_course', 'mnet_enrol_assignments');
+        foreach ($tables as $tname) {
+            $table = new xmldb_table($tname);
+            if ($dbman->table_exists($table)) {
+                $dbman->drop_table($table);
+            }
+        }
+
+        upgrade_main_savepoint(true, 2010071701);
+    }
+
+    if ($oldversion < 2010071800) {
+
+        // Define table backup_files_template to be created
+        $table = new xmldb_table('backup_files_template');
+
+        // Adding fields to table backup_files_template
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('backupid', XMLDB_TYPE_CHAR, '32', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('contextid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
+        $table->add_field('component', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('filearea', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('itemid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
+        $table->add_field('info', XMLDB_TYPE_TEXT, 'medium', null, null, null, null);
+
+        // Adding keys to table backup_files_template
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+
+        // Adding indexes to table backup_files_template
+        $table->add_index('backupid_contextid_component_filearea_itemid_ix', XMLDB_INDEX_NOTUNIQUE, array('backupid', 'contextid', 'component', 'filearea', 'itemid'));
+
+        // Conditionally launch create table for backup_files_template
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Main savepoint reached
+        upgrade_main_savepoint(true, 2010071800);
+    }
 
     return true;
 }
