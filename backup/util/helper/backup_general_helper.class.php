@@ -136,10 +136,12 @@ abstract class backup_general_helper extends backup_helper {
         $info->backup_version = $infoarr['backup_version'];
         $info->backup_release = $infoarr['backup_release'];
         $info->backup_date    = $infoarr['backup_date'];
+        $info->mnet_remoteusers         = $infoarr['mnet_remoteusers'];
         $info->original_wwwroot         = $infoarr['original_wwwroot'];
         $info->original_site_identifier_hash = $infoarr['original_site_identifier_hash'];
         $info->original_course_id       = $infoarr['original_course_id'];
         $info->original_course_contextid= $infoarr['original_course_contextid'];
+        $info->original_system_contextid= $infoarr['original_system_contextid'];
         $info->type   =  $infoarr['details']['detail'][0]['type'];
         $info->format =  $infoarr['details']['detail'][0]['format'];
         $info->mode   =  $infoarr['details']['detail'][0]['mode'];
