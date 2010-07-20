@@ -45,7 +45,7 @@ function blog_rss_print_link($filtertype, $filterselect, $tagid=0, $tooltiptext=
 
 
 // Generate any blog RSS feed via one function (called by ../rss/file.php)
-function blog_generate_rss_feed($type, $id, $tagid=0) {
+function blog_rss_get_feed($type, $id, $tagid=0) {
     global $CFG, $SITE, $DB;
 
     if (empty($CFG->enablerssfeeds)) {
@@ -136,9 +136,9 @@ function blog_rss_file_name($type, $id, $tagid=0) {
     global $CFG;
 
     if ($tagid) {
-        return "$CFG->dataroot/rss/blog/$type/$id/$tagid.xml";
+        return "$CFG->dataroot/cache/rss/blog/$type/$id/$tagid.xml";
     } else {
-        return "$CFG->dataroot/rss/blog/$type/$id.xml";
+        return "$CFG->dataroot/cache/rss/blog/$type/$id.xml";
     }
 }
 

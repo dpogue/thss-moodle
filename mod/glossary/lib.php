@@ -51,10 +51,6 @@ function glossary_add_instance($glossary) {
 /// will create a new instance and return the id number
 /// of the new instance.
 
-    if (empty($glossary->userating)) {
-        $glossary->assessed = 0;
-    }
-
     if (empty($glossary->ratingtime) or empty($glossary->assessed)) {
         $glossary->assesstimestart  = 0;
         $glossary->assesstimefinish = 0;
@@ -108,10 +104,6 @@ function glossary_update_instance($glossary) {
 
     $glossary->timemodified = time();
     $glossary->id           = $glossary->instance;
-
-    //if (empty($glossary->userating)) {
-//        $glossary->assessed = 0;
-  //  }
 
     if (empty($glossary->ratingtime) or empty($glossary->assessed)) {
         $glossary->assesstimestart  = 0;
@@ -2603,7 +2595,7 @@ function glossary_extend_settings_navigation(settings_navigation $settings, navi
 
         $string = get_string('rsstype','forum');
 
-        $url = new moodle_url(rss_get_url($PAGE->cm->context->id, $USER->id, 'glossary', $glossary->id));
+        $url = new moodle_url(rss_get_url($PAGE->cm->context->id, $USER->id, 'mod_glossary', $glossary->id));
         $glossarynode->add($string, $url, settings_navigation::TYPE_SETTING, null, null, new pix_icon('i/rss', ''));
     }
 }

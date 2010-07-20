@@ -48,7 +48,7 @@ if (count($args) < 5) {
 
 $contextid   = (int)$args[0];
 $token  = $args[1];
-$modulename = clean_param($args[2], PARAM_FILE);
+$componentname = clean_param($args[2], PARAM_FILE);
 $instance   = $args[3];
 
 $userid = rss_get_userid_from_token($token);
@@ -58,59 +58,62 @@ if (!$userid) {
 $user = get_complete_user_data('id', $userid);
 session_set_user($user);
 
+//Set context
 $context = get_context_instance_by_id($contextid);
 if (!$context) {
     rss_not_found();
 }
 $PAGE->set_context($context);
 
+//Get course from context
+//TODO: note that in the case of the hub rss feed, the feed is not related to a course context,
+//it is more a "site" context. The Hub RSS bypass the following line using context id = 2
 $coursecontext = get_course_context($context);
 $course = $DB->get_record('course', array('id' => $coursecontext->instanceid), '*', MUST_EXIST);
 
-$isblog = ($modulename == 'blog');
-if ($isblog) {
-   $blogid   = (int)$args[4];  // could be groupid / courseid  / userid  depending on $instance
-   if ($args[5] != 'rss.xml') {
-       $tagid = (int)$args[5];
-   } else {
-       $tagid = 0;
-   }
-} else {
-    $instance = (int)$instance;  // we know it's an id number
-}
-
-//Check name of module
-if (!$isblog) {
-    $mods = get_plugin_list('mod');
-    $mods = array_keys($mods);
-    if (!in_array(strtolower($modulename), $mods)) {
-        rss_not_found();
-    }
-    try {
-        $cm = get_coursemodule_from_instance($modulename, $instance, 0, false, MUST_EXIST);
-        require_login($course, false, $cm, false, true);
-    } catch (Exception $e) {
-        rss_not_found();
-    }
-
-} else {
-    try {
-        require_login($course, false, NULL, false, true);
-    } catch (Exception $e) {
-        rss_not_found();
-    }
-}
-
+//this will store the path to the cached rss feed contents
 $pathname = null;
-//Work out the filename of the cached RSS file
-if ($isblog) {
-    require_once($CFG->dirroot.'/blog/rsslib.php');
-    $pathname = blog_generate_rss_feed($instance, $blogid, $tagid);
-} else {
-    $functionname = $cm->modname.'_rss_get_feed';
-    require_once($CFG->dirroot."/mod/{$cm->modname}/rsslib.php");
-    if(function_exists($functionname)) {
-        $pathname = $functionname($context, $cm, $instance, $args);
+
+$componentdir = get_component_directory($componentname);
+list($type, $plugin) = normalize_component($componentname);
+
+if (file_exists($componentdir)) {
+    require_once("$componentdir/rsslib.php");
+    $functionname = $plugin.'_rss_get_feed';
+
+    if (function_exists($functionname)) {
+
+        if ($componentname=='blog') {
+
+            $blogid = (int) $args[4];  // could be groupid / courseid  / userid  depending on $instance
+            if ($args[5] != 'rss.xml') {
+                $tagid = (int) $args[5];
+            } else {
+                $tagid = 0;
+            }
+
+            try {
+                require_login($course, false, NULL, false, true);
+            } catch (Exception $e) {
+                rss_not_found();
+            }
+            $pathname = $functionname($instance, $blogid, $tagid);
+        } else if ($componentname=='local_hub') {
+            
+            $pathname = $functionname($args);
+        } else {
+
+            $instance = (int)$instance;
+
+            try {
+                $cm = get_coursemodule_from_instance($plugin, $instance, 0, false, MUST_EXIST);
+                require_login($course, false, $cm, false, true);
+            } catch (Exception $e) {
+                rss_not_found();
+            }
+
+            $pathname = $functionname($context, $cm, $instance, $args);
+        }
     }
 }
 
