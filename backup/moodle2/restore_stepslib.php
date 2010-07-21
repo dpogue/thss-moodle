@@ -131,15 +131,18 @@ class restore_load_included_files extends restore_structure_step {
 class restore_load_and_map_roles extends restore_execution_step {
 
     protected function define_execution() {
-        if ($this->task->get_preloaded_information()) { // if info is already preloaded, nothing to do
+        if ($this->task->get_preloaded_information()) { // if info is already preloaded
             return;
         }
 
         $file = $this->get_basepath() . '/roles.xml';
         // Load needed toles to temp_ids
         restore_dbops::load_roles_to_tempids($this->get_restoreid(), $file);
+
         // Process roles, mapping/skipping. Any error throws exception
-        restore_dbops::process_included_roles($this->get_restoreid(), $this->task->get_courseid(), $this->task->get_userid(), $this->task->is_samesite());
+        // Note we pass controller's info because it can contain role mapping information
+        // about manual mappings performed by UI
+        restore_dbops::process_included_roles($this->get_restoreid(), $this->task->get_courseid(), $this->task->get_userid(), $this->task->is_samesite(), $this->task->get_info()->role_mappings);
     }
 }
 
@@ -323,7 +326,6 @@ class restore_groups_structure_step extends restore_structure_step {
 /**
  * Structure step that will create all the needed scales
  * by loading them from the scales.xml
- * Note group members only will be added if restoring user info
  */
 class restore_scales_structure_step extends restore_structure_step {
 
@@ -379,6 +381,75 @@ class restore_scales_structure_step extends restore_structure_step {
     protected function after_execute() {
         // Add scales related files, matching with "scale" mappings
         $this->add_related_files('grade', 'scale', 'scale', $this->task->get_old_system_contextid());
+    }
+}
+
+
+/**
+ * Structure step that will create all the needed outocomes
+ * by loading them from the outcomes.xml
+ */
+class restore_outcomes_structure_step extends restore_structure_step {
+
+    protected function define_structure() {
+
+        $paths = array(); // Add paths here
+        $paths[] = new restore_path_element('outcome', '/outcomes_definition/outcome');
+        return $paths;
+    }
+
+    protected function process_outcome($data) {
+        global $DB;
+
+        $data = (object)$data;
+
+        $restorefiles = false; // Only if we end creating the group
+
+        $oldid = $data->id;    // need this saved for later
+
+        // Look for outcome (by shortname both in standard (courseid=null) and current course
+        // with priority to standard outcomes (ORDER clause)
+        // outcome is not course unique, use get_record_sql to suppress warning
+        $params = array('courseid' => $this->get_courseid(), 'shortname' => $data->shortname);
+        if (!$outdb = $DB->get_record_sql('SELECT *
+                                             FROM {grade_outcomes}
+                                            WHERE shortname = :shortname
+                                              AND (courseid = :courseid OR courseid IS NULL)
+                                         ORDER BY COALESCE(courseid, 0)', $params, IGNORE_MULTIPLE)) {
+            // Remap the user
+            $userid = $this->get_mappingid('user', $data->usermodified);
+            $data->usermodified = $userid ? $userid : $this->get_userid();
+            // Remap the scale
+            $data->scaleid = $this->get_mappingid('scale', $data->scaleid);
+            // Remap the course if course outcome
+            $data->courseid = $data->courseid ? $this->get_courseid() : null;
+            // If global outcome (course=null), check the user has perms to create it
+            // falling to course outcome if not
+            $systemctx = get_context_instance(CONTEXT_SYSTEM);
+            if (is_null($data->courseid) && !has_capability('moodle/grade:manageoutcomes', $systemctx , $data->userid)) {
+                $data->courseid = $this->get_courseid();
+            }
+            // outcome doesn't exist, create
+            $newitemid = $DB->insert_record('grade_outcomes', $data);
+            $restorefiles = true; // We'll restore the files
+        } else {
+            // scale exists, use it
+            $newitemid = $outdb->id;
+        }
+        // Set the corresponding grade_outcomes_courses record
+        $outcourserec = new stdclass();
+        $outcourserec->courseid  = $this->get_courseid();
+        $outcourserec->outcomeid = $newitemid;
+        if (!$DB->record_exists('grade_outcomes_courses', (array)$outcourserec)) {
+            $DB->insert_record('grade_outcomes_courses', $outcourserec);
+        }
+        // Save the id mapping (with files support at system context)
+        $this->set_mapping('outcome', $oldid, $newitemid, $restorefiles, $this->task->get_old_system_contextid());
+    }
+
+    protected function after_execute() {
+        // Add outcomes related files, matching with "outcome" mappings
+        $this->add_related_files('grade', 'outcome', 'outcome', $this->task->get_old_system_contextid());
     }
 }
 

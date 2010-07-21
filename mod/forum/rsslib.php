@@ -32,7 +32,7 @@
  * @param array $args the arguments received in the url
  * @return string the full path to the cached RSS feed directory. Null if there is a problem.
  */
-function forum_rss_get_feed($context, $cm, $forumid, $args) {
+function forum_rss_get_feed($context, $args) {
     global $CFG, $DB;
 
     $status = true;
@@ -43,14 +43,27 @@ function forum_rss_get_feed($context, $cm, $forumid, $args) {
         return null;
     }
 
-    //check capabilities
-    if (!has_capability('mod/forum:viewdiscussion', $context)) {
+    $forumid = $args[3];
+
+    $uservalidated = false;
+
+    $cm = get_coursemodule_from_instance('forum', $forumid, 0, false, MUST_EXIST);
+    if ($cm) {
+        $modcontext = get_context_instance(CONTEXT_MODULE, $cm->id);
+
+        //context id from db should match the submitted one
+        if ($context->id==$modcontext->id && has_capability('mod/forum:viewdiscussion', $modcontext)) {
+            $uservalidated = true;
+        }
+    }
+
+    if (!$uservalidated) {
         return null;
     }
 
     $forum = $DB->get_record('forum', array('id' => $forumid), '*', MUST_EXIST);
 
-    if (!rss_enabled('forum', $forum)) {
+    if (!rss_enabled_for_mod('forum', $forum)) {
         return null;
     }
 
@@ -59,7 +72,7 @@ function forum_rss_get_feed($context, $cm, $forumid, $args) {
 
     //hash the sql to get the cache file name
     $filename = rss_get_file_name($forum, $sql);
-    $cachedfilepath = rss_get_file_full_name('forum', $filename);
+    $cachedfilepath = rss_get_file_full_name('mod_forum', $filename);
 
     //Is the cache out of date?
     $cachedfilelastmodified = 0;
@@ -70,7 +83,7 @@ function forum_rss_get_feed($context, $cm, $forumid, $args) {
         //need to regenerate the cached version
         $result = forum_rss_feed_contents($forum, $sql);
         if (!empty($result)) {
-            $status = rss_save_file('forum',$filename,$result);
+            $status = rss_save_file('mod_forum',$filename,$result);
         }
     }
 
@@ -85,7 +98,7 @@ function forum_rss_get_feed($context, $cm, $forumid, $args) {
  * @return void
  */
 function forum_rss_delete_file($forum) {
-    rss_delete_file('forum', $forum);
+    rss_delete_file('mod_forum', $forum);
 }
 
 ///////////////////////////////////////////////////////

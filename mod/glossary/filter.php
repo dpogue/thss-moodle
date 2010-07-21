@@ -1,12 +1,21 @@
 <?php
 
+/**
+ *
+ * @global moodle_database $DB
+ * @global moodle_page $PAGE
+ * @param int $courseid
+ * @param string $text
+ * @return string
+ */
 function glossary_filter($courseid, $text) {
-    global $CFG, $DB, $OUTPUT;
+    global $CFG, $DB, $GLOSSARY_EXCLUDECONCEPTS, $PAGE;
 
     // Trivial-cache - keyed on $cachedcourseid
     static $nothingtodo;
     static $conceptlist;
     static $cachedcourseid;
+    static $jsinitialised;
 
     if (empty($courseid)) {
         $courseid = SITEID;
@@ -113,8 +122,7 @@ function glossary_filter($courseid, $text) {
 
         foreach ($concepts as $concept) {
 
-            $glossaryname = $glossaries[$concept->glossaryid];
-
+            $glossaryname = str_replace(':', '-', $glossaries[$concept->glossaryid]);
             if ($concept->category) {       // Link to a category
                 $title = strip_tags($glossaryname.': '.$strcategory.' '.$concept->concept);
                 $href_tag_begin = '<a class="glossary autolink glossaryid'.$concept->glossaryid.'" title="'.$title.'" '.
@@ -128,26 +136,26 @@ function glossary_filter($courseid, $text) {
                     $encodedconcept = urlencode($concept->concept);
                     $title = str_replace('"', "'", strip_tags($glossaryname.': '.$concept->concept));
                 }
-                $randid = html_writer::random_id($title);
-                $href_tag_begin = '<a id="'.$randid.'" class="glossary autolink glossaryid'.$concept->glossaryid.'" title="'.$title.'" '.
-                                  'href="'.$CFG->wwwroot.'/mod/glossary/showentry.php?courseid='.$courseid.
-                                  '&amp;concept='.$encodedconcept.'" >';
-
-                //attach the onclick event
-                $link = '/mod/glossary/showentry.php?courseid='.$courseid.'\&amp;concept='.$encodedconcept;
-                $action = new popup_action('click', $link.'&popup=1', 'entry', array('height'=>600,'width'=>450));
-                $OUTPUT->add_action_handler($action, $randid);
+                $link = new moodle_url('/mod/glossary/showentry.php', array('courseid'=>$courseid, 'concept'=>$encodedconcept));
+                $href_tag_begin = html_writer::start_tag('a', array(
+                    'href'=>$link,
+                    'title'=>$title,
+                    'class'=>'glossary autolink glossaryid'.$concept->glossaryid));
             }
-
-
             $conceptlist[] = new filterobject($concept->concept, $href_tag_begin, '</a>',
                                               $concept->casesensitive, $concept->fullmatch);
         }
 
         $conceptlist = filter_remove_duplicates($conceptlist);
+
+        if (empty($jsinitialised)) {
+            // Add a JavaScript event to open popup's here. This only ever need to be
+            // added once!
+            $PAGE->requires->yui_module('moodle-mod_glossary-autolinker', 'M.mod_glossary.init_filter_autolinking', array(array('courseid'=>$courseid)));
+            $jsinitialised = true;
+        }
     }
 
-    global $GLOSSARY_EXCLUDECONCEPTS;
     if(!empty($GLOSSARY_EXCLUDECONCEPTS)) {
         $reducedconceptlist=array();
         foreach($conceptlist as $concept) {

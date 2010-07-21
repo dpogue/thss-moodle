@@ -156,19 +156,78 @@ function xmldb_lesson_upgrade($oldversion) {
         $dbman->drop_table($table);
         upgrade_mod_savepoint(true, 2009120800, 'lesson');
     }
+
     if ($oldversion < 2009120801) {
 
     /// Define field contentsformat to be added to lesson_pages
         $table = new xmldb_table('lesson_pages');
-        $field = new xmldb_field('contentsformat', XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0', 'contents');
+        $field = new xmldb_field('contentsformat', XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, FORMAT_MOODLE, 'contents');
 
     /// Conditionally launch add field contentsformat
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
 
+        // conditionally migrate to html format in contents
+        if ($CFG->texteditors !== 'textarea') {
+            $rs = $DB->get_recordset('lesson_pages', array('contentsformat'=>FORMAT_MOODLE), '', 'id,contents,contentsformat');
+            foreach ($rs as $lp) {
+                $lp->contents       = text_to_html($lp->contents, false, false, true);
+                $lp->contentsformat = FORMAT_HTML;
+                $DB->update_record('lesson_pages', $lp);
+                upgrade_set_timeout();
+            }
+            $rs->close();
+        }
     /// lesson savepoint reached
         upgrade_mod_savepoint(true, 2009120801, 'lesson');
+    }
+
+    if ($oldversion < 2010072000) {
+        // Define field answerformat to be added to lesson_answers
+        $table = new xmldb_table('lesson_answers');
+        $field = new xmldb_field('answerformat', XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0', 'answer');
+
+        // Launch add field answerformat
+        $dbman->add_field($table, $field);
+
+        // lesson savepoint reached
+        upgrade_mod_savepoint(true, 2010072000, 'lesson');
+    }
+
+    if ($oldversion < 2010072001) {
+        // Define field responseformat to be added to lesson_answers
+        $table = new xmldb_table('lesson_answers');
+        $field = new xmldb_field('responseformat', XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0', 'response');
+
+        // Launch add field responseformat
+        $dbman->add_field($table, $field);
+
+        // lesson savepoint reached
+        upgrade_mod_savepoint(true, 2010072001, 'lesson');
+    }
+
+    if ($oldversion < 2010072003) {
+        $rs = $DB->get_recordset('lesson_answers', array());
+        foreach ($rs as $answer) {
+            $flags = intval($answer->flags);
+            $update = false;
+            if ($flags & 1) {
+                $answer->answer       = text_to_html($answer->answer, false, false, true);
+                $answer->answerformat = FORMAT_HTML;
+                $update = true;
+            }
+            if ($flags & 2) {
+                $answer->response       = text_to_html($answer->response, false, false, true);
+                $answer->responseformat = FORMAT_HTML;
+                $update = true;
+            }
+            if ($update) {
+                $DB->update_record('lesson_answers', $answer);
+            }
+        }
+        $rs->close();
+        upgrade_mod_savepoint(true, 2010072003, 'lesson');
     }
 
 

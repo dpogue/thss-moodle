@@ -281,7 +281,7 @@ class backup_course_structure_step extends backup_structure_step {
 
         $allowedmodules = new backup_nested_element('allowed_modules');
 
-        $module = new backup_nested_element('module', array('modulename'));
+        $module = new backup_nested_element('module', array(), array('modulename'));
 
         // Build the tree
 
@@ -538,6 +538,9 @@ class backup_final_outcomes_structure_step extends backup_structure_step {
                                     JOIN {backup_ids_temp} bi ON o.id = bi.itemid
                                    WHERE bi.backupid = ?
                                      AND bi.itemname = 'outcomefinal'", array(backup::VAR_BACKUPID));
+
+        // Annotate outcome files (they store files in system context, so pass it instead of default one)
+        $outcome->annotate_files('grade', 'outcome', 'id', get_context_instance(CONTEXT_SYSTEM)->id);
 
         // Return main element (outcomesdef)
         return $outcomesdef;
@@ -1199,6 +1202,10 @@ class backup_main_structure_step extends backup_structure_step {
         $info['original_wwwroot']=$CFG->wwwroot;
         $info['original_site_identifier_hash'] = md5(get_site_identifier());
         $info['original_course_id'] = $this->get_courseid();
+        $originalcourseinfo = backup_controller_dbops::backup_get_original_course_info($this->get_courseid());
+        $info['original_course_fullname']  = $originalcourseinfo->fullname;
+        $info['original_course_shortname'] = $originalcourseinfo->shortname;
+        $info['original_course_startdate'] = $originalcourseinfo->startdate;
         $info['original_course_contextid'] = get_context_instance(CONTEXT_COURSE, $this->get_courseid())->id;
         $info['original_system_contextid'] = get_context_instance(CONTEXT_SYSTEM)->id;
 
@@ -1212,7 +1219,9 @@ class backup_main_structure_step extends backup_structure_step {
         $information = new backup_nested_element('information', null, array(
             'name', 'moodle_version', 'moodle_release', 'backup_version',
             'backup_release', 'backup_date', 'mnet_remoteusers', 'original_wwwroot',
-            'original_site_identifier_hash', 'original_course_id', 'original_course_contextid', 'original_system_contextid'));
+            'original_site_identifier_hash', 'original_course_id',
+            'original_course_fullname', 'original_course_shortname', 'original_course_startdate',
+            'original_course_contextid', 'original_system_contextid'));
 
         $details = new backup_nested_element('details');
 

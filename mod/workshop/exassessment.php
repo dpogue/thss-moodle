@@ -51,7 +51,7 @@ $isreviewer = ($USER->id == $assessment->reviewerid);
 if ($isreviewer or $canmanage) {
     // such a user can continue
 } else {
-    print_error('nopermissions', '', $workshop->view_url());
+    print_error('nopermissions', 'error', $workshop->view_url(), 'assess example submission');
 }
 
 // only the reviewer is allowed to modify the assessment
@@ -94,6 +94,16 @@ echo $OUTPUT->heading(get_string('assessedexample', 'workshop'), 2);
 $wsoutput = $PAGE->get_renderer('mod_workshop');      // workshop renderer
 $example = $workshop->get_example_by_id($example->id);     // reload so can be passed to the renderer
 echo $wsoutput->example_full($example);
+
+// show instructions for assessing as thay may contain important information
+// for evaluating the assessment
+if (trim($workshop->instructreviewers)) {
+    $instructions = file_rewrite_pluginfile_urls($workshop->instructreviewers, 'pluginfile.php', $PAGE->context->id,
+        'mod_workshop', 'instructreviewers', 0, workshop::instruction_editors_options($PAGE->context));
+    print_collapsible_region_start('', 'workshop-viewlet-instructreviewers', get_string('instructreviewers', 'workshop'));
+    echo $OUTPUT->box(format_text($instructions, $workshop->instructreviewersformat), array('generalbox', 'instructions'));
+    print_collapsible_region_end();
+}
 
 if ($canmanage) {
     echo $OUTPUT->heading(get_string('assessmentreference', 'workshop'), 2);

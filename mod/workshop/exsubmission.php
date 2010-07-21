@@ -64,7 +64,7 @@ if ($example->id and ($canmanage or ($workshop->assessing_examples_allowed() and
 } elseif (is_null($example->id) and $canmanage) {
     // ok you can go
 } else {
-    print_error('nopermissions');
+    print_error('nopermissions', 'error', $workshop->view_url(), 'view or manage example submission');
 }
 
 if ($id and $delete and $confirm and $canmanage) {
@@ -156,6 +156,16 @@ if ($edit) {
 // Output starts here
 echo $OUTPUT->header();
 echo $OUTPUT->heading(format_string($workshop->name), 2);
+
+// show instructions for submitting as thay may contain some list of questions and we need to know them
+// while reading the submitted answer
+if (trim($workshop->instructauthors)) {
+    $instructions = file_rewrite_pluginfile_urls($workshop->instructauthors, 'pluginfile.php', $PAGE->context->id,
+        'mod_workshop', 'instructauthors', 0, workshop::instruction_editors_options($PAGE->context));
+    print_collapsible_region_start('', 'workshop-viewlet-instructauthors', get_string('instructauthors', 'workshop'));
+    echo $OUTPUT->box(format_text($instructions, $workshop->instructauthorsformat), array('generalbox', 'instructions'));
+    print_collapsible_region_end();
+}
 
 // if in edit mode, display the form to edit the example
 if ($edit and $canmanage) {

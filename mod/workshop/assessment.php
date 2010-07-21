@@ -65,7 +65,12 @@ $isauthor               = ($USER->id == $submission->authorid);
 if ($isreviewer or $isauthor or ($canviewallassessments and $canviewallsubmissions)) {
     // such a user can continue
 } else {
-    print_error('nopermissions', '', $workshop->view_url());
+    print_error('nopermissions', 'error', $workshop->view_url(), 'view this assessment');
+}
+
+if ($isauthor and !$isreviewer and !$canviewallassessments and $workshop->phase != workshop::PHASE_CLOSED) {
+    // authors can see assessments of their work at the end of workshop only
+    print_error('nopermissions', 'error', $workshop->view_url(), 'view assessment of own work before workshop is closed');
 }
 
 // only the reviewer is allowed to modify the assessment
@@ -160,6 +165,16 @@ echo $OUTPUT->heading(get_string('assessedsubmission', 'workshop'), 2);
 $wsoutput = $PAGE->get_renderer('mod_workshop');      // workshop renderer
 $submission = $workshop->get_submission_by_id($submission->id);     // reload so can be passed to the renderer
 echo $wsoutput->submission_full($submission, has_capability('mod/workshop:viewauthornames', $workshop->context));
+
+// show instructions for assessing as thay may contain important information
+// for evaluating the assessment
+if (trim($workshop->instructreviewers)) {
+    $instructions = file_rewrite_pluginfile_urls($workshop->instructreviewers, 'pluginfile.php', $PAGE->context->id,
+        'mod_workshop', 'instructreviewers', 0, workshop::instruction_editors_options($PAGE->context));
+    print_collapsible_region_start('', 'workshop-viewlet-instructreviewers', get_string('instructreviewers', 'workshop'));
+    echo $OUTPUT->box(format_text($instructions, $workshop->instructreviewersformat), array('generalbox', 'instructions'));
+    print_collapsible_region_end();
+}
 
 if ($isreviewer) {
     echo $OUTPUT->heading(get_string('assessmentbyyourself', 'workshop'), 2);
