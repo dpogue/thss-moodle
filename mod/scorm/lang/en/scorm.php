@@ -22,6 +22,8 @@
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+$string['toc'] = 'TOC';
+$string['navigation'] = 'Navigation';
 
 $string['activation'] = 'Activation';
 $string['activityloading'] = 'You will be automatically redirected to the activity in';
@@ -194,8 +196,7 @@ $string['passed'] = 'Passed';
 $string['php5'] = 'PHP 5 (DOMXML native library)';
 $string['pluginname'] = 'SCORM package';
 $string['popup'] = 'New window';
-$string['popupblocked'] = 'If a new window does not appear, {$a}';
-$string['popupblockedlinkname'] = 'click here to launch the activity';
+$string['popupblockmessage'] = 'If a pop-up window doesn\'t appear, please enable pop-ups in your browser.';
 $string['popupmenu'] = 'In a drop down menu';
 $string['popupopen'] = 'Open package in a new window';
 $string['position_error'] = 'The {$a->tag} tag can\'t be child of {$a->parent} tag';

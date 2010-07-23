@@ -29,7 +29,7 @@ YUI.add('moodle-mod_glossary-autolinker', function(Y) {
                 openpopup(e, {
                     url : this.getAttribute('href')+'&popup=1',
                     name : popupname,
-                    options : build_querystring(popupoptions)
+                    options : build_windowoptionsstring(popupoptions)
                 })
             }, Y.one(document.body), 'a.glossary.autolink');
         }
@@ -62,8 +62,8 @@ YUI.add('moodle-mod_glossary-autolinker', function(Y) {
                 },
                 readOnly : true
             },
-            width : {value : 450},
-            height : {value : 600},
+            width : {value : 600},
+            height : {value : 450},
             menubar : {value : false},
             location : {value : false},
             scrollbars : {value : true},

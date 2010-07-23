@@ -29,6 +29,10 @@
  */
 class restore_plan extends base_plan implements loggable {
 
+    /**
+     *
+     * @var restore_controller
+     */
     protected $controller; // The restore controller building/executing this plan
     protected $basepath;   // Fullpath to dir where backup is available
     protected $preloaded;  // When executing the plan, do we have preloaded (from checks) info
@@ -91,6 +95,10 @@ class restore_plan extends base_plan implements loggable {
 
     public function get_preloaded_information() {
         return $this->preloaded;
+    }
+
+    public function get_tempdir() {
+        return $this->controller->get_tempdir();
     }
 
     public function log($message, $level, $a = null, $depth = null, $display = false) {

@@ -35,6 +35,10 @@ class restore_final_task extends restore_task {
      */
     public function build() {
 
+        // TODO: Gradebook
+        // TODO: interlinks
+        // TODO: Apply all the block_positions accumulated along the process
+
         // Clean the temp dir (conditionally) and drop temp table
         $this->add_step(new restore_drop_and_clean_temp_stuff('drop_and_clean_temp_stuff'));
 

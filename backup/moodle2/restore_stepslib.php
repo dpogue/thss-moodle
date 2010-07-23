@@ -59,9 +59,9 @@ class restore_drop_and_clean_temp_stuff extends restore_execution_step {
     protected function define_execution() {
         global $CFG;
         restore_controller_dbops::drop_restore_temp_tables($this->get_restoreid()); // Drop ids temp table
-        backup_helper::delete_old_backup_dirs(time() - (4 * 60 * 60));               // Delete > 4 hours temp dirs
+        backup_helper::delete_old_backup_dirs(time() - (4 * 60 * 60));              // Delete > 4 hours temp dirs
         if (empty($CFG->keeptempdirectoriesonbackup)) { // Conditionally
-            backup_helper::delete_backup_dir($this->get_restoreid()); // Empty backup dir
+            backup_helper::delete_backup_dir($this->task->get_tempdir()); // Empty restore dir
         }
     }
 }
@@ -358,7 +358,7 @@ class restore_scales_structure_step extends restore_structure_step {
                                         ORDER BY courseid", $params, IGNORE_MULTIPLE)) {
             // Remap the user if possible, defaut to user performing the restore if not
             $userid = $this->get_mappingid('user', $data->userid);
-            $data->userid = $userid ? $userid : $this->get_userid();
+            $data->userid = $userid ? $userid : $this->task->get_userid();
             // Remap the course if course scale
             $data->courseid = $data->courseid ? $this->get_courseid() : 0;
             // If global scale (course=0), check the user has perms to create it
@@ -418,7 +418,7 @@ class restore_outcomes_structure_step extends restore_structure_step {
                                          ORDER BY COALESCE(courseid, 0)', $params, IGNORE_MULTIPLE)) {
             // Remap the user
             $userid = $this->get_mappingid('user', $data->usermodified);
-            $data->usermodified = $userid ? $userid : $this->get_userid();
+            $data->usermodified = $userid ? $userid : $this->task->get_userid();
             // Remap the scale
             $data->scaleid = $this->get_mappingid('scale', $data->scaleid);
             // Remap the course if course outcome
@@ -453,10 +453,75 @@ class restore_outcomes_structure_step extends restore_structure_step {
     }
 }
 
+/**
+ * Structure step that will read the section.xml creating/updating sections
+ * as needed, rebuilding course cache and other friends
+ */
+class restore_section_structure_step extends restore_structure_step {
 
-/*
+    protected function define_structure() {
+        return array(new restore_path_element('section', '/section'));
+    }
+
+    public function process_section($data) {
+        global $DB;
+        $data = (object)$data;
+        $oldid = $data->id; // We'll need this later
+
+        $restorefiles = false;
+
+        // Look for the section
+        $section = new stdclass();
+        $section->course  = $this->get_courseid();
+        $section->section = $data->number;
+        // Section doesn't exist, create it with all the info from backup
+        if (!$secrec = $DB->get_record('course_sections', (array)$section)) {
+            $section->name = $data->name;
+            $section->summary = $data->summary;
+            $section->summaryformat = $data->summaryformat;
+            $section->sequence = '';
+            $section->visible = $data->visible;
+            $newitemid = $DB->insert_record('course_sections', $section);
+            $restorefiles = true;
+
+        // Section exists, update non-empty information
+        } else {
+            $section->id = $secrec->id;
+            if (empty($secrec->name)) {
+                $section->name = $data->name;
+            }
+            if (empty($secrec->summary)) {
+                $section->summary = $data->summary;
+                $section->summaryformat = $data->summaryformat;
+                $restorefiles = true;
+            }
+            $DB->update_record('course_sections', $section);
+            $newitemid = $secrec->id;
+        }
+
+        // Annotate the section mapping, with restorefiles option if needed
+        $this->set_mapping('course_section', $oldid, $newitemid, $restorefiles);
+
+        // If needed, adjust course->numsections
+        if ($numsections = $DB->get_field('course', 'numsections', array('id' => $this->get_courseid()))) {
+            if ($numsections < $section->section) {
+                $DB->set_field('course', 'numsections', $section->section, array('id' => $this->get_courseid()));
+            }
+        }
+    }
+
+    protected function after_execute() {
+        // Add section related files, with 'course_section' itemid to match
+        $this->add_related_files('course', 'section', 'course_section');
+    }
+}
+
+
+/**
  * Structure step that will read the course.xml file, loading it and performing
- * various actions depending of the site/restore settings
+ * various actions depending of the site/restore settings. Note that target
+ * course always exist before arriving here so this step will be updating
+ * the course record (never inserting)
  */
 class restore_course_structure_step extends restore_structure_step {
 
@@ -472,8 +537,293 @@ class restore_course_structure_step extends restore_structure_step {
 
     // Processing functions go here
     public function process_course($data) {
-        // TODO: don't forget to remap defaultgroupingid
-        print_object('stopped before processing course. Continue here');
+        global $CFG, $DB;
+
+        $data = (object)$data;
+        $coursetags = isset($data->tags['tag']) ? $data->tags['tag'] : array();
+        $coursemodules = isset($data->allowed_modules['module']) ? $data->allowed_modules['module'] : array();
+        $oldid = $data->id; // We'll need this later
+
+        $fullname  = $this->get_setting_value('course_fullname');
+        $shortname = $this->get_setting_value('course_shortname');
+        $startdate = $this->get_setting_value('course_startdate');
+
+        // Calculate final course names, to avoid dupes
+        list($fullname, $shortname) = restore_dbops::calculate_course_names($this->get_courseid(), $fullname, $shortname);
+
+        // Need to change some fields before updating the course record
+        $data->id = $this->get_courseid();
+        $data->fullname = $fullname;
+        $data->shortname= $shortname;
+        $data->idnumber = '';
+        // TODO: Set category from the UI, its not a setting just a param
+        $data->category = get_course_category()->id;
+        $data->startdate= $this->apply_date_offset($data->startdate);
+        if ($data->defaultgroupingid) {
+            $data->defaultgroupingid = $this->get_mappingid('grouping', $data->defaultgroupingid);
+        }
+        if (empty($CFG->enablecompletion) || !$this->get_setting_value('userscompletion')) {
+            $data->enablecompletion = 0;
+            $data->completionstartonenrol = 0;
+            $data->completionnotify = 0;
+        }
+        $languages = get_string_manager()->get_list_of_translations(); // Get languages for quick search
+        if (!array_key_exists($data->lang, $languages)) {
+            $data->lang = '';
+        }
+        $themes = get_list_of_themes(); // Get themes for quick search later
+        if (!in_array($data->theme, $themes) || empty($CFG->allowcoursethemes)) {
+            $data->theme = '';
+        }
+
+        // Course record ready, update it
+        $DB->update_record('course', $data);
+
+        // Course tags
+        if (!empty($CFG->usetags) && isset($coursetags)) { // if enabled in server and present in backup
+            $tags = array();
+            foreach ($coursetags as $coursetag) {
+                $coursetag = (object)$coursetag;
+                $tags[] = $coursetag->rawname;
+            }
+            tag_set('course', $this->get_courseid(), $tags);
+        }
+        // Course allowed modules
+        if (!empty($data->restrictmodules) && !empty($coursemodules)) {
+            $available = get_plugin_list('mod');
+            foreach ($coursemodules as $coursemodule) {
+                $mname = $coursemodule['modulename'];
+                if (array_key_exists($mname, $available)) {
+                    if ($module = $DB->get_record('modules', array('name' => $mname, 'visible' => 1))) {
+                        $rec = new stdclass();
+                        $rec->course = $this->get_courseid();
+                        $rec->module = $module->id;
+                        if (!$DB->record_exists('course_allowed_modules', (array)$rec)) {
+                            $DB->insert_record('course_allowed_modules', $rec);
+                        }
+                    }
+                }
+            }
+        }
+        // Role name aliases
+        restore_dbops::set_course_role_names($this->get_restoreid(), $this->get_courseid());
     }
 
+    protected function after_execute() {
+        // Add course related files, without itemid to match
+        $this->add_related_files('course', 'summary', null);
+        $this->add_related_files('course', 'legacy', null);
+    }
+}
+
+
+/*
+ * Structure step that will read the roles.xml file (at course/activity/block levels)
+ * containig all the role_assignments and overrides for that context. If corresponding to
+ * one mapped role, they will be applied to target context. Will observe the role_assignments
+ * setting to decide if ras are restored.
+ * Note: only ras with component == null are restored as far as the any ra with component
+ * is handled by one enrolment plugin, hence it will createt the ras later
+ */
+class restore_ras_and_caps_structure_step extends restore_structure_step {
+
+    protected function define_structure() {
+
+        $paths = array();
+
+        // Observe the role_assignments setting
+        if ($this->get_setting_value('role_assignments')) {
+            $paths[] = new restore_path_element('assignment', '/roles/role_assignments/assignment');
+        }
+        $paths[] = new restore_path_element('override', '/roles/role_overrides/override');
+
+        return $paths;
+    }
+
+    public function process_assignment($data) {
+        $data = (object)$data;
+
+        // Check roleid, userid are one of the mapped ones
+        $newroleid = $this->get_mappingid('role', $data->roleid);
+        $newuserid = $this->get_mappingid('user', $data->userid);
+        // If newroleid and newuserid and component is empty assign via API (handles dupes and friends)
+        if ($newroleid && $newuserid && empty($data->component)) {
+            // TODO: role_assign() needs one userid param to be able to specify our restore userid
+            role_assign($newroleid, $newuserid, $this->task->get_contextid());
+        }
+    }
+
+    public function process_override($data) {
+        $data = (object)$data;
+
+        // Check roleid is one of the mapped ones
+        $newroleid = $this->get_mappingid('role', $data->roleid);
+        // If newroleid is valid assign it via API (it handles dupes and so on)
+        if ($newroleid) {
+            // TODO: assign_capability() needs one userid param to be able to specify our restore userid
+            assign_capability($data->capability, $data->permission, $newroleid, $this->task->get_contextid());
+        }
+    }
+}
+
+/**
+ * This structure steps restores the enrol plugins and their underlying
+ * enrolments, performing all the mappings and/or movements required
+ */
+class restore_enrolments_structure_step extends restore_structure_step {
+
+    protected function define_structure() {
+
+        $paths = array();
+
+        $paths[] = new restore_path_element('enrol', '/enrolments/enrols/enrol');
+        $paths[] = new restore_path_element('enrolment', '/enrolments/enrols/enrol/user_enrolments/enrolment');
+
+        return $paths;
+    }
+
+    public function process_enrol($data) {
+        global $DB;
+
+        $data = (object)$data;
+        $oldid = $data->id; // We'll need this later
+
+        // TODO: Just one quick process of manual enrol_plugin. Add the rest (complex ones) and fix this
+        if ($data->enrol !== 'manual') {
+            debugging("Skipping '{$data->enrol}' enrolment plugin. Must be implemented", DEBUG_DEVELOPER);
+            return;
+        }
+
+        // Perform various checks to decide what to do with the enrol plugin
+        $installed = array_key_exists($data->enrol, enrol_get_plugins(false));
+        $enabled   = enrol_is_enabled($data->enrol);
+        $exists    = 0;
+        $roleid    = $this->get_mappingid('role', $data->roleid);
+        if ($rec = $DB->get_record('enrol', array('courseid' => $this->get_courseid(), 'enrol' => $data->enrol))) {
+            $exists = $rec->id;
+        }
+        // If installed and enabled, continue processing
+        if ($installed && $enabled) {
+            // If not exists in course and we have a target role mapping
+            if (!$exists && $roleid) {
+                $data->roleid = $roleid;
+                $enrol = enrol_get_plugin($data->enrol);
+                $courserec = $DB->get_record('course', array('id' => $this->get_courseid())); // Requires object, uses only id!!
+                $newitemid = $enrol->add_instance($courserec, array($data));
+
+            // Already exists, user it for enrolments
+            } else {
+                $newitemid = $exists;
+            }
+
+        // Not installed and enabled, map to 0
+        } else {
+            $newitemid = 0;
+        }
+        // Perform the simple mapping and done
+        $this->set_mapping('enrol', $oldid, $newitemid);
+    }
+
+    public function process_enrolment($data) {
+        global $DB;
+
+        $data = (object)$data;
+
+        // Process only if parent instance have been mapped
+        if ($enrolid = $this->get_new_parentid('enrol')) {
+            // And only if user is a mapped one
+            if ($userid = $this->get_mappingid('user', $data->userid)) {
+                // TODO: Surely need to use API (enrol_user) here, instead of the current low-level impl
+                // TODO: Note enrol_user() sticks to $USER->id (need to add userid param)
+                $enrolment = new stdclass();
+                $enrolment->enrolid = $enrolid;
+                $enrolment->userid  = $userid;
+                if (!$DB->record_exists('user_enrolments', (array)$enrolment)) {
+                    $enrolment->status = $data->status;
+                    $enrolment->timestart = $data->timestart;
+                    $enrolment->timeend = $data->timeend;
+                    $enrolment->modifierid = $this->task->get_userid();
+                    $enrolment->timecreated = time();
+                    $enrolment->timemodified = 0;
+                    $DB->insert_record('user_enrolments', $enrolment);
+                }
+            }
+        }
+    }
+}
+
+
+/**
+ * This structure steps restores the filters and their configs
+ */
+class restore_filters_structure_step extends restore_structure_step {
+
+    protected function define_structure() {
+
+        $paths = array();
+
+        $paths[] = new restore_path_element('active', '/filters/filter_actives/filter_active');
+        $paths[] = new restore_path_element('config', '/filters/filter_configs/filter_config');
+
+        return $paths;
+    }
+
+    public function process_active($data) {
+
+        $data = (object)$data;
+
+        if (!filter_is_enabled($data->filter)) { // Not installed or not enabled, nothing to do
+            return;
+        }
+        filter_set_local_state($data->filter, $this->task->get_contextid(), $data->active);
+    }
+
+    public function process_config($data) {
+
+        $data = (object)$data;
+
+        if (!filter_is_enabled($data->filter)) { // Not installed or not enabled, nothing to do
+            return;
+        }
+        filter_set_local_config($data->filter, $this->task->get_contextid(), $data->name, $data->value);
+    }
+}
+
+
+/**
+ * This structure steps restores the comments
+ * Note: Cannot use the comments API because defaults to USER->id.
+ * That should change allowing to pass $userid
+ */
+class restore_comments_structure_step extends restore_structure_step {
+
+    protected function define_structure() {
+
+        $paths = array();
+
+        $paths[] = new restore_path_element('comment', '/comments/comment');
+
+        return $paths;
+    }
+
+    public function process_comment($data) {
+        global $DB;
+
+        $data = (object)$data;
+
+        // First of all, if the comment has some itemid, ask to the task what to map
+        $mapping = false;
+        $newitemid = 0;
+        if ($data->itemid) {
+            $mapping = $this->task->get_comment_mapping_itemname();
+            $newitemid = $this->get_mappingid($mapping, $data->itemid);
+        }
+        // Only restore the comment if has no mapping OR we have found the matching mapping
+        if (!$mapping || $newitemid) {
+            if ($data->userid = $this->get_mappingid('user', $data->userid)) {
+                $data->contextid = $this->task->get_contextid();
+                $DB->insert_record('comments', $data);
+            }
+        }
+    }
 }

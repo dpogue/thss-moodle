@@ -710,7 +710,7 @@ class navigation_node_collection implements IteratorAggregate {
             $nodes = $this->getIterator();
             // Search immediate children first
             foreach ($nodes as &$node) {
-                if ($node->key == $key && ($type == null || $type === $node->type)) {
+                if ($node->key === $key && ($type === null || $type === $node->type)) {
                     return $node;
                 }
             }
@@ -948,13 +948,17 @@ class global_navigation extends navigation_node {
             $this->load_all_courses();
         }
 
+        // We always load the frontpage course to ensure it is available without
+        // JavaScript enabled.
+        $frontpagecourse = $this->load_course($SITE);
+        $this->add_front_page_course_essentials($frontpagecourse, $SITE);
+
         // Next load context specific content into the navigation
         switch ($this->page->context->contextlevel) {
             case CONTEXT_SYSTEM :
             case CONTEXT_COURSECAT :
-                // Load the front page course navigation
-                $coursenode = $this->load_course($SITE);
-                $this->add_front_page_course_essentials($coursenode, $SITE);
+                // This has already been loaded we just need to map the variable
+                $coursenode = $frontpagecourse;
                 break;
             case CONTEXT_BLOCK :
             case CONTEXT_COURSE :
@@ -1367,9 +1371,9 @@ class global_navigation extends navigation_node {
                 continue;
             }
             if ($cm->icon) {
-                $icon = new pix_icon($cm->icon, '', $cm->iconcomponent);
+                $icon = new pix_icon($cm->icon, get_string('modulename', $cm->modname), $cm->iconcomponent);
             } else {
-                $icon = new pix_icon('icon', '', $cm->modname);
+                $icon = new pix_icon('icon', get_string('modulename', $cm->modname), $cm->modname);
             }
             $url = new moodle_url('/mod/'.$cm->modname.'/view.php', array('id'=>$cm->id));
             $activitynode = $sectionnode->add($cm->name, $url, navigation_node::TYPE_ACTIVITY, $cm->name, $cm->id, $icon);
@@ -2678,8 +2682,7 @@ class settings_navigation extends navigation_node {
 
         // Restore to this course
         if (has_capability('moodle/restore:restorecourse', $coursecontext)) {
-            $url = new moodle_url('/files/index.php', array('contextid'=>$coursecontext->id, 'itemid'=>0, 'component' => 'backup', 'filearea'=>'course'));
-            $url = null; // Disabled until restore is implemented. MDL-21432
+            $url = new moodle_url('/backup/restorefile.php', array('contextid'=>$coursecontext->id));
             $coursenode->add(get_string('restore'), $url, self::TYPE_SETTING, null, 'restore', new pix_icon('i/restore', ''));
         }
 
@@ -2755,7 +2758,7 @@ class settings_navigation extends navigation_node {
     }
 
     /**
-     * Adds branches and links to the settings navigaiton to add course activities
+     * Adds branches and links to the settings navigation to add course activities
      * and resources.
      *
      * @param stdClass $course
@@ -2862,6 +2865,11 @@ class settings_navigation extends navigation_node {
             $this->page->set_cm($cm, $this->page->course);
         }
 
+        $file = $CFG->dirroot.'/mod/'.$this->page->activityname.'/lib.php';
+        if (file_exists($file)) {
+            require_once($file);
+        }
+
         $modulenode = $this->add(get_string($this->page->activityname.'administration', $this->page->activityname));
         $modulenode->force_open();
 
@@ -2903,12 +2911,7 @@ class settings_navigation extends navigation_node {
             $modulenode->add(get_string('backup'), $url, self::TYPE_SETTING);
         }
 
-        $file = $CFG->dirroot.'/mod/'.$this->page->activityname.'/lib.php';
         $function = $this->page->activityname.'_extend_settings_navigation';
-
-        if (file_exists($file)) {
-            require_once($file);
-        }
         if (!function_exists($function)) {
             return $modulenode;
         }
