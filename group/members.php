@@ -20,6 +20,7 @@ $group = $DB->get_record('groups', array('id'=>$groupid), '*', MUST_EXIST);
 $course = $DB->get_record('course', array('id'=>$group->courseid), '*', MUST_EXIST);
 
 $PAGE->set_url('/groups/members.php', array('id'=>$groupid));
+$PAGE->set_pagelayout('standard');
 
 require_login($course);
 $context = get_context_instance(CONTEXT_COURSE, $course->id);
@@ -146,6 +147,6 @@ echo html_writer::table($groupinfotable);
     $potentialmembersselector->print_user_summaries($course->id);
 
     //this must be after calling display() on the selectors so their setup JS executes first
-    $PAGE->requires->js_function_call('init_add_remove_members_page');
+    $PAGE->requires->js_init_call('init_add_remove_members_page', null, false, $potentialmembersselector->get_js_module());
 
     echo $OUTPUT->footer();

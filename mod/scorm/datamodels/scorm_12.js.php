@@ -222,7 +222,11 @@ function SCORMapi1_2() {
                         hnode = scorm_tree_node.getNodeByIndex(hidx);
                         if (hnode) {
                             hnode.highlight();
-                            hnode.focus();
+                            scorm_layout_widget = YAHOO.widget.Layout.getLayoutById('scorm_layout');
+                            var left = scorm_layout_widget.getUnitByPosition('left');
+                            if (left.expanded) {
+                                hnode.focus();
+                            }
                         }
                     }
                 }
@@ -245,8 +249,6 @@ function SCORMapi1_2() {
             if (Initialized) {
                 Initialized = false;
                 result = StoreData(cmi,true);
-                // trigger TOC update
-                //alert('trigger TOC update');
                 if (nav.event != '') {
                     if (nav.event == 'continue') {
                         setTimeout('top.document.location=top.next;',500);
@@ -272,6 +274,7 @@ function SCORMapi1_2() {
                         echo 'LogAPICall("LMSFinish", param, "", 0);';
                     }
                 ?>
+                // trigger TOC update
                 var sURL = "<?php echo $CFG->wwwroot; ?>" + "/mod/scorm/prereqs.php?a=<?php echo $scorm->id ?>&scoid=<?php echo $scoid ?>&attempt=<?php echo $attempt ?>&mode=<?php echo $mode ?>&currentorg=<?php echo $currentorg ?>&sesskey=<?php echo sesskey(); ?>";
                 YAHOO.util.Connect.asyncRequest('GET', sURL, this.connectPrereqCallback, null);
                 return result;

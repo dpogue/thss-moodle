@@ -512,7 +512,7 @@ function scorm_get_user_data($userid) {
     return $DB->get_record('user', array('id'=>$userid),'firstname, lastname, picture');
 }
 
-function scorm_grade_user_attempt($scorm, $userid, $attempt=1, $time=false) {
+function scorm_grade_user_attempt($scorm, $userid, $attempt=1) {
     global $DB;
     $attemptscore = NULL;
     $attemptscore->scoes = 0;
@@ -563,18 +563,10 @@ function scorm_grade_user_attempt($scorm, $userid, $attempt=1, $time=false) {
             $score = $attemptscore->max;   // Remote Learner GRADEHIGHEST is default
     }
 
-    if ($time) {
-        $result = new stdClass();
-        $result->score = $score;
-        $result->time = $attemptscore->lastmodify;
-    } else {
-        $result = $score;
-    }
-
-    return $result;
+    return $score;
 }
 
-function scorm_grade_user($scorm, $userid, $time=false) {
+function scorm_grade_user($scorm, $userid) {
 
     // ensure we dont grade user beyond $scorm->maxattempt settings
     $lastattempt = scorm_get_last_attempt($scorm->id, $userid);
@@ -584,60 +576,36 @@ function scorm_grade_user($scorm, $userid, $time=false) {
 
     switch ($scorm->whatgrade) {
         case FIRSTATTEMPT:
-            return scorm_grade_user_attempt($scorm, $userid, 1, $time);
+            return scorm_grade_user_attempt($scorm, $userid, 1);
         break;
         case LASTATTEMPT:
-            return scorm_grade_user_attempt($scorm, $userid, scorm_get_last_completed_attempt($scorm->id, $userid), $time);
+            return scorm_grade_user_attempt($scorm, $userid, scorm_get_last_completed_attempt($scorm->id, $userid));
         break;
         case HIGHESTATTEMPT:
             $maxscore = 0;
             $attempttime = 0;
             for ($attempt = 1; $attempt <= $lastattempt; $attempt++) {
-                $attemptscore = scorm_grade_user_attempt($scorm, $userid, $attempt, $time);
-                if ($time) {
-                    if ($attemptscore->score > $maxscore) {
-                        $maxscore = $attemptscore->score;
-                        $attempttime = $attemptscore->time;
-                    }
-                } else {
-                    $maxscore = $attemptscore > $maxscore ? $attemptscore: $maxscore;
-                }
+                $attemptscore = scorm_grade_user_attempt($scorm, $userid, $attempt);
+                $maxscore = $attemptscore > $maxscore ? $attemptscore: $maxscore;
             }
-            if ($time) {
-                $result = new stdClass();
-                $result->score = $maxscore;
-                $result->time = $attempttime;
-                return $result;
-            } else {
-               return $maxscore;
-            }
+            return $maxscore;
+
         break;
         case AVERAGEATTEMPT:
+            $attemptcount = scorm_get_attempt_count($userid, $scorm, true);
+            if (empty($attemptcount)) {
+                return 0;
+            } else {
+                $attemptcount = count($attemptcount);
+            }
             $lastattempt = scorm_get_last_attempt($scorm->id, $userid);
             $sumscore = 0;
             for ($attempt = 1; $attempt <= $lastattempt; $attempt++) {
-                $attemptscore = scorm_grade_user_attempt($scorm, $userid, $attempt, $time);
-                if ($time) {
-                    $sumscore += $attemptscore->score;
-                } else {
-                    $sumscore += $attemptscore;
-                }
+                $attemptscore = scorm_grade_user_attempt($scorm, $userid, $attempt);
+                $sumscore += $attemptscore;
             }
 
-            if ($lastattempt > 0) {
-                $score = $sumscore / $lastattempt;
-            } else {
-                $score = 0;
-            }
-
-            if ($time) {
-                $result = new stdClass();
-                $result->score = $score;
-                $result->time = $attemptscore->time;
-                return $result;
-            } else {
-               return $score;
-            }
+            return round($sumscore / $attemptcount);
         break;
     }
 }
@@ -797,7 +765,7 @@ function scorm_view_display ($user, $scorm, $action, $cm, $boxwidth='') {
     }
 
     // is this the first attempt ?
-    $attemptcount = scorm_get_attempt_count($user, $scorm);
+    $attemptcount = scorm_get_attempt_count($user->id, $scorm);
 
     // do not give the player launch FORM if the SCORM object is locked after the final attempt
     if ($scorm->lastattemptlock == 0 || $result->attemptleft > 0) {
@@ -816,7 +784,7 @@ function scorm_view_display ($user, $scorm, $action, $cm, $boxwidth='') {
                       if ($incomplete === false) {
                           echo '<input type="hidden" name="newattempt" value="on" />'."\n";
                       }
-                  } elseif ($attemptcount != 0 && ($incomplete === false) && (($result->attemptleft > 0)||($scorm->maxattempt == 0))) {
+                  } elseif (!empty($attemptcount) && ($incomplete === false) && (($result->attemptleft > 0)||($scorm->maxattempt == 0))) {
 ?>
                       <br />
                       <input type="checkbox" id="a" name="newattempt" />
@@ -1038,7 +1006,7 @@ function scorm_element_cmp($a, $b) {
 function scorm_get_attempt_status($user, $scorm) {
     global $DB;
 
-    $attempts = scorm_get_attempt_count($user, $scorm, true);
+    $attempts = scorm_get_attempt_count($user->id, $scorm, true);
     if(empty($attempts)) {
         $attemptcount = 0;
     } else {
@@ -1055,33 +1023,52 @@ function scorm_get_attempt_status($user, $scorm) {
 
     $gradereported = 0;
     $gradesum = 0;
-    switch ($scorm->grademethod) {
-        case GRADEHIGHEST:
-           $grademethod = get_string('gradehighest', 'scorm');
-        break;
-        case GRADEAVERAGE:
-           $grademethod = get_string('gradeaverage', 'scorm');
-        break;
-        case GRADESUM:
-           $grademethod = get_string('gradesum', 'scorm');
-        break;
-        case GRADESCOES:
-           $grademethod = get_string('gradescoes', 'scorm');
-        break;
-    }
+    if ($scorm->maxattempt == 1) {
+        switch ($scorm->grademethod) {
+            case GRADEHIGHEST:
+                $grademethod = get_string('gradehighest', 'scorm');
+            break;
+            case GRADEAVERAGE:
+                $grademethod = get_string('gradeaverage', 'scorm');
+            break;
+            case GRADESUM:
+                $grademethod = get_string('gradesum', 'scorm');
+            break;
+            case GRADESCOES:
+                $grademethod = get_string('gradescoes', 'scorm');
+            break;
+        }
+     } else {
+         switch ($scorm->whatgrade) {
+            case HIGHESTATTEMPT:
+                $grademethod = get_string('highestattempt', 'scorm');
+            break;
+            case AVERAGEATTEMPT:
+                $grademethod = get_string('averageattempt', 'scorm');
+            break;
+            case FIRSTATTEMPT:
+                $grademethod = get_string('firstattempt', 'scorm');
+            break;
+            case LASTATTEMPT:
+                $grademethod = get_string('lastattempt', 'scorm');
+            break;
+        }
+     }
 
     if(!empty($attempts)) {
+        $i = 1;
         foreach($attempts as $attempt) {
             $gradereported = scorm_grade_user_attempt($scorm, $user->id, $attempt->attemptnumber);
-            $result .= get_string('gradeforattempt', 'scorm').' ' . $attempt->attemptnumber . ': ' . $gradereported .'%<BR>';
+            $result .= get_string('gradeforattempt', 'scorm').' ' . $i . ': ' . $gradereported .'%<BR>';
+            $i++;
         }
     }
-
+    $calculatedgrade = scorm_grade_user($scorm, $user->id);
     $result .= get_string('grademethod', 'scorm'). ': ' . $grademethod;
     if(empty($attempts)) {
         $result .= '<BR>' . get_string('gradereported','scorm') . ': ' . get_string('none') . '<BR>';
     } else {
-        $result .= '<BR>' . get_string('gradereported','scorm') . ': ' . $gradereported . ($scorm->grademethod == GRADESCOES ? '' : '%') .'<BR>';
+        $result .= '<BR>' . get_string('gradereported','scorm') . ': ' . $calculatedgrade . ($scorm->grademethod == GRADESCOES ? '' : '%') .'<BR>';
     }
     $result .= '</p>';
     if ($attemptcount >= $scorm->maxattempt and $scorm->maxattempt > 0) {
@@ -1098,14 +1085,14 @@ function scorm_get_attempt_status($user, $scorm) {
 * @param bool $attempts return the list of attempts
 * @return int - no. of attempts so far
 */
-function scorm_get_attempt_count($user, $scorm, $attempts_only=false) {
+function scorm_get_attempt_count($userid, $scorm, $attempts_only=false) {
     global $DB;
     $attemptcount = 0;
     $element = 'cmi.core.score.raw';
     if ($scorm->version == 'scorm1_3') {
         $element = 'cmi.score.raw';
     }
-    $attempts = $DB->get_records_select('scorm_scoes_track',"element=? AND userid=? AND scormid=?", array($element, $user->id, $scorm->id),'attempt','DISTINCT attempt AS attemptnumber');
+    $attempts = $DB->get_records_select('scorm_scoes_track',"element=? AND userid=? AND scormid=?", array($element, $userid, $scorm->id),'attempt','DISTINCT attempt AS attemptnumber');
     if ($attempts_only) {
         return $attempts;
     }

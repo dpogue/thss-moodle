@@ -24,6 +24,7 @@ $courseid = optional_param('courseid', 0, PARAM_INT);
 $id       = optional_param('id', 0, PARAM_INT);
 
 $PAGE->set_url('/grade/edit/scale/edit.php', array('id' => $id, 'courseid' => $courseid));
+$PAGE->set_pagelayout('admin');
 
 $systemcontext = get_context_instance(CONTEXT_SYSTEM);
 $heading = '';
@@ -107,6 +108,7 @@ if ($mform->is_cancelled()) {
 
     if (empty($scale->id)) {
         $data->description = $data->description_editor['text'];
+        $data->descriptionformat = $data->description_editor['format'];
         grade_scale::set_properties($scale, $data);
         if (!has_capability('moodle/grade:manage', $systemcontext)) {
             $data->standard = 0;
