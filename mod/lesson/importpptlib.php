@@ -19,10 +19,13 @@
  * Contains functions used by importppt.php that naturally pertain to importing
  * powerpoint presentations into the lesson module
  *
- * @package   lesson
- * @copyright 2009 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  2009 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
+
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * A recursive function to build a html list
@@ -203,8 +206,8 @@ function lesson_create_objects($pageobjects, $lessonid) {
 /**
  * Form displayed to the user asking them to select a file to upload
  *
- * @copyright 2009 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2009 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class lesson_importppt_form extends moodleform {
 

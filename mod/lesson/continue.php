@@ -18,22 +18,21 @@
 /**
  * Action for processing page answers by users
  *
- * @package   lesson
- * @copyright 2009 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  2009 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
 
 /** Require the specific libraries */
 require_once("../../config.php");
 require_once($CFG->dirroot.'/mod/lesson/locallib.php');
 
-try {
-    $cm = get_coursemodule_from_id('lesson', required_param('id', PARAM_INT), 0, false, MUST_EXIST);;
-    $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
-    $lesson = new lesson($DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST));
-} catch (Exception $e) {
-    print_error('invalidcoursemodule');
-}
+$id = required_param('id', PARAM_INT);
+
+$cm = get_coursemodule_from_id('lesson', $id, 0, false, MUST_EXIST);;
+$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+$lesson = new lesson($DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST));
 
 require_login($course, false, $cm);
 require_sesskey();
@@ -173,7 +172,7 @@ if (isset($USER->modattempts[$lesson->id])) {
     $content = $OUTPUT->box(get_string("savechangesandeol", "lesson"), 'center');
     $content .= $OUTPUT->box(get_string("or", "lesson"), 'center');
     $content .= $OUTPUT->box(get_string("continuetoanswer", "lesson"), 'center');
-    $content .= html_writer::empty_tag('input', array('type'=>'hidden', 'nam'=>'id', 'value'=>$cm->id));
+    $content .= html_writer::empty_tag('input', array('type'=>'hidden', 'name'=>'id', 'value'=>$cm->id));
     $content .= html_writer::empty_tag('input', array('type'=>'hidden', 'name'=>'pageid', 'value'=>LESSON_EOL));
     $content .= html_writer::empty_tag('input', array('type'=>'submit', 'name'=>'submit', 'value'=>get_string('savechanges', 'lesson')));
     echo html_writer::tag('form', "<div>$content</div>", array('method'=>'get', 'target'=>$url));
@@ -182,7 +181,7 @@ if (isset($USER->modattempts[$lesson->id])) {
 // Review button back
 if ($lesson->review && !$result->correctanswer && !$result->noanswer && !$result->isessayquestion) {
     $url = $CFG->wwwroot.'/mod/lesson/view.php';
-    $content = html_writer::empty_tag('input', array('type'=>'hidden', 'nam'=>'id', 'value'=>$cm->id));
+    $content = html_writer::empty_tag('input', array('type'=>'hidden', 'name'=>'id', 'value'=>$cm->id));
     $content .= html_writer::empty_tag('input', array('type'=>'hidden', 'name'=>'pageid', 'value'=>$page->id));
     $content .= html_writer::empty_tag('input', array('type'=>'submit', 'name'=>'submit', 'value'=>get_string('reviewquestionback', 'lesson')));
     echo html_writer::tag('form', "<div class=\"singlebutton\">$content</div>", array('method'=>'get', 'target'=>$url));

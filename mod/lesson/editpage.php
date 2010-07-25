@@ -18,9 +18,10 @@
 /**
  * Action for adding a question page.  Prints an HTML form.
  *
- * @package   lesson
- * @copyright 2009 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  2009 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
 
 require_once("../../config.php");
@@ -33,13 +34,10 @@ $id     = required_param('id', PARAM_INT);         // Course Module ID
 $qtype  = optional_param('qtype', 0, PARAM_INT);
 $edit   = optional_param('edit', false, PARAM_BOOL);
 
-try {
-    $cm = get_coursemodule_from_id('lesson', $id, 0, false, MUST_EXIST);;
-    $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
-    $lesson = new lesson($DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST));
-} catch (Exception $e) {
-    print_error('invalidcoursemodule');
-}
+$cm = get_coursemodule_from_id('lesson', $id, 0, false, MUST_EXIST);;
+$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+$lesson = new lesson($DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST));
+
 require_login($course, false, $cm);
 
 $context = get_context_instance(CONTEXT_MODULE, $cm->id);
@@ -77,7 +75,10 @@ if ($edit) {
     $data = new stdClass;
     $data->id = $cm->id;
     $data->pageid = $pageid;
-    $data->qtype = $qtype;
+    if ($qtype) {
+        //TODO: the handling of form for the selection of question type is a bloody hack! (skodak)
+        $data->qtype = $qtype;
+    }
     $data = file_prepare_standard_editor($data, 'contents', $editoroptions, null);
     $mform->set_data($data);
     $PAGE->navbar->add(get_string('addanewpage', 'lesson'), $PAGE->url);

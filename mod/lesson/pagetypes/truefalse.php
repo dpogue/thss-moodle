@@ -18,12 +18,15 @@
 /**
  * True/false
  *
- * @package   lesson
- * @copyright 2009 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  2009 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
 
- /** True/False question type */
+defined('MOODLE_INTERNAL') || die();
+
+/** True/False question type */
 define("LESSON_PAGE_TRUEFALSE",     "2");
 
 class lesson_page_type_truefalse extends lesson_page {
@@ -268,13 +271,13 @@ class lesson_add_page_form_truefalse extends lesson_add_page_form_base {
 
     public function custom_definition() {
         $this->_form->addElement('header', 'answertitle0', get_string('correctresponse', 'lesson'));
-        $this->add_answer(0);
+        $this->add_answer(0, NULL, true);
         $this->add_response(0);
         $this->add_jumpto(0, get_string('correctanswerjump', 'lesson'));
         $this->add_score(0, get_string('correctanswerscore', 'lesson'), 1);
 
         $this->_form->addElement('header', 'answertitle1', get_string('wrongresponse', 'lesson'));
-        $this->add_answer(1);
+        $this->add_answer(1, NULL, true);
         $this->add_response(1);
         $this->add_jumpto(1, get_string('wronganswerjump', 'lesson'));
         $this->add_score(1, get_string('wronganswerscore', 'lesson'), 0);

@@ -18,10 +18,13 @@
 /**
  * Cluster
  *
- * @package   lesson
- * @copyright 2009 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  2009 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
+
+defined('MOODLE_INTERNAL') || die();
 
  /** Start of Cluster page */
 define("LESSON_PAGE_CLUSTER",   "30");
@@ -111,7 +114,7 @@ class lesson_add_page_form_cluster extends lesson_add_page_form_base {
 
         $this->editoroptions = array('noclean'=>true, 'maxfiles'=>EDITOR_UNLIMITED_FILES, 'maxbytes'=>$PAGE->course->maxbytes);
         $mform->addElement('editor', 'contents_editor', get_string("pagecontents", "lesson"), null, $this->editoroptions);
-        $mform->setType('contents_editor', PARAM_CLEANHTML);
+        $mform->setType('contents_editor', PARAM_RAW);
 
         $this->add_jumpto(0);
     }

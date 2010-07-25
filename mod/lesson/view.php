@@ -18,9 +18,10 @@
 /**
  * This page prints a particular instance of lesson
  *
- * @package   lesson
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  **/
 
 require_once(dirname(__FILE__) . '/../../config.php');
@@ -31,15 +32,12 @@ require_once($CFG->libdir . '/completionlib.php');
 $id      = required_param('id', PARAM_INT);             // Course Module ID
 $pageid  = optional_param('pageid', NULL, PARAM_INT);   // Lesson Page ID
 $edit    = optional_param('edit', -1, PARAM_BOOL);
-$userpassword = optional_param('userpassword','',PARAM_CLEAN);
+$userpassword = optional_param('userpassword','',PARAM_RAW);
 
-try {
-    $cm = get_coursemodule_from_id('lesson', $id, 0, false, MUST_EXIST);;
-    $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
-    $lesson = new lesson($DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST));
-} catch (Exception $e) {
-    print_error('invalidcoursemodule');
-}
+$cm = get_coursemodule_from_id('lesson', $id, 0, false, MUST_EXIST);;
+$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+$lesson = new lesson($DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST));
+
 require_login($course, false, $cm);
 
 $url = new moodle_url('/mod/lesson/view.php', array('id'=>$id));
@@ -79,7 +77,7 @@ if (!$canmanage) {
             }
         } else {
             echo $lessonoutput->header($lesson, $cm);
-            echo $lessonoutput->login_prompt($lesson, optional_param('userpassword', 0, PARAM_CLEAN));
+            echo $lessonoutput->login_prompt($lesson, $userpassword !== '');
             echo $lessonoutput->footer();
             exit();
         }

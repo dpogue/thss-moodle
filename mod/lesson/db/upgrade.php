@@ -36,10 +36,13 @@
  * Please do not forget to use upgrade_set_timeout()
  * before any action that may take longer time to finish.
  *
- * @package   lesson
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 o
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 o
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 function xmldb_lesson_upgrade($oldversion) {
     global $CFG, $DB, $OUTPUT;
@@ -121,7 +124,6 @@ function xmldb_lesson_upgrade($oldversion) {
                     continue;
                 }
 
-                $filearea = 'media_file';
                 $filename = clean_param($lesson->mediafile, PARAM_FILE);
                 if ($filename === '') {
                     echo $OUTPUT->notification("Unsupported lesson filename, skipping: ".$filepath);
@@ -130,8 +132,8 @@ function xmldb_lesson_upgrade($oldversion) {
                 }
 
                 $context = get_context_instance(CONTEXT_MODULE, $lesson->cmid);
-                if (!$fs->file_exists($context->id, 'mod_lesson', $filearea, $lesson->id, '/', $filename)) {
-                    $file_record = array('contextid'=>$context->id, 'component'=>'mod_lesson', 'filearea'=>$filearea, 'itemid'=>$lesson->id, 'filepath'=>'/', 'filename'=>$filename);
+                if (!$fs->file_exists($context->id, 'mod_lesson', 'mediafile', 0, '/', $filename)) {
+                    $file_record = array('contextid'=>$context->id, 'component'=>'mod_lesson', 'filearea'=>'mediafile', 'itemid'=>0, 'filepath'=>'/', 'filename'=>$filename);
                     if ($fs->create_file_from_pathname($file_record, $filepath)) {
                         if ($DB->set_field('lesson', 'mediafile', $filename, array('id'=>$lesson->id))) {
                             unlink($filepath);

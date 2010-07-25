@@ -21,10 +21,13 @@
  * Please see http://docs.moodle.org/en/Developement:How_Moodle_outputs_HTML
  * for an overview.
  *
- * @package   moodlecore
- * @copyright 2009 Tim Hunt
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    core
+ * @subpackage lib
+ * @copyright  2009 Tim Hunt
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Simple base class for Moodle renderers.
@@ -354,7 +357,7 @@ class core_renderer extends renderer_base {
         if (!empty($CFG->debugpageinfo)) {
             $output .= '<div class="performanceinfo">This page is: ' . $this->page->debug_summary() . '</div>';
         }
-        if (debugging(null, DEBUG_DEVELOPER)) {  // Only in developer mode
+        if (debugging(null, DEBUG_DEVELOPER) and has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM))) {  // Only in developer mode
             $output .= '<div class="purgecaches"><a href="'.$CFG->wwwroot.'/admin/purgecaches.php?confirm=1&amp;sesskey='.sesskey().'">'.get_string('purgecaches', 'admin').'</a></div>';
         }
         if (!empty($CFG->debugvalidators)) {
@@ -2457,7 +2460,7 @@ EOD;
      * @return string
      */
     protected function render_image_gallery(image_gallery $imagegallery) {
-        $this->page->requires->yui_module(array('gallery-lightbox','gallery-lightbox-skin'), 
+        $this->page->requires->yui_module(array('gallery-lightbox','gallery-lightbox-skin'),
                  'Y.Lightbox.init', null, '2010.04.08-12-35');
         if (count($imagegallery->images) == 0) {
             return '';

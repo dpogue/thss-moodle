@@ -18,10 +18,13 @@
 /**
  * Moodle renderer used to display special elements of the lesson module
  *
- * @package   lesson
- * @copyright 2009 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  2009 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
+
+defined('MOODLE_INTERNAL') || die();
 
 class mod_lesson_renderer extends plugin_renderer_base {
     /**
@@ -513,7 +516,7 @@ class mod_lesson_renderer extends plugin_renderer_base {
             }
 
             // collect all of the branch tables viewed
-            if ($viewedbranches = $DB->get_records_select("lesson_branch", array ("lessonid"=>$lesson->id, "userid"=>$USER->id, "retry"=>$ntries), 'timeseen DESC', 'pageid, id')) {
+            if ($viewedbranches = $DB->get_records("lesson_branch", array ("lessonid"=>$lesson->id, "userid"=>$USER->id, "retry"=>$ntries), 'timeseen DESC', 'pageid, id')) {
                 $viewedpageids = array_merge($viewedpageids, array_keys($viewedbranches));
             }
 

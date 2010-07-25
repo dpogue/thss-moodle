@@ -23,17 +23,15 @@
  *  - weblib.php      - functions that produce web output
  *  - datalib.php     - functions that access the database
  *
- * @package   moodlecore
- * @copyright 1999 onwards Martin Dougiamas  http://dougiamas.com
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    core
+ * @subpackage lib
+ * @copyright  1999 onwards Martin Dougiamas  http://dougiamas.com
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 /// CONSTANTS (Encased in phpdoc proper comments)/////////////////////////
-
-/**
- * Used by some scripts to check they are being called by Moodle
- */
-define('MOODLE_INTERNAL', true);
 
 /// Date and time constants ///
 /**
@@ -3851,12 +3849,7 @@ function get_complete_user_data($field, $value, $mnethostid=null) {
 
 /// Add the custom profile fields to the user record
     require_once($CFG->dirroot.'/user/profile/lib.php');
-    $customfields = (array)profile_user_record($user->id);
-    foreach ($customfields as $cname=>$cvalue) {
-        if (!isset($user->$cname)) { // Don't overwrite any standard fields
-            $user->$cname = $cvalue;
-        }
-    }
+    profile_load_custom_fields($user);
 
 /// Rewrite some variables if necessary
     if (!empty($user->description)) {

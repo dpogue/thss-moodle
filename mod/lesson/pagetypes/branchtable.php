@@ -18,10 +18,13 @@
 /**
  * Branch Table
  *
- * @package   lesson
- * @copyright 2009 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  2009 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
+
+defined('MOODLE_INTERNAL') || die();
 
  /** Branch Table page */
 define("LESSON_PAGE_BRANCHTABLE",   "20");
@@ -43,6 +46,28 @@ class lesson_page_type_branchtable extends lesson_page {
         }
         return $this->string;
     }
+
+    /**
+     * Gets an array of the jumps used by the answers of this page
+     *
+     * @return array
+     */
+    public function get_jumps() {
+        global $DB;
+        $jumps = array();
+        $params = array ("lessonid" => $this->lesson->id, "pageid" => $this->properties->id);
+        if ($answers = $this->get_answers()) {
+            foreach ($answers as $answer) {
+                if ($answer->answer === '') {
+                    // show only jumps for real branches (==have description)
+                    continue;
+                }
+                $jumps[] = $this->get_jump_name($answer->jumpto);
+            }
+        }
+        return $jumps;
+    }
+
     public static function get_jumptooptions($firstpage, $lesson) {
         global $DB, $PAGE;
         $jump = array();
@@ -87,6 +112,10 @@ class lesson_page_type_branchtable extends lesson_page {
         $buttons = array();
         $i = 0;
         foreach ($this->get_answers() as $answer) {
+            if ($answer->answer === '') {
+                // not a branch!
+                continue;
+            }
             $params = array();
             $params['id'] = $PAGE->cm->id;
             $params['pageid'] = $this->properties->id;
@@ -172,6 +201,10 @@ class lesson_page_type_branchtable extends lesson_page {
         $options->para = false;
         $i = 1;
         foreach ($answers as $answer) {
+            if ($answer->answer === '') {
+                // not a branch!
+                continue;
+            }
             $cells = array();
             $cells[] = "<span class=\"label\">".get_string("branch", "lesson")." $i<span>: ";
             $cells[] = format_text($answer->answer, $answer->answerformat, $options);
@@ -274,7 +307,7 @@ class lesson_add_page_form_branchtable extends lesson_add_page_form_base {
 
         $this->editoroptions = array('noclean'=>true, 'maxfiles'=>EDITOR_UNLIMITED_FILES, 'maxbytes'=>$PAGE->course->maxbytes);
         $mform->addElement('editor', 'contents_editor', get_string("pagecontents", "lesson"), null, $this->editoroptions);
-        $mform->setType('contents_editor', PARAM_CLEANHTML);
+        $mform->setType('contents_editor', PARAM_RAW);
 
         $mform->addElement('checkbox', 'layout', null, get_string("arrangebuttonshorizontally", "lesson"));
         $mform->setDefault('layout', true);
@@ -284,12 +317,7 @@ class lesson_add_page_form_branchtable extends lesson_add_page_form_base {
 
         for ($i = 0; $i < $lesson->maxanswers; $i++) {
             $mform->addElement('header', 'headeranswer'.$i, get_string('branch', 'lesson').' '.($i+1));
-            $mform->addElement('textarea', 'answer['.$i.']', get_string("description", "lesson"), array('rows'=>10, 'cols'=>70, 'width'=>630, 'height'=>300));
-            $mform->setType('answer['.$i.']', PARAM_CLEANHTML);
-            if ($i == 0) {
-                // we should have one required branch
-                $mform->addRule('answer['.$i.']', null, 'required', null, 'server');
-            }
+            $this->add_answer($i, get_string("description", "lesson"), $i == 0);
 
             $mform->addElement('select', 'jumpto['.$i.']', get_string("jump", "lesson"), $jumptooptions);
             if ($i === 0) {

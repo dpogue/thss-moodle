@@ -30,7 +30,11 @@
 abstract class restore_structure_step extends restore_step {
 
     protected $filename; // Name of the file to be parsed
-    protected $pathelements; // Array of pathelements to process
+    protected $contentprocessor; // xml parser processor being used
+                                 // (need it here, apart from parser
+                                 // thanks to serialized data to process -
+                                 // say thanks to blocks!)
+    protected $pathelements;  // Array of pathelements to process
     protected $elementsoldid; // Array to store last oldid used on each element
     protected $elementsnewid; // Array to store last newid used on each element
 
@@ -42,6 +46,7 @@ abstract class restore_structure_step extends restore_step {
             throw new restore_step_exception('wrong_restore_task_specified');
         }
         $this->filename = $filename;
+        $this->contentprocessor = null;
         $this->pathelements = array();
         $this->elementsoldid = array();
         $this->elementsnewid = array();
@@ -70,7 +75,11 @@ abstract class restore_structure_step extends restore_step {
         }
 
         // Get restore_path elements array adapting and preparing it for processing
-        $this->pathelements = $this->prepare_pathelements($this->define_structure());
+        $structure = $this->define_structure();
+        if (!is_array($structure)) {
+            throw new restore_step_exception('restore_step_structure_not_array', $this->get_name());
+        }
+        $this->pathelements = $this->prepare_pathelements($structure);
 
         // Populate $elementsoldid and $elementsoldid based on available pathelements
         foreach ($this->pathelements as $pathelement) {
@@ -82,6 +91,9 @@ abstract class restore_structure_step extends restore_step {
         $xmlparser = new progressive_parser();
         $xmlparser->set_file($fullpath);
         $xmlprocessor = new restore_structure_parser_processor($this->task->get_courseid(), $this);
+        $this->contentprocessor = $xmlprocessor; // Save the reference to the contentprocessor
+                                                 // as far as we are going to need it out
+                                                 // from parser (blame serialized data!)
         $xmlparser->set_processor($xmlprocessor);
 
         // Add pathelements to processor
@@ -142,6 +154,9 @@ abstract class restore_structure_step extends restore_step {
         $names = array();
         $paths = array();
         foreach($elementsarr as $element) {
+            if (!$element instanceof restore_path_element) {
+                throw new restore_step_exception('restore_path_element_wrong_class', get_class($element));
+            }
             if (array_key_exists($element->get_name(), $names)) {
                 throw new restore_step_exception('restore_path_element_name_alreadyexists', $element->get_name());
             }

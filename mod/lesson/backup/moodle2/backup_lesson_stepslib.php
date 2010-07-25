@@ -49,16 +49,17 @@
  *          UL->user level info
  *          files->table may have files)
  *
- * @package   moodlecore
- * @copyright 2010 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  2010 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
  * Structure step class that informs a backup task how to backup the lesson module.
  *
- * @copyright 2010 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2010 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class backup_lesson_activity_structure_step extends backup_activity_structure_step {
 
@@ -181,7 +182,7 @@ class backup_lesson_activity_structure_step extends backup_activity_structure_st
         $timer->annotate_ids('user', 'userid');
 
         // Annotate the file areas in user by the lesson module.
-        $lesson->annotate_files('mod_lesson', 'media_file', 'id');
+        $lesson->annotate_files('mod_lesson', 'mediafile', 'id');
         $page->annotate_files('mod_lesson', 'page_contents', 'id');
 
         // Prepare and return the structure we have just created for the lesson module.

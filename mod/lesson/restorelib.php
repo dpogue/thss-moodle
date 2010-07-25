@@ -18,9 +18,10 @@
 /**
  * This php script contains all the stuff to restore lesson mods
  *
- * @package   lesson
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  **/
 
     //This is the "graphical" structure of the lesson mod:
@@ -53,6 +54,8 @@
     //          files->table may have files)
     //
     //-----------------------------------------------------------
+
+defined('MOODLE_INTERNAL') || die();
 
     //This function executes all the restore procedure about this mod
     function lesson_restore_mods($mod,$restore) {

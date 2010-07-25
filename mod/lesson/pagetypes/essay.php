@@ -18,12 +18,15 @@
 /**
  * Essay
  *
- * @package   lesson
- * @copyright 2009 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage lesson
+ * @copyright  2009 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
 
- /** Essay question type */
+defined('MOODLE_INTERNAL') || die();
+
+/** Essay question type */
 define("LESSON_PAGE_ESSAY", "10");
 
 class lesson_page_type_essay extends lesson_page {
@@ -262,7 +265,7 @@ class lesson_display_answer_form_essay extends moodleform {
         $mform->setType('pageid', PARAM_INT);
 
         $mform->addElement('editor', 'answer', get_string('youranswer', 'lesson'), null, null);
-        $mform->setType('answer', PARAM_CLEANHTML);
+        $mform->setType('answer', PARAM_RAW);
 
         $this->add_action_buttons(null, get_string("pleaseenteryouranswerinthebox", "lesson"));
     }

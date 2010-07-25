@@ -18,9 +18,10 @@
 /**
  * Provides the interface for viewing and adding high scores
  *
- * @package   lesson
+ * @package    mod
+ * @subpackage lesson
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
 
 /** include required files */
@@ -31,13 +32,10 @@ $id      = required_param('id', PARAM_INT);             // Course Module ID
 $mode    = optional_param('mode', '', PARAM_ALPHA);
 $link = optional_param('link', 0, PARAM_INT);
 
-try {
-    $cm = get_coursemodule_from_id('lesson', $id, 0, false, MUST_EXIST);;
-    $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
-    $lesson = new lesson($DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST));
-} catch (Exception $e) {
-    print_error('invalidcoursemodule');
-}
+$cm = get_coursemodule_from_id('lesson', $id, 0, false, MUST_EXIST);;
+$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+$lesson = new lesson($DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST));
+
 require_login($course, false, $cm);
 
 $url = new moodle_url('/mod/lesson/highscores.php', array('id'=>$id));

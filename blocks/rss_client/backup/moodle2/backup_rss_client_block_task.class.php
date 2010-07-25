@@ -31,8 +31,6 @@ require_once($CFG->dirroot . '/blocks/rss_client/backup/moodle2/backup_rss_clien
  * TODO: Finish phpdocs
  */
 class backup_rss_client_block_task extends backup_block_task {
-    // Nothing to do, it's just the backup_block_task in action
-    // with required methods doing nothing special
 
     protected function define_my_settings() {
     }
