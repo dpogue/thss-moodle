@@ -889,7 +889,7 @@ function chat_format_message($message, $courseid, $currentuser, $chat_lastrow=NU
 
     if (isset($users[$message->userid])) {
         $user = $users[$message->userid];
-    } else if ($user = $DB->get_record('user', array('id'=>$message->userid), user_image::fields())) {
+    } else if ($user = $DB->get_record('user', array('id'=>$message->userid), user_picture::fields())) {
         $users[$message->userid] = $user;
     } else {
         return NULL;
@@ -1230,7 +1230,7 @@ function chat_extend_navigation($navigation, $course, $module, $cm) {
 
     $currentgroup = groups_get_activity_group($cm, true);
 
-    if (has_capability('mod/chat:chat', get_context_instance(CONTEXT_MODULE, $cm->instance))) {
+    if (has_capability('mod/chat:chat', get_context_instance(CONTEXT_MODULE, $cm->id))) {
         $strenterchat    = get_string('enterchat', 'chat');
 
         $target = $CFG->wwwroot.'/mod/chat/';

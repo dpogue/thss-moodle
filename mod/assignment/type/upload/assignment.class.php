@@ -191,7 +191,7 @@ class assignment_upload extends assignment_base {
         if ($this->can_upload_file($submission)) {
             $fs = get_file_storage();
             // edit files in another page
-            if ($submission = $this->get_submission($USER->id)) {
+            if ($submission) {
                 if ($files = $fs->get_area_files($this->context->id, 'mod_assignment', 'submission', $submission->id, "timemodified", false)) {
                     $str = get_string('editthesefiles', 'assignment');
                 } else {
@@ -200,7 +200,7 @@ class assignment_upload extends assignment_base {
             } else {
                 $str = get_string('uploadfiles', 'assignment');
             }
-            echo $OUTPUT->single_button(new moodle_url('/mod/assignment/type/upload/upload.php', array('contextid'=>$this->context->id, 'userid'=>$submission->userid)), $str, 'get');
+            echo $OUTPUT->single_button(new moodle_url('/mod/assignment/type/upload/upload.php', array('contextid'=>$this->context->id, 'userid'=>$USER->id)), $str, 'get');
         }
 
     }
@@ -368,9 +368,11 @@ class assignment_upload extends assignment_base {
         if ($this->drafts_tracked() and $this->isopen() and has_capability('mod/assignment:grade', $this->context) and $mode != '') { // we do not want it on view.php page
             if ($this->can_unfinalize($submission)) {
                 $options = array ('id'=>$this->cm->id, 'userid'=>$userid, 'action'=>'unfinalize', 'mode'=>$mode, 'offset'=>$offset);
+                $output .= '<form></form>'; //@TODO: see bug MDL-22893 this is a temporary workaround for a broken - form nesting isn't valid!
                 $output .= $OUTPUT->single_button(new moodle_url('upload.php', $options), get_string('unfinalize', 'assignment'));
             } else if ($this->can_finalize($submission)) {
                 $options = array ('id'=>$this->cm->id, 'userid'=>$userid, 'action'=>'finalizeclose', 'mode'=>$mode, 'offset'=>$offset);
+                $output .= '<form></form>'; //@TODO: see bug MDL-22893 this is a temporary workaround for a broken - form nesting isn't valid!
                 $output .= $OUTPUT->single_button(new moodle_url('upload.php', $options), get_string('finalize', 'assignment'));
             }
         }
@@ -538,8 +540,8 @@ class assignment_upload extends assignment_base {
         global $CFG, $USER, $DB, $OUTPUT;
 
         $returnurl  = new moodle_url('/mod/assignment/view.php', array('id'=>$this->cm->id));
-        $filecount = $this->count_user_files($USER->id);
         $submission = $this->get_submission($USER->id);
+        $filecount = $this->count_user_files($submission->id);
 
         if (!$this->can_upload_file($submission)) {
             $this->view_header(get_string('upload'));
@@ -728,7 +730,6 @@ class assignment_upload extends assignment_base {
         $offset = required_param('offset', PARAM_INT);
 
         $returnurl = "submissions.php?id={$this->cm->id}&amp;userid=$userid&amp;mode=$mode&amp;offset=$offset&amp;forcerefresh=1";
-
         if (data_submitted()
           and $submission = $this->get_submission($userid)
           and $this->can_unfinalize($submission)
@@ -873,7 +874,7 @@ class assignment_upload extends assignment_base {
         if (is_enrolled($this->context, $USER, 'mod/assignment:submit')
           and $this->isopen()                                                 // assignment not closed yet
           and (empty($submission) or $submission->userid == $USER->id)        // his/her own submission
-          and $this->count_user_files($USER->id) < $this->assignment->var1    // file limit not reached
+          and $this->count_user_files($submission->id) < $this->assignment->var1    // file limit not reached
           and !$this->is_finalized($submission)) {                            // no uploading after final submission
             return true;
         } else {
@@ -961,7 +962,7 @@ class assignment_upload extends assignment_base {
           and $this->isopen()                                                 // assignment not closed yet
           and !empty($submission)                                             // submission must exist
           and $submission->userid == $USER->id                                // his/her own submission
-          and ($this->count_user_files($USER->id)
+          and ($this->count_user_files($submission->id)
             or ($this->notes_allowed() and !empty($submission->data1)))) {    // something must be submitted
 
             return true;
@@ -1071,7 +1072,7 @@ class assignment_upload extends assignment_base {
         }
 
         // Check if the user has uploaded any files, if so we can add some more stuff to the settings nav
-        if ($submission && is_enrolled($this->context, $USER, 'mod/assignment:submit') && $this->count_user_files($USER->id)) {
+        if ($submission && is_enrolled($this->context, $USER, 'mod/assignment:submit') && $this->count_user_files($submission->id)) {
             $fs = get_file_storage();
             if ($files = $fs->get_area_files($this->context->id, 'mod_assignment', 'submission', $submission->id, "timemodified", false)) {
                 if (!$this->drafts_tracked() or !$this->isopen() or $this->is_finalized($submission)) {

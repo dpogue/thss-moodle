@@ -23,9 +23,7 @@
 
 M.mod_scorm = {};
 
-M.mod_scorm.init = function(Y, hide_nav, hide_toc, toc_title, window_name, window_options, window_width, window_height, launch_sco) {
-
-    var popup_winHandle = false;
+M.mod_scorm.init = function(Y, hide_nav, hide_toc, toc_title, window_name, launch_sco) {
 
     if (hide_nav == 0) {
         scorm_hide_nav = false;
@@ -81,13 +79,6 @@ M.mod_scorm.init = function(Y, hide_nav, hide_toc, toc_title, window_name, windo
                 var api_url = M.cfg.wwwroot + '/mod/scorm/api.php?' + node.title;
                 document.getElementById('external-scormapi').src = api_url;
             }
-
-            // make the popup work
-            if (window_name) {
-                popup_winHandle = window.open('', window_name, window_options, window_width, window_height);
-                popup_winHandle.location.href =  url_prefix + node.title;
-                popup_winHandle.resizeTo(window_width, window_height);
-            }
          
             var content = new YAHOO.util.Element('scorm_content');
             try {
@@ -95,9 +86,20 @@ M.mod_scorm.init = function(Y, hide_nav, hide_toc, toc_title, window_name, windo
                 // and also it has some restrictions on DOM access from object tag
                 if (window_name || node.title == null) {
                     var obj = document.createElement('<iframe id="scorm_object" src="">');
+                    if (window_name) {
+                        var mine = window.open('','','width=1,height=1,left=0,top=0,scrollbars=no');
+                        if(! mine) {
+                             alert(M.str.scorm.popupsblocked);
+                        }
+                        mine.close()
+                    }
                 }
                 else {
                     var obj = document.createElement('<iframe id="scorm_object" src="'+url_prefix + node.title+'">');
+                } 
+                // fudge IE7 to redraw the screen
+                if (YAHOO.env.ua.ie > 5 && YAHOO.env.ua.ie < 8) {
+                    obj.attachEvent("onload", scorm_resize_parent);
                 }
             } catch (e) {
                 var obj = document.createElement('object');
@@ -106,6 +108,13 @@ M.mod_scorm.init = function(Y, hide_nav, hide_toc, toc_title, window_name, windo
                 if (!window_name && node.title != null) {
                     obj.setAttribute('data', url_prefix + node.title);
                 }
+                    if (window_name) {
+                        var mine = window.open('','','width=1,height=1,left=0,top=0,scrollbars=no');
+                        if(! mine) {
+                             alert(M.str.scorm.popupsblocked);
+                        }
+                        mine.close()
+                    }
             }
             var old = YAHOO.util.Dom.get('scorm_object');
             if (old) {
@@ -113,7 +122,7 @@ M.mod_scorm.init = function(Y, hide_nav, hide_toc, toc_title, window_name, windo
             } else {
                 content.appendChild(obj);
             }
-          
+
             scorm_resize_frame();
 
             var left = scorm_layout_widget.getUnitByPosition('left');
@@ -137,6 +146,15 @@ M.mod_scorm.init = function(Y, hide_nav, hide_toc, toc_title, window_name, windo
             scorm_buttons[4].set('disabled', (scorm_skipnext(scorm_current_node) == null));
         };
 
+        var scorm_resize_parent = function() {
+            // fudge  IE7 to redraw the screen
+            parent.resizeBy(-10, -10);
+            parent.resizeBy(10, 10);
+            var ifr = YAHOO.util.Dom.get('scorm_object');
+            if (ifr) {
+                ifr.detachEvent("onload", scorm_resize_parent);
+            }
+        }
 
         var scorm_resize_layout = function(alsowidth) {
             if (window_name) {
@@ -151,6 +169,7 @@ M.mod_scorm.init = function(Y, hide_nav, hide_toc, toc_title, window_name, windo
                 }
             }
             // make sure that the max width of the TOC doesn't go to far
+
             var left = scorm_layout_widget.getUnitByPosition('left');
             var maxwidth = parseInt(YAHOO.util.Dom.getStyle('scorm_layout', 'width'));
             left.set('maxWidth', (maxwidth - 10));

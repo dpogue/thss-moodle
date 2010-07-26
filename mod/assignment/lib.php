@@ -988,9 +988,9 @@ class assignment_base {
         $mformdata->nextid = $nextid;
         $mformdata->submissioncomment= $submission->submissioncomment;
         $mformdata->submissioncommentformat= FORMAT_HTML;
-        $mformdata->submission_content= $this->print_student_answer($user->id);
+        $mformdata->submission_content= $this->print_user_files($user->id,true);
 
-        $submitform = new mod_assignment_online_grading_form( null, $mformdata );
+        $submitform = new mod_assignment_grading_form( null, $mformdata );
 
         if ($submitform->is_cancelled()) {
             redirect('submissions.php?id='.$this->cm->id);
@@ -1857,7 +1857,7 @@ class assignment_base {
 
             $fs = get_file_storage();
 
-            if ($files = $fs->get_area_files($this->context->id, 'mod_assignment', 'submission', $user->id, "timemodified", false)) {
+            if ($files = $fs->get_area_files($this->context->id, 'mod_assignment', 'submission', $submission->id, "timemodified", false)) {
                 $countfiles = count($files)." ".get_string("uploadedfiles", "assignment");
                 foreach ($files as $file) {
                     $countfiles .= "; ".$file->get_filename();
@@ -2058,7 +2058,7 @@ class assignment_base {
 } ////// End of the assignment_base class
 
 
-class mod_assignment_online_grading_form extends moodleform { // TODO: why "online" in the name of this class? (skodak)
+class mod_assignment_grading_form extends moodleform { 
 
     function definition() {
         global $OUTPUT;
@@ -2844,10 +2844,10 @@ function assignment_print_recent_activity($course, $viewfullnames, $timestart) {
             if (empty($modinfo->groups[$cm->id])) {
                 continue;
             }
-            $usersgroups =  groups_get_all_groups($course->id, $cm->userid, $cm->groupingid);
+            $usersgroups =  groups_get_all_groups($course->id, $submission->userid, $cm->groupingid);
             if (is_array($usersgroups)) {
                 $usersgroups = array_keys($usersgroups);
-                $interset = array_intersect($usersgroups, $modinfo->groups[$cm->id]);
+                $intersect = array_intersect($usersgroups, $modinfo->groups[$cm->id]);
                 if (empty($intersect)) {
                     continue;
                 }
@@ -2860,7 +2860,7 @@ function assignment_print_recent_activity($course, $viewfullnames, $timestart) {
         return false;
     }
 
-    echo $OUTPUT->heading(get_string('newsubmissions', 'assignment').':');
+    echo $OUTPUT->heading(get_string('newsubmissions', 'assignment').':', 3);
 
     foreach ($show as $submission) {
         $cm = $modinfo->cms[$submission->cmid];

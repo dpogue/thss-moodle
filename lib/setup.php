@@ -150,10 +150,10 @@ if (defined('ABORT_AFTER_CONFIG')) {
     }
 }
 
-/**
- * Used by some scripts to check they are being called by Moodle
- */
-define('MOODLE_INTERNAL', true);
+/** Used by library scripts to check they are being called by Moodle */
+if (!defined('MOODLE_INTERNAL')) { // necessary because cli installer has to define it earlier
+    define('MOODLE_INTERNAL', true);
+}
 
 /**
  * Database connection. Used for all access to the database.
