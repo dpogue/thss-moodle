@@ -32,6 +32,8 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot.'/course/moodleform_mod.php');
 require_once($CFG->dirroot . '/mod/lesson/lib.php');
 
+/** This page */
+define('LESSON_THISPAGE', 0);
 /** Next page -> any page not seen before */
 define("LESSON_UNSEENPAGE", 1);
 /** Next page -> any page not answered correctly */
@@ -784,7 +786,7 @@ abstract class lesson_add_page_form_base extends moodleform {
         if ($label === NULL) {
             $label = get_string('answer', 'lesson');
         }
-        $this->_form->addElement('editor', 'answer_editor['.$count.']', $label, null, array('noclean'=>true));
+        $this->_form->addElement('editor', 'answer_editor['.$count.']', $label, array('rows'=>'4', 'columns'=>'80'), array('noclean'=>true));
         $this->_form->setDefault('answer_editor['.$count.']', array('text'=>'', 'format'=>FORMAT_MOODLE));
         if ($required) {
             $this->_form->addRule('answer_editor['.$count.']', get_string('required'), 'required', null, 'client');
@@ -802,7 +804,7 @@ abstract class lesson_add_page_form_base extends moodleform {
         if ($label === NULL) {
             $label = get_string('response', 'lesson');
         }
-        $this->_form->addElement('editor', 'response_editor['.$count.']', $label, null, array('noclean'=>true));
+        $this->_form->addElement('editor', 'response_editor['.$count.']', $label, array('rows'=>'4', 'columns'=>'80'), array('noclean'=>true));
         $this->_form->setDefault('response_editor['.$count.']', array('text'=>'', 'format'=>FORMAT_MOODLE));
         if ($required) {
             $this->_form->addRule('response_editor['.$count.']', get_string('required'), 'required', null, 'client');
@@ -2034,7 +2036,7 @@ abstract class lesson_page extends lesson_base {
         static $jumpnames = array();
 
         if (!array_key_exists($jumpto, $jumpnames)) {
-            if ($jumpto == 0) {
+            if ($jumpto == LESSON_THISPAGE) {
                 $jumptitle = get_string('thispage', 'lesson');
             } elseif ($jumpto == LESSON_NEXTPAGE) {
                 $jumptitle = get_string('nextpage', 'lesson');
