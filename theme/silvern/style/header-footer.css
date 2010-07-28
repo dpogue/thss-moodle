@@ -217,11 +217,7 @@ header #welcome p {
 }
 
 .gecko header div#welcome p {
-    background: [[setting:welcomecolour]] none;
-}
-
-.gecko19 header div#welcome p {
-	background: transparent -moz-linear-gradient(top, [[setting:welcomecolour]], [[setting:welcomecolourfade]]);
+	background: transparent -moz-linear-gradient(top, [[setting:welcomecolour]] 0%, [[setting:welcomecolourfade]] 100%);
 }
 
 .safari header div#welcome p {

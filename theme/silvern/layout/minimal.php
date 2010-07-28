@@ -1,33 +1,38 @@
 <?php echo $OUTPUT->doctype() ?>
-<html <?php echo $OUTPUT->htmlattributes() ?>>
+<html lang="en-ca">
 <head>
-    <title><?php echo $PAGE->title ?></title>
-    <link rel="shortcut icon" href="<?php echo $OUTPUT->pix_url('favicon', 'theme')?>" />
-    <?php echo $OUTPUT->standard_head_html() ?>
+<?php echo $OUTPUT->standard_head_html() ?>
 </head>
 <body id="<?php echo $PAGE->pagetype ?>" class="<?php echo $PAGE->bodyclasses ?>">
 <?php echo $OUTPUT->standard_top_of_body_html() ?>
-
-<div id="page">
-
-<?php if ($PAGE->heading) { ?>
-    <div id="header" class="clearfix">
-        <h1 class="headermain"><?php echo $PAGE->heading ?></h1>
-        <div class="headermenu"><?php echo $PAGE->headingmenu ?></div>
-    </div>
-    <hr />
-<?php } ?>
-<!-- END OF HEADER -->
-
-    <div id="content" class="clearfix">
-        <?php echo core_renderer::MAIN_CONTENT_TOKEN ?>
-    </div>
-
-<!-- START OF FOOTER -->
-    <div id="footer" class="clearfix">
-        <?php echo $OUTPUT->standard_footer_html() ?>
-    </div>
-</div>
+	<nav class="blackbar">
+		<span class="left">
+			<b>
+				<?php echo $SITE->fullname."\n"; ?>
+			</b>
+		</span>
+	</nav>
+	<header>
+		<nav>
+			<div id="menubar">
+				<div class="breadcrumb"><?php echo $OUTPUT->navbar(); ?></div>
+				<div class="navbutton"><?php echo $PAGE->button; ?></div>
+			</div>
+		</nav>
+	</header>
+	<section id="page">
+		<div id="content">
+<?php echo core_renderer::MAIN_CONTENT_TOKEN ?>
+		</div>
+	</section>
+	
+	<footer>
+		<p>
+            Proudly powered by the <a href="http://www.moodle.org/">Moodle Project</a>.
+            <br />
+<?php echo $OUTPUT->standard_footer_html(); ?>
+		</p>
+	</footer>
 <?php echo $OUTPUT->standard_end_of_body_html() ?>
 </body>
 </html>

@@ -67,7 +67,7 @@ function thss_set_welcomecolour($css, $colour) {
  * @copyright 2006 Jonas John
  * http://www.jonasjohn.de/snippets/php/hex2rgb.htm
  */
-function Hex2RGB($colour) {
+/*function Hex2RGB($colour) {
     $colour = str_replace('#', '', $colour);
     if (strlen($colour) != 6){ return array(0,0,0); }
     $rgb = array();
@@ -75,7 +75,7 @@ function Hex2RGB($colour) {
         $rgb[$x] = hexdec(substr($colour,(2*$x),2));
     }
     return $rgb;
-}
+}*/
 
 function tabmenu_nav($index=false) {
     global $USER, $CFG, $SITE, $DB;
