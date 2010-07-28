@@ -1750,7 +1750,9 @@ class assignment_base {
 
         $found = false;
 
-        if ($files = $fs->get_area_files($this->context->id, 'mod_assignment', 'submission', $userid, "timemodified", false)) {
+        $submission = $this->get_submission($userid);
+
+        if ($files = $fs->get_area_files($this->context->id, 'mod_assignment', 'submission', $submission->id, "timemodified", false)) {
             require_once($CFG->libdir.'/portfoliolib.php');
             require_once($CFG->dirroot . '/mod/assignment/locallib.php');
             $button = new portfolio_add_button();
@@ -2908,8 +2910,10 @@ function assignment_get_recent_mod_activity(&$activities, &$index, $timestart, $
     $params['cminstance'] = $cm->instance;
     $params['timestart'] = $timestart;
 
-    if (!$submissions = $DB->get_records_sql("SELECT asb.id, asb.timemodified, asb.userid,
-                                                     u.firstname, u.lastname, u.email, u.picture
+    $userfields = user_picture::fields('u', null, 'userid');
+
+    if (!$submissions = $DB->get_records_sql("SELECT asb.id, asb.timemodified,
+                                                     $userfields
                                                 FROM {assignment_submissions} asb
                                                 JOIN {assignment} a      ON a.id = asb.assignment
                                                 JOIN {user} u            ON u.id = asb.userid
@@ -2994,9 +2998,15 @@ function assignment_get_recent_mod_activity(&$activities, &$index, $timestart, $
             $tmpactivity->grade = $grades->items[0]->grades[$submission->userid]->str_long_grade;
         }
 
-        $tmpactivity->user->userid   = $submission->userid;
+        $userfields = explode(',', user_picture::fields());
+        foreach ($userfields as $userfield) {
+            if ($userfield == 'id') {
+                $tmpactivity->user->{$userfield} = $submission->userid; // aliased in SQL above
+            } else {
+                $tmpactivity->user->{$userfield} = $submission->{$userfield};
+            }
+        }
         $tmpactivity->user->fullname = fullname($submission, $viewfullnames);
-        $tmpactivity->user->picture  = $submission->picture;
 
         $activities[$index++] = $tmpactivity;
     }
@@ -3035,7 +3045,7 @@ function assignment_print_recent_mod_activity($activity, $courseid, $detail, $mo
     }
 
     echo '<div class="user">';
-    echo "<a href=\"$CFG->wwwroot/user/view.php?id={$activity->user->userid}&amp;course=$courseid\">"
+    echo "<a href=\"$CFG->wwwroot/user/view.php?id={$activity->user->id}&amp;course=$courseid\">"
          ."{$activity->user->fullname}</a>  - ".userdate($activity->timestamp);
     echo '</div>';
 

@@ -104,7 +104,7 @@ class repository_upload extends repository {
         }
 
         if ($file = $fs->get_file($context->id, $record->component, $record->filearea, $record->itemid, $record->filepath, $record->filename)) {
-            throw new moodle_exception('fileexist');
+            throw new moodle_exception('fileexists');
         }
 
         $record->contextid = $context->id;
@@ -133,14 +133,6 @@ class repository_upload extends repository {
         $ret['dynload'] = false;
         $ret['upload'] = array('label'=>get_string('attachment', 'repository'), 'id'=>'repo-form');
         return $ret;
-    }
-
-    /**
-     * Define the readable name of this repository
-     * @return string
-     */
-    public function get_name(){
-        return get_string('pluginname', 'repository_upload');
     }
 
     /**

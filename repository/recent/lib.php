@@ -116,21 +116,12 @@ class repository_recent extends repository {
         return $ret;
     }
 
-
-    /**
-     * Set repository name
-     *
-     * @return string repository name
-     */
-    public function get_name(){
-        return get_string('pluginname', 'repository_recent');;
-    }
-
     public static function get_type_option_names() {
-        return array('recentfilesnumber');
+        return array('recentfilesnumber', 'pluginname');
     }
 
     public function type_config_form($mform) {
+        parent::type_config_form($mform);
         $number = get_config('repository_recent', 'recentfilesnumber');
         if (empty($number)) {
             $number = DEFAULT_RECENT_FILES_NUM;
@@ -188,7 +179,7 @@ class repository_recent extends repository {
             $file_record = array('contextid'=>$user_context->id, 'component'=>'user', 'filearea'=>'draft',
                 'itemid'=>$draftitemid, 'filepath'=>$new_filepath, 'filename'=>$new_filename);
             if ($file = $fs->get_file($user_context->id, 'user', 'draft', $draftitemid, $new_filepath, $new_filename)) {
-                $file->delete();
+                throw new moodle_exception('fileexists');
             }
             $fs->create_file_from_storedfile($file_record, $stored_file);
         }
