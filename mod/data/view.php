@@ -368,9 +368,21 @@
     }
 
 
+//if data activity closed dont let students in
+$showactivity = true;
+if (!has_capability('mod/data:manageentries', $context)) {
+    $timenow = time();
+    if (!empty($data->timeavailablefrom) && $data->timeavailablefrom > $timenow) {
+        echo $OUTPUT->notification(get_string('notopenyet', 'data', userdate($data->timeavailablefrom)));
+        $showactivity = false;
+    } else if (!empty($data->timeavailableto) && $timenow > $data->timeavailableto) {
+        echo $OUTPUT->notification(get_string('expired', 'data', userdate($data->timeavailableto)));
+        $showactivity = false;
+    }
+}
 
-/// Print the tabs
-
+if ($showactivity) {
+    // Print the tabs
     if ($record or $mode == 'single') {
         $currenttab = 'single';
     } elseif($mode == 'asearch') {
@@ -712,6 +724,7 @@
 /// Mark as viewed
     $completion=new completion_info($course);
     $completion->set_module_viewed($cm);
+}
 
-    echo $OUTPUT->footer();
+echo $OUTPUT->footer();
 

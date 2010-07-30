@@ -18,9 +18,12 @@
 /**
  * Media filter
  *
- * @package   filter_mediaplugin
- * @copyright 2010 Petr Skoda {@link http://skodak.org}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    filter
+ * @subpackage mediaplugin
+ * @copyright  2010 Petr Skoda {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 $plugin->version = 2010070900;
