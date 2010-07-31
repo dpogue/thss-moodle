@@ -64,12 +64,6 @@ class restore_label_activity_task extends restore_activity_task {
      * to the activity to be executed by the link decoder
      */
     static public function define_decode_rules() {
-        $rules = array();
-
-        $rules[] = new restore_decode_rule('LABELVIEWBYID', '/mod/label/view.php?id=$1', 'course_module');
-        $rules[] = new restore_decode_rule('LABELINDEX', '/mod/label/index.php?id=$1', 'course');
-
-        return $rules;
-
+        return array();
     }
 }
