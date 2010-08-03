@@ -220,15 +220,6 @@ a.skip:active {position: static;display: block;}
 .phpinfo .h {background-color: #9999cc;font-weight: bold;}
 
 /**
- * Navigation
- */
-.block_js_expansion .block_tree {overflow:scroll;}
-.block_js_expansion.mouseover .content {width:200%;z-index:1000;position:relative;}
-.block_js_expansion.mouseover .content .block_tree {width:100%;background-color:#fcfcfc;padding-bottom:0;}
-.ie6 .block_js_expansion.mouseover .content,
-.ie7 .block_js_expansion.mouseover .content {padding-bottom:2px;}
-
-/**
  * Blogs
  */
 .addbloglink {text-align: center;}
@@ -341,6 +332,8 @@ table.mod_index {width:100%;}
 .comment-delete-confirm {background: #eee; padding: 2px; width: 5em;text-align:center;}
 .comment-container {float:left;margin: 4px;}
 .comment-report-selectall{display:none}
+.comment-link {display:none}
+.jsenabled .comment-link {display:block}
 .jsenabled .comment-report-selectall{display:inline}
 
 /**

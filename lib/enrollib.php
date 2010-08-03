@@ -1055,7 +1055,7 @@ abstract class enrol_plugin {
      * @param int $courseid
      * @return moodle_url page url
      */
-    public function get_candidate_link($courseid) {
+    public function get_newinstance_link($courseid) {
         // override for most plugins, check if instance already exists in cases only one instance is supported
         return NULL;
     }
@@ -1158,14 +1158,18 @@ abstract class enrol_plugin {
      * @return void
      */
     public function course_updated($inserted, $course, $data) {
-        // override if settings on course edit page or some automatic sync needed
+        if ($inserted) {
+            if ($this->get_config('defaultenrol')) {
+                $this->add_default_instance($course);
+            }
+        }
     }
 
     /**
-     * Add new instance of enrol plugin settings.
+     * Add new instance of enrol plugin.
      * @param object $course
      * @param array instance fields
-     * @return int id of new instance
+     * @return int id of new instance, null if can not be created
      */
     public function add_instance($course, array $fields = NULL) {
         global $DB;
@@ -1254,46 +1258,19 @@ abstract class enrol_plugin {
      *
      * @param navigation_node $instancesnode
      * @param object $instance
-     * @return moodle_url;
+     * @return void
      */
     public function add_course_navigation($instancesnode, stdClass $instance) {
-        if ($managelink = $this->get_manage_link($instance)) {
-            $instancesnode->add($this->get_instance_name($instance), $managelink, navigation_node::TYPE_SETTING);
-        }
+        // usually adds manage users
     }
 
     /**
-     * Returns enrolment instance manage link.
-     *
-     * By defaults looks for manage.php file and tests for manage capability.
-     *
-     * @param object $instance
-     * @return moodle_url;
+     * Returns edit icons for the page with list of instances
+     * @param stdClass $instance
+     * @return array
      */
-    public function get_manage_link($instance) {
-        global $CFG, $DB;
-
-        $name = $this->get_name();
-
-        if ($instance->enrol !== $name) {
-             throw new coding_exception('Invalid enrol instance type!');
-        }
-
-        if (!file_exists("$CFG->dirroot/enrol/$name/manage.php")) {
-            return NULL;
-        }
-
-        if ($instance->courseid == SITEID) {
-            // no enrolments on the frontpage, only roles there allowed
-            return NULL;
-        }
-
-        $context = get_context_instance(CONTEXT_COURSE, $instance->courseid);
-        if (!has_capability('enrol/'.$name.':manage', $context)) {
-            return NULL;
-        }
-
-        return new moodle_url("/enrol/$name/manage.php", array('enrolid'=>$instance->id));
+    public function get_action_icons(stdClass $instance) {
+        return array();
     }
 
     /**

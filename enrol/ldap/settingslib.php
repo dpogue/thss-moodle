@@ -18,13 +18,14 @@
 /**
  * LDAP enrolment plugin admin setting classes
  *
- * @package   enrol_ldap
- * @author    Iñaki Arenaza
- * @copyright 2010 Iñaki Arenaza <iarenaza@eps.mondragon.edu>
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    enrol
+ * @subpackage ldap
+ * @author     Iñaki Arenaza
+ * @copyright  2010 Iñaki Arenaza <iarenaza@eps.mondragon.edu>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
+defined('MOODLE_INTERNAL') || die();
 
 class admin_setting_configtext_trim_lower extends admin_setting_configtext {
     /* @var boolean whether to lowercase the value or not before writing in to the db */

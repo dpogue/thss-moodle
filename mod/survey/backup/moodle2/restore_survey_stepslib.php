@@ -52,8 +52,10 @@ class restore_survey_activity_structure_step extends restore_activity_structure_
         $data = (object)$data;
         $oldid = $data->id;
         $data->course = $this->get_courseid();
+        $data->timemodified = $this->apply_date_offset($data->timemodified);
+        $data->timecreated = $this->apply_date_offset($data->timecreated);
 
-        // insert the choice record
+        // insert the survey record
         $newitemid = $DB->insert_record('survey', $data);
         // inmediately after inserting "activity" record, call this
         $this->apply_activity_instance($newitemid);
@@ -79,6 +81,7 @@ class restore_survey_activity_structure_step extends restore_activity_structure_
         $oldid = $data->id;
         $data->survey = $this->get_new_parentid('survey');
         $data->userid = $this->get_mappingid('user', $data->userid);
+        $data->time = $this->apply_date_offset($data->time);
 
         $newitemid = $DB->insert_record('survey_answers', $data);
         // No need to save this mapping as far as nothing depend on it

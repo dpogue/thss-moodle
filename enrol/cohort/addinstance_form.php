@@ -18,12 +18,13 @@
 /**
  * Adds instance form
  *
- * @package   enrol_cohort
- * @copyright 2010 Petr Skoda  {@link http://skodak.org}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    enrol
+ * @subpackage cohort
+ * @copyright  2010 Petr Skoda {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
+defined('MOODLE_INTERNAL') || die();
 
 require_once("$CFG->libdir/formslib.php");
 
@@ -67,7 +68,7 @@ class enrol_cohort_addinstance_form extends moodleform {
         $mform->addElement('hidden', 'id', null);
         $mform->setType('id', PARAM_INT);
 
-        $this->add_action_buttons();
+        $this->add_action_buttons(true, get_string('addinstance', 'enrol'));
 
         $this->set_data(array('id'=>$course->id));
     }

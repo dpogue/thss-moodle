@@ -18,9 +18,10 @@
 /**
  * Adds new instance of enrol_meta to specified course.
  *
- * @package   enrol_meta
- * @copyright 2010 Petr Skoda  {@link http://skodak.org}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    enrol
+ * @subpackage meta
+ * @copyright  2010 Petr Skoda {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require('../../config.php');
@@ -32,11 +33,16 @@ $id = required_param('id', PARAM_INT); // course id
 $course = $DB->get_record('course', array('id'=>$id), '*', MUST_EXIST);
 $context = get_context_instance(CONTEXT_COURSE, $course->id, MUST_EXIST);
 
+$PAGE->set_url('/enrol/meta/addinstance.php', array('id'=>$course->id));
+$PAGE->set_pagelayout('admin');
+
+navigation_node::override_active_url(new moodle_url('/enrol/instances.php', array('id'=>$course->id)));
+
 require_login($course);
 require_capability('moodle/course:enrolconfig', $context);
 
 $enrol = enrol_get_plugin('meta');
-if (!$enrol->get_candidate_link($course->id)) {
+if (!$enrol->get_newinstance_link($course->id)) {
     redirect(new moodle_url('/enrol/instances.php', array('id'=>$course->id)));
 }
 
@@ -51,7 +57,8 @@ if ($mform->is_cancelled()) {
     redirect(new moodle_url('/enrol/instances.php', array('id'=>$course->id)));
 }
 
-$PAGE->set_url('/enrol/meta/addinstance.php', array('id'=>$course->id));
+$PAGE->set_heading($course->fullname);
+$PAGE->set_title(get_string('pluginname', 'enrol_meta'));
 
 echo $OUTPUT->header();
 

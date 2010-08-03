@@ -133,17 +133,17 @@ class question_edit_form extends moodleform {
         $mform->setDefault('defaultgrade', 1);
         $mform->addRule('defaultgrade', null, 'required', null, 'client');
 
-        $mform->addElement('text', 'penalty', get_string('penaltyfactor', 'quiz'),
+        $mform->addElement('text', 'penalty', get_string('penaltyfactor', 'question'),
                 array('size' => 3));
         $mform->setType('penalty', PARAM_NUMBER);
         $mform->addRule('penalty', null, 'required', null, 'client');
-        $mform->setHelpButton('penalty', array('penalty', get_string('penalty', 'quiz'), 'quiz'));
+        $mform->addHelpButton('penalty', 'penaltyfactor', 'question');
         $mform->setDefault('penalty', 0.1);
 
         $mform->addElement('htmleditor', 'generalfeedback', get_string('generalfeedback', 'quiz'),
                 array('rows' => 10, 'course' => $this->coursefilesid));
         $mform->setType('generalfeedback', PARAM_RAW);
-        $mform->setHelpButton('generalfeedback', array('generalfeedback', get_string('generalfeedback', 'quiz'), 'quiz'));
+        $mform->addHelpButton('generalfeedback', 'generalfeedback', 'quiz');
 
         // Any questiontype specific fields.
         $this->definition_inner($mform);

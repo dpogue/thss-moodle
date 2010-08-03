@@ -315,6 +315,7 @@ EOD;
 
         $strsubmit = get_string('savecomment');
         $strcancel = get_string('cancel');
+        $strshowcomments = get_string('showcommentsnonjs');
         $sesskey = sesskey();
         $html = '';
         // print html template
@@ -329,7 +330,10 @@ EOD;
             $icon = $OUTPUT->pix_url('t/collapsed');
             $html .= <<<EOD
 <div class="mdl-left">
-<a id="comment-link-{$this->cid}" href="{$this->link}">
+<noscript>
+<a href="{$this->link}">{$strshowcomments}</a>
+</noscript>
+<a id="comment-link-{$this->cid}" class="comment-link" href="#">
     <img id="comment-img-{$this->cid}" src="$icon" alt="{$this->linktext}" title="{$this->linktext}" />
     <span id="comment-link-text-{$this->cid}">{$this->linktext} {$this->count}</span>
 </a>
@@ -518,7 +522,7 @@ EOD;
             $newcmt->fullname = fullname($USER);
             $url = new moodle_url('/user/view.php', array('id'=>$USER->id, 'course'=>$this->courseid));
             $newcmt->profileurl = $url->out();
-            $newcmt->content = format_text($newcmt->content);
+            $newcmt->content = format_text($newcmt->content, $format);
             $newcmt->avatar = $OUTPUT->user_picture($USER, array('size'=>16));
             return $newcmt;
         } else {
@@ -528,15 +532,20 @@ EOD;
 
     /**
      * delete by context, commentarea and itemid
-     *
+    * @param object $param {
+    *            contextid => int the context in which the comments exist [required]
+    *            commentarea => string the comment area [optional]
+    *            itemid => int comment itemid [optional]
+    * }
+     * @return boolean
      */
-    public function delete_comments() {
+    public function delete_comments($param) {
         global $DB;
-        $DB->delete_records('comments', array(
-            'contextid'=>$this->context->id,
-            'commentarea'=>$this->commentarea,
-            'itemid'=>$this->itemid)
-        );
+        $param = (array)$param;
+        if (empty($param['contextid'])) {
+            return false;
+        }
+        $DB->delete_records('comments', $param);
         return true;
     }
 

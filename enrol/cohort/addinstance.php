@@ -18,9 +18,10 @@
 /**
  * Adds new instance of enrol_cohort to specified course.
  *
- * @package   enrol_cohort
- * @copyright 2010 Petr Skoda  {@link http://skodak.org}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    enrol
+ * @subpackage cohort
+ * @copyright  2010 Petr Skoda {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require('../../config.php');
@@ -36,7 +37,9 @@ require_login($course);
 require_capability('moodle/course:enrolconfig', $context);
 
 $PAGE->set_url('/enrol/cohort/addinstance.php', array('id'=>$course->id));
-$PAGE->set_pagelayout('standard');
+$PAGE->set_pagelayout('admin');
+
+navigation_node::override_active_url(new moodle_url('/enrol/instances.php', array('id'=>$course->id)));
 
 // Try and make the manage instances node on the navigation active
 $courseadmin = $PAGE->settingsnav->get('courseadmin');
@@ -46,7 +49,7 @@ if ($courseadmin && $courseadmin->get('users') && $courseadmin->get('users')->ge
 
 
 $enrol = enrol_get_plugin('cohort');
-if (!$enrol->get_candidate_link($course->id)) {
+if (!$enrol->get_newinstance_link($course->id)) {
     redirect(new moodle_url('/enrol/instances.php', array('id'=>$course->id)));
 }
 

@@ -18,12 +18,13 @@
 /**
  * Self enrol plugin implementation.
  *
- * @package   enrol_self
- * @copyright 2010 Petr Skoda  {@link http://skodak.org}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    enrol
+ * @subpackage self
+ * @copyright  2010 Petr Skoda  {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
+defined('MOODLE_INTERNAL') || die();
 
 require_once("$CFG->libdir/formslib.php");
 
@@ -64,7 +65,21 @@ class enrol_self_enrol_form extends moodleform {
         if ($instance->password) {
             if ($data['enrolpassword'] !== $instance->password) {
                 if ($instance->customint1) {
-                    //TODO: check groups
+                    $groups = $DB->get_records('groups', array('courseid'=>$instance->courseid), 'id ASC', 'id, enrolmentkey');
+                    $found = false;
+                    foreach ($groups as $group) {
+                        if (empty($group->enrolmentkey)) {
+                            continue;
+                        }
+                        if ($group->enrolmentkey === $data['enrolpassword']) {
+                            $found = true;
+                            break;
+                        }
+                    }
+                    if (!$found) {
+                        // we can not hint because there are probably multiple passwords
+                        $errors['enrolpassword'] = get_string('passwordinvalid', 'enrol_self');
+                    }
 
                 } else {
                     $plugin = enrol_get_plugin('self');

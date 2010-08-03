@@ -18,9 +18,10 @@
 /**
  * Self enrolment plugin - support for user self unenrolment.
  *
- * @package   enrol_self
- * @copyright 2010 Petr Skoda {@link http://skodak.org}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    enrol
+ * @subpackage self
+ * @copyright  2010 Petr Skoda  {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require('../../config.php');
@@ -32,6 +33,10 @@ $instance = $DB->get_record('enrol', array('id'=>$enrolid, 'enrol'=>'self'), '*'
 $course = $DB->get_record('course', array('id'=>$instance->courseid), '*', MUST_EXIST);
 $context = get_context_instance(CONTEXT_COURSE, $course->id, MUST_EXIST);
 
+require_login();
+if (!is_enrolled($context)) {
+    redirect(new moodle_url('/'));
+}
 require_login($course);
 
 $plugin = enrol_get_plugin('self');

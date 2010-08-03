@@ -18,13 +18,14 @@
 /**
  * Paypal enrolments plugin settings and presets.
  *
- * @package   enrol_paypal
- * @copyright 2010 Eugene Venter
- * @author    Eugene Venter - based on code by Petr Skoda and others
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    enrol
+ * @subpackage paypal
+ * @copyright  2010 Eugene Venter
+ * @author     Eugene Venter - based on code by Petr Skoda and others
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
+defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
 
@@ -43,37 +44,30 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_heading('enrol_paypal_defaults',
         get_string('enrolinstancedefaults', 'admin'), get_string('enrolinstancedefaults_desc', 'admin')));
 
-    $settings->add(new admin_setting_configtext('enrol_paypal/cost', get_string('cost', 'enrol_paypal'), '', 0, PARAM_FLOAT, 4));
-
-    $paypalcurrencies = array(  'USD' => 'US Dollars',
-                                'EUR' => 'Euros',
-                                'JPY' => 'Japanese Yen',
-                                'GBP' => 'British Pounds',
-                                'CAD' => 'Canadian Dollars',
-                                'AUD' => 'Australian Dollars'
-                            );
-
-    $settings->add(new admin_setting_configselect('enrol_paypal/currency', get_string('currency', 'enrol_paypal'), '', 'USD', $paypalcurrencies));
-
-    $settings->add(new admin_setting_configcheckbox('enrol_paypal/defaultenrol',
-        get_string('defaultenrol', 'enrol'), get_string('defaultenrol_desc', 'enrol'), 0));
-
     $options = array(ENROL_INSTANCE_ENABLED  => get_string('yes'),
                      ENROL_INSTANCE_DISABLED => get_string('no'));
-    $settings->add(new admin_setting_configselect_with_advanced('enrol_paypal/status',
-        get_string('status', 'enrol_paypal'), get_string('status_desc', 'enrol_paypal'),
-        array('value'=>ENROL_INSTANCE_DISABLED, 'adv'=>false), $options));
+    $settings->add(new admin_setting_configselect('enrol_paypal/status',
+        get_string('status', 'enrol_paypal'), get_string('status_desc', 'enrol_paypal'), ENROL_INSTANCE_DISABLED, $options));
+
+    $settings->add(new admin_setting_configtext('enrol_paypal/cost', get_string('cost', 'enrol_paypal'), '', 0, PARAM_FLOAT, 4));
+
+    $paypalcurrencies = array('USD' => 'US Dollars',
+                              'EUR' => 'Euros',
+                              'JPY' => 'Japanese Yen',
+                              'GBP' => 'British Pounds',
+                              'CAD' => 'Canadian Dollars',
+                              'AUD' => 'Australian Dollars'
+                             );
+    $settings->add(new admin_setting_configselect('enrol_paypal/currency', get_string('currency', 'enrol_paypal'), '', 'USD', $paypalcurrencies));
 
     if (!during_initial_install()) {
         $options = get_default_enrol_roles(get_context_instance(CONTEXT_SYSTEM));
         $student = get_archetype_roles('student');
         $student = reset($student);
-        $settings->add(new admin_setting_configselect_with_advanced('enrol_paypal/roleid',
-            get_string('defaultrole', 'enrol_paypal'), get_string('defaultrole_desc', 'enrol_paypal'),
-            array('value'=>$student->id, 'adv'=>false), $options));
+        $settings->add(new admin_setting_configselect('enrol_paypal/roleid',
+            get_string('defaultrole', 'enrol_paypal'), get_string('defaultrole_desc', 'enrol_paypal'), $student->id, $options));
     }
 
-    $settings->add(new admin_setting_configtext_with_advanced('enrol_paypal/enrolperiod',
-        get_string('enrolperiod', 'enrol_paypal'), get_string('enrolperiod_desc', 'enrol_paypal'),
-        array('value'=>0, 'adv'=>true), PARAM_INT));
+    $settings->add(new admin_setting_configtext('enrol_paypal/enrolperiod',
+        get_string('enrolperiod', 'enrol_paypal'), get_string('enrolperiod_desc', 'enrol_paypal'), 0, PARAM_INT));
 }

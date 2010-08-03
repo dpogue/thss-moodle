@@ -40,7 +40,7 @@ class restore_feedback_activity_structure_step extends restore_activity_structur
         $paths[] = new restore_path_element('feedback_item', '/activity/feedback/items/item');
         if ($userinfo) {
             $paths[] = new restore_path_element('feedback_completed', '/activity/feedback/completeds/completed');
-            $paths[] = new restore_path_element('feedback_value', '/activity/feedback/values/value');
+            $paths[] = new restore_path_element('feedback_value', '/activity/feedback/completeds/completed/values/value');
             $paths[] = new restore_path_element('feedback_tracking', '/activity/feedback/trackings/tracking');
         }
 
@@ -57,6 +57,7 @@ class restore_feedback_activity_structure_step extends restore_activity_structur
 
         $data->timeopen = $this->apply_date_offset($data->timeopen);
         $data->timeclose = $this->apply_date_offset($data->timeclose);
+        $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         // insert the feedback record
         $newitemid = $DB->insert_record('feedback', $data);
@@ -72,7 +73,7 @@ class restore_feedback_activity_structure_step extends restore_activity_structur
         $data->feedback = $this->get_new_parentid('feedback');
 
         $newitemid = $DB->insert_record('feedback_item', $data);
-        $this->set_mapping('feedback_item', $oldid, $newitemid);
+        $this->set_mapping('feedback_item', $oldid, $newitemid, true); // Can have files
     }
 
     protected function process_feedback_completed($data) {
@@ -82,6 +83,7 @@ class restore_feedback_activity_structure_step extends restore_activity_structur
         $oldid = $data->id;
         $data->feedback = $this->get_new_parentid('feedback');
         $data->userid = $this->get_mappingid('user', $data->userid);
+        $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $newitemid = $DB->insert_record('feedback_completed', $data);
         $this->set_mapping('feedback_completed', $oldid, $newitemid);
@@ -92,8 +94,8 @@ class restore_feedback_activity_structure_step extends restore_activity_structur
 
         $data = (object)$data;
         $oldid = $data->id;
-        $data->item = $this->get_new_parentid('feedback_item');
         $data->completed = $this->get_new_parentid('feedback_completed');
+        $data->item = $this->get_mappingid('feedback_item', $data->item);
         $data->course_id = $this->get_courseid();
 
         $newitemid = $DB->insert_record('feedback_value', $data);
@@ -106,16 +108,16 @@ class restore_feedback_activity_structure_step extends restore_activity_structur
         $data = (object)$data;
         $oldid = $data->id;
         $data->feedback = $this->get_new_parentid('feedback');
+        $data->completed = $this->get_mappingid('feedback_completed', $data->completed);
         $data->userid = $this->get_mappingid('user', $data->userid);
 
         $newitemid = $DB->insert_record('feedback_tracking', $data);
-        $this->set_mapping('feedback_tracking', $oldid, $newitemid);
     }
-    
+
 
     protected function after_execute() {
         // Add feedback related files, no need to match by itemname (just internally handled context)
         $this->add_related_files('mod_feedback', 'intro', null);
-        $this->add_related_files('mod_feedback', 'item', 'id'); //TODO: Verify that this is working.
+        $this->add_related_files('mod_feedback', 'item', 'feedback_item');
     }
 }

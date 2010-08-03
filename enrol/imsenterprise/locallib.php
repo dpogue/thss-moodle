@@ -18,13 +18,13 @@
 /**
  * IMS Enterprise enrol plugin implementation.
  *
- * @package   enrol_imsenterprise
- * @copyright 2010 Eugene Venter
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @author Eugene Venter
+ * @package    enrol
+ * @subpackage imsenterprise
+ * @copyright  2010 Eugene Venter
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
+defined('MOODLE_INTERNAL') || die();
 
 
 class imsenterprise_roles {
