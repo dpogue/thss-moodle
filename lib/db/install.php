@@ -1,7 +1,30 @@
 <?php
 
-// This file is executed right after the install.xml
+// This file is part of Moodle - http://moodle.org/
 //
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * This file is executed right after the install.xml
+ *
+ * @package    core
+ * @subpackage admin
+ * @copyright  2009 Petr Skoda (http://skodak.org)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
 
 function xmldb_main_install() {
     global $CFG, $DB, $SITE;
@@ -118,28 +141,6 @@ function xmldb_main_install() {
     $mnetallhosts->id                 = $DB->insert_record('mnet_host', $mnetallhosts, true);
     set_config('mnet_all_hosts_id', $mnetallhosts->id);
 
-    /// insert log entries - replaces statements section in install.xml
-    update_log_display_entry('user', 'view', 'user', 'CONCAT(firstname,\' \',lastname)');
-    update_log_display_entry('course', 'user report', 'user', 'CONCAT(firstname,\' \',lastname)');
-    update_log_display_entry('course', 'view', 'course', 'fullname');
-    update_log_display_entry('course', 'update', 'course', 'fullname');
-    update_log_display_entry('course', 'enrol', 'user', 'course', 'fullname'); // there should be some way to store user id of the enrolled user!
-    update_log_display_entry('course', 'unenrol', 'user', 'course', 'fullname'); // there should be some way to store user id of the enrolled user!
-    update_log_display_entry('course', 'report log', 'course', 'fullname');
-    update_log_display_entry('course', 'report live', 'course', 'fullname');
-    update_log_display_entry('course', 'report outline', 'course', 'fullname');
-    update_log_display_entry('course', 'report participation', 'course', 'fullname');
-    update_log_display_entry('course', 'report stats', 'course', 'fullname');
-    update_log_display_entry('message', 'write', 'user', 'CONCAT(firstname,\' \',lastname)');
-    update_log_display_entry('message', 'read', 'user', 'CONCAT(firstname,\' \',lastname)');
-    update_log_display_entry('message', 'add contact', 'user', 'CONCAT(firstname,\' \',lastname)');
-    update_log_display_entry('message', 'remove contact', 'user', 'CONCAT(firstname,\' \',lastname)');
-    update_log_display_entry('message', 'block contact', 'user', 'CONCAT(firstname,\' \',lastname)');
-    update_log_display_entry('message', 'unblock contact', 'user', 'CONCAT(firstname,\' \',lastname)');
-    update_log_display_entry('group', 'view', 'groups', 'name');
-    update_log_display_entry('tag', 'update', 'tag', 'name');
-
-
     /// Create guest record - do not assign any role, guest user get's the default guest role automatically on the fly
     $guest = new object();
     $guest->auth        = 'manual';
@@ -187,7 +188,6 @@ function xmldb_main_install() {
 
     /// Now is the correct moment to install capabilities - after creation of legacy roles, but before assigning of roles
     update_capabilities('moodle');
-    external_update_descriptions('moodle');
 
     /// Default allow assign
     $defaultallowassigns = array(

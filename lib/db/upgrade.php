@@ -1,23 +1,47 @@
-<?PHP
+<?php
 
-// This file keeps track of upgrades to Moodle.
+// This file is part of Moodle - http://moodle.org/
 //
-// Sometimes, changes between versions involve
-// alterations to database structures and other
-// major things that may break installations.
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
-// The upgrade function in this file will attempt
-// to perform all the necessary actions to upgrade
-// your older installation to the current version.
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
 //
-// If there's something it cannot do itself, it
-// will tell you what you need to do.
-//
-// The commands in here will all be database-neutral,
-// using the methods of database_manager class
-//
-// Please do not forget to use upgrade_set_timeout()
-// before any action that may take longer time to finish.
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * This file keeps track of upgrades to Moodle.
+ *
+ * Sometimes, changes between versions involve
+ * alterations to database structures and other
+ * major things that may break installations.
+ *
+ * The upgrade function in this file will attempt
+ * to perform all the necessary actions to upgrade
+ * your older installation to the current version.
+ *
+ * If there's something it cannot do itself, it
+ * will tell you what you need to do.
+ *
+ * The commands in here will all be database-neutral,
+ * using the methods of database_manager class
+ *
+ * Please do not forget to use upgrade_set_timeout()
+ * before any action that may take longer time to finish.
+ *
+ * @package    core
+ * @subpackage admin
+ * @copyright  2006 onwards Martin Dougiamas  http://dougiamas.com
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
 
 /**
  *
@@ -26,7 +50,7 @@
  * @global moodle_database $DB
  * @global core_renderer $OUTPUT
  * @param int $oldversion
- * @return bool
+ * @return bool always true
  */
 function xmldb_main_upgrade($oldversion) {
     global $CFG, $USER, $DB, $OUTPUT;
@@ -4884,6 +4908,37 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
 
         // Main savepoint reached
         upgrade_main_savepoint(true, 2010072700);
+    }
+
+    if ($oldversion < 2010080303) {
+        $rs = $DB->get_recordset_sql('SELECT i.id, i.name, r.type FROM {repository_instances} i, {repository} r WHERE i.typeid = r.id');
+        foreach ($rs as $record) {
+            if ($record->name == $record->type) {
+                // repository_instances was saving type name as in name field
+                // which should be empty, the repository api will try to find
+                // instance name from language files
+                $DB->set_field('repository_instances', 'name', '');
+            }
+        }
+        $rs->close();
+        upgrade_main_savepoint(true, 2010080303);
+    }
+
+    if ($oldversion < 2010080305) {
+        // first drop all log disaply actions, we will rectreate them automatically later
+        $DB->delete_records('log_display', array());
+
+        // Define field component to be added to log_display
+        $table = new xmldb_table('log_display');
+        $field = new xmldb_field('component', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null, 'field');
+
+        // Launch add field component
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Main savepoint reached
+        upgrade_main_savepoint(true, 2010080305);
     }
 
 
