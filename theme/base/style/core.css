@@ -177,7 +177,7 @@ a.skip:active {position: static;display: block;}
 .mform .fitem {width:100%;overflow:hidden;margin-top:5px;margin-bottom:1px;clear:right;}
 .mform .fitem .fitemtitle {width:15%;text-align:right;float:left;}
 .mform .fitem .fitemtitle div {display: inline;}
-.mform .fitem .felement {border-width: 0;width:60%;margin-left:16%;}
+.mform .fitem .felement {border-width: 0;width:80%;margin-left:16%;}
 .mform .fitem fieldset.felement {margin-left:0;padding-left:1%;}
 .mform .error,
 .mform .required {color:#A00;}
@@ -195,18 +195,11 @@ a.skip:active {position: static;display: block;}
 .mform fieldset.fdate_selector label {display:inline;float: none;width: auto;}
 .mform .ftags label.accesshide {display: block;position: static;}
 .mform .ftags select {margin-bottom: 0.7em;min-width: 22em;}
-.mform .fitem .felement {margin-right:16%;}
 
 /** Browser corrections for mforms **/
 .ie .mform .fitem .felement {margin-left:0;text-align:left;float:left;}
 /** Fix IE double margin + float bugs **/
 .ie .mform .fitem .fitemtitle {padding-right:1em;}
-#date_selector_calendar_panel .bd {padding: 0;}
-#date_selector_calendar_panel .yui-calcontainer {border: none;float: none;}
-/* Prevent border-collapse:collapse from bleeding through in IE6, IE7 */
-#date_selector_calendar_panel.yui-overlay-hidden table {*display:none;}
-#date_selector_calendar_panel th.calhead {padding-right: 2em;}
-#date_selector_calendar_panel a.container-close {top: 10px;}
 #portfolio-add-button {display:inline;}
 
 /**
@@ -497,9 +490,8 @@ body.tag .managelink {padding: 5px;}
  * File Manager
  */
 .filemanager-toolbar {margin: 5px 0;}
-.filemanager-toolbar a:link,
-.filemanager-toolbar a:visited {border: 1px solid gray;background: #ccc;color: black;padding: 3px;}
-.filemanager-toolbar a:hover {background: white;text-decoration: none;}
+.filemanager-toolbar a {border: 1px solid #AACCEE;background: #F4FAFF;color: black;padding: 3px;}
+.filemanager-toolbar a:hover {background: #FFFFFF;}
 .fm-breadcrumb {margin:0;}
 .filemanager-container {padding: 5px;margin: 6px 0;background: #E9F4FF;border: #AACCEE 1px solid}
 .filemanager-container ul{margin:0;padding:0;}

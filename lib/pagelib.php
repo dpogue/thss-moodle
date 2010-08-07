@@ -328,7 +328,12 @@ class moodle_page {
      */
     protected function magic_get_context() {
         if (is_null($this->_context)) {
-            throw new coding_exception('$PAGE->context accessed before it was known.');
+            if (CLI_SCRIPT) {
+                // cli scripts work in system context, do not annoy devs with fatal errors here
+                $this->_context = get_context_instance(CONTEXT_SYSTEM);
+            } else {
+                throw new coding_exception('$PAGE->context accessed before it was known.');
+            }
         }
         return $this->_context;
     }
@@ -1735,7 +1740,7 @@ class page_generic_activity extends page_base {
         }
 
         $buttons = '<table><tr><td>'.$OUTPUT->update_module_button($this->modulerecord->id, $this->activityname).'</td>';
-        if ($this->user_allowed_editing() && !empty($CFG->showblocksonmodpages)) {
+        if ($this->user_allowed_editing()) {
             $buttons .= '<td><form method="get" action="view.php"><div>'.
                 '<input type="hidden" name="id" value="'.$this->modulerecord->id.'" />'.
                 '<input type="hidden" name="edit" value="'.($this->user_is_editing()?'off':'on').'" />'.

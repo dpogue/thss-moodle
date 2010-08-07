@@ -333,12 +333,13 @@ function survey_get_responses($surveyid, $groupid, $groupingid) {
         $groupsjoin = "";
     }
 
-    return $DB->get_records_sql("SELECT u.id, u.firstname, u.lastname, u.picture, MAX(a.time) as time
+    $userfields = user_picture::fields('u');
+    return $DB->get_records_sql("SELECT $userfields, MAX(a.time) as time
                                    FROM {survey_answers} a
                                    JOIN {user} u ON a.userid = u.id
                             $groupsjoin
                                   WHERE a.survey = :surveyid
-                               GROUP BY u.id, u.firstname, u.lastname, u.picture
+                               GROUP BY $userfields
                                ORDER BY time ASC", $params);
 }
 
@@ -392,7 +393,8 @@ function survey_get_user_answers($surveyid, $questionid, $groupid, $sort="sa.ans
         $groupsql  = '';
     }
 
-    return $DB->get_records_sql("SELECT sa.*,u.firstname,u.lastname,u.picture
+    $userfields = user_picture::fields('u');
+    return $DB->get_records_sql("SELECT sa.*, $userfields
                                    FROM {survey_answers} sa,  {user} u $groupfrom
                                   WHERE sa.survey = :surveyid
                                         AND sa.question = :questionid
@@ -537,11 +539,6 @@ function survey_print_multi($question) {
     $numoptions = count($options);
 
     $oneanswer = ($question->type == 1 || $question->type == 2) ? true : false;
-    if ($question->type == 2) {
-        $P = "P";
-    } else {
-        $P = "";
-    }
 
     echo "<tr class=\"smalltext\"><th scope=\"row\">$strresponses</th>";
     echo "<th scope=\"col\" class=\"hresponse\">". get_string('notyetanswered', 'survey'). "</th>";
@@ -563,6 +560,13 @@ function survey_print_multi($question) {
         $rowclass = survey_question_rowclass($qnum);
         if ($q->text) {
             $q->text = get_string($q->text, "survey");
+        }
+
+        $oneanswer = ($q->type == 1 || $q->type == 2) ? true : false;
+        if ($q->type == 2) {
+            $P = "P";
+        } else {
+            $P = "";
         }
 
         echo "<tr class=\"$rowclass rblock\">";

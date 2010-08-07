@@ -56,7 +56,7 @@ class backup_assignment_activity_task extends backup_activity_task {
 
         // Link to the list of assignments
         $search="/(".$base."\/mod\/assignment\/index.php\?id\=)([0-9]+)/";
-        $content= preg_replace($search, '$@ASIGNMENTINDEX*$2@$', $content);
+        $content= preg_replace($search, '$@ASSIGNMENTINDEX*$2@$', $content);
 
         // Link to assignment view by moduleid
         $search="/(".$base."\/mod\/assignment\/view.php\?id\=)([0-9]+)/";

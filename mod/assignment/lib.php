@@ -321,6 +321,17 @@ class assignment_base {
         echo '</div>';
         echo '</tr>';
 
+         if ($this->type == 'uploadsingle') { //@TODO: move to overload view_feedback method in the class or is uploadsingle merging into upload?
+            $responsefiles = $this->print_responsefiles($submission->userid, true);
+            if (!empty($responsefiles)) {
+                echo '<tr>';
+                echo '<td class="left side">&nbsp;</td>';
+                echo '<td class="content">';
+                echo $responsefiles;
+                echo '</tr>';
+            }
+         }
+
         echo '</table>';
     }
 
@@ -1785,12 +1796,12 @@ class assignment_base {
     /**
      * Count the files uploaded by a given user
      *
-     * @param $userid int The user id
+     * @param $itemid int The submission's id as the file's itemid.
      * @return int
      */
-    function count_user_files($userid) {
+    function count_user_files($itemid) {
         $fs = get_file_storage();
-        $files = $fs->get_area_files($this->context->id, 'mod_assignment', 'submission', $userid, "id", false);
+        $files = $fs->get_area_files($this->context->id, 'mod_assignment', 'submission', $itemid, "id", false);
         return count($files);
     }
 

@@ -223,12 +223,17 @@ class navigation_node implements renderable {
     }
 
     /**
-     * Overrides the fullmeurl variable providing
+     * This sets the URL that the URL of new nodes get compared to when locating
+     * the active node.
+     *
+     * The active node is the node that matches the URL set here. By default this
+     * is either $PAGE->url or if that hasn't been set $FULLME.
      *
      * @param moodle_url $url The url to use for the fullmeurl.
      */
     public static function override_active_url(moodle_url $url) {
-        self::$fullmeurl = $url;
+        // Clone the URL, in case the calling script changes their URL later.
+        self::$fullmeurl = new moodle_url($url);
     }
 
     /**
@@ -336,6 +341,11 @@ class navigation_node implements renderable {
 
     /**
      * Marks this node as active and forces it open.
+     *
+     * Important: If you are here because you need to mark a node active to get
+     * the navigation to do what you want have you looked at {@see navigation_node::override_active_url()}?
+     * You can use it to specify a different URL to match the active navigation node on
+     * rather than having to locate and manually mark a node active.
      */
     public function make_active() {
         $this->isactive = true;
@@ -955,6 +965,8 @@ class global_navigation extends navigation_node {
         $frontpagecourse = $this->load_course($SITE);
         $this->add_front_page_course_essentials($frontpagecourse, $SITE);
 
+        $canviewcourseprofile = true;
+
         // Next load context specific content into the navigation
         switch ($this->page->context->contextlevel) {
             case CONTEXT_SYSTEM :
@@ -967,6 +979,14 @@ class global_navigation extends navigation_node {
                 // Load the course associated with the page into the navigation
                 $course = $this->page->course;
                 $coursenode = $this->load_course($course);
+                // If the user is not enrolled then we only want to show the
+                // course node and not populate it.
+                $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
+                if (!is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext)) {
+                    $coursenode->make_active();
+                    $canviewcourseprofile = false;
+                    break;
+                }
                 // Add the essentials such as reports etc...
                 $this->add_course_essentials($coursenode, $course);
                 if ($this->format_display_course_content($course->format)) {
@@ -982,6 +1002,16 @@ class global_navigation extends navigation_node {
                 $cm = $this->page->cm;
                 // Load the course associated with the page into the navigation
                 $coursenode = $this->load_course($course);
+
+                // If the user is not enrolled then we only want to show the
+                // course node and not populate it.
+                $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
+                if (!is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext)) {
+                    $coursenode->make_active();
+                    $canviewcourseprofile = false;
+                    break;
+                }
+
                 $this->add_course_essentials($coursenode, $course);
                 // Load the course sections into the page
                 $sections = $this->load_course_sections($course, $coursenode);
@@ -1014,6 +1044,14 @@ class global_navigation extends navigation_node {
                 if ($course->id != SITEID) {
                     // Load the course associated with the user into the navigation
                     $coursenode = $this->load_course($course);
+                    // If the user is not enrolled then we only want to show the
+                    // course node and not populate it.
+                    $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
+                    if (!is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext)) {
+                        $coursenode->make_active();
+                        $canviewcourseprofile = false;
+                        break;
+                    }
                     $this->add_course_essentials($coursenode, $course);
                     $sections = $this->load_course_sections($course, $coursenode);
                 }
@@ -1038,7 +1076,7 @@ class global_navigation extends navigation_node {
 
         // Load for the current user
         $this->load_for_user();
-        if ($this->page->context->contextlevel >= CONTEXT_COURSE && $this->page->context->instanceid != SITEID) {
+        if ($this->page->context->contextlevel >= CONTEXT_COURSE && $this->page->context->instanceid != SITEID && $canviewcourseprofile) {
             $this->load_for_user(null, true);
         }
         // Load each extending user into the navigation.
@@ -1637,7 +1675,7 @@ class global_navigation extends navigation_node {
                             //stop when the first visible plugin is found
                             $gradeavailable = true;
                             break;
-        }
+                        }
                     }
                 }
 
@@ -1883,7 +1921,17 @@ class global_navigation extends navigation_node {
         }
         return true;
     }
-
+    /**
+     * This generates the the structure of the course that won't be generated when
+     * the modules and sections are added.
+     *
+     * Things such as the reports branch, the participants branch, blogs... get
+     * added to the course node by this method.
+     *
+     * @param navigation_node $coursenode
+     * @param stdClass $course
+     * @return bool True for successfull generation
+     */
     public function add_front_page_course_essentials(navigation_node $coursenode, stdClass $course) {
         global $CFG;
 
@@ -1951,6 +1999,19 @@ class global_navigation extends navigation_node {
         $this->cache->clear();
     }
 
+    /**
+     * Sets an expansion limit for the navigation
+     *
+     * The expansion limit is used to prevent the display of content that has a type
+     * greater than the provided $type.
+     *
+     * Can be used to ensure things such as activities or activity content don't get
+     * shown on the navigation.
+     * They are still generated in order to ensure the navbar still makes sense.
+     *
+     * @param int $type One of navigation_node::TYPE_*
+     * @return <type>
+     */
     public function set_expansion_limit($type) {
         $nodes = $this->find_all_of_type($type);
         foreach ($nodes as &$node) {
@@ -1969,7 +2030,21 @@ class global_navigation extends navigation_node {
         }
         return true;
     }
-
+    /**
+     * Attempts to get the navigation with the given key from this nodes children.
+     *
+     * This function only looks at this nodes children, it does NOT look recursivily.
+     * If the node can't be found then false is returned.
+     *
+     * If you need to search recursivily then use the {@see find()} method.
+     *
+     * Note: If you are trying to set the active node {@see navigation_node::override_active_url()}
+     * may be of more use to you.
+     *
+     * @param string|int $key The key of the node you wish to receive.
+     * @param int $type One of navigation_node::TYPE_*
+     * @return navigation_node|false
+     */
     public function get($key, $type = null) {
         if (!$this->initialised) {
             $this->initialise();
@@ -1977,6 +2052,23 @@ class global_navigation extends navigation_node {
         return parent::get($key, $type);
     }
 
+    /**
+     * Searches this nodes children and thier children to find a navigation node
+     * with the matching key and type.
+     *
+     * This method is recursive and searches children so until either a node is
+     * found of there are no more nodes to search.
+     *
+     * If you know that the node being searched for is a child of this node
+     * then use the {@see get()} method instead.
+     *
+     * Note: If you are trying to set the active node {@see navigation_node::override_active_url()}
+     * may be of more use to you.
+     *
+     * @param string|int $key The key of the node you wish to receive.
+     * @param int $type One of navigation_node::TYPE_*
+     * @return navigation_node|false
+     */
     public function find($key, $type) {
         if (!$this->initialised) {
             $this->initialise();
@@ -2106,6 +2198,10 @@ class global_navigation_for_ajax extends global_navigation {
         return $this->expandable;
     }
 
+    /**
+     * Returns an array of expandable nodes
+     * @return array
+     */
     public function get_expandable() {
         return $this->expandable;
     }
@@ -3047,6 +3143,14 @@ class settings_navigation extends navigation_node {
         return $usernode;
     }
 
+    /**
+     * Extends the settings navigation for the given user.
+     *
+     * Note: This method gets called automatically if you call
+     * $PAGE->navigation->extend_for_user($userid)
+     *
+     * @param int $userid
+     */
     public function extend_for_user($userid) {
         global $CFG;
 

@@ -12,7 +12,7 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 $attemptid = required_param('attempt', PARAM_INT); // The attempt to summarise.
 
-$PAGE->set_url('/mod/quiz/summary.php', array('attempt'=>$attemptid));
+$PAGE->set_url('/mod/quiz/summary.php', array('attempt' => $attemptid));
 
 $attemptobj = quiz_attempt::create($attemptid);
 
@@ -27,6 +27,10 @@ if ($attemptobj->get_userid() != $USER->id) {
 /// If the attempt is alreadyuj closed, redirect them to the review page.
 if ($attemptobj->is_finished()) {
     redirect($attemptobj->review_url());
+}
+
+if ($attemptobj->is_preview_user()) {
+    navigation_node::override_active_url($attemptobj->start_attempt_url());
 }
 
 /// Check access.
@@ -51,7 +55,6 @@ if (empty($attemptobj->get_quiz()->showblocks)) {
 }
 
 /// Print the page header
-$PAGE->requires->js('/mod/quiz/quiz.js');
 $title = get_string('summaryofattempt', 'quiz');
 if ($accessmanager->securewindow_required($attemptobj->is_preview_user())) {
     $accessmanager->setup_secure_page($attemptobj->get_course()->shortname . ': ' .
