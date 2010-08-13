@@ -15,7 +15,7 @@ M.mod_quiz.init_attempt_form = function(Y) {
         }
     }, '#responseform', 'press:13');
     Y.on('submit', M.mod_quiz.timer.stop, '#responseform');
-}
+};
 
 M.mod_quiz.init_review_form = function(Y) {
     Y.all('.questionflagsavebutton').remove();
@@ -28,7 +28,7 @@ M.mod_quiz.init_review_form = function(Y) {
     }, '.questionflagsaveform', 'press:13');
 
     Y.on('submit', function(e) { e.halt(); }, '.questionflagsaveform');
-}
+};
 
 // Code for updating the countdown timer that is used on timed quizzes.
 M.mod_quiz.timer = {
@@ -118,6 +118,9 @@ M.mod_quiz.nav.update_flag_state = function(attemptid, questionid, newstate) {
     navlink.removeClass('flagged');
     if (newstate == 1) {
         navlink.addClass('flagged');
+        navlink.one('.accesshide .flagstate').setContent(M.str.question.flagged);
+    } else {
+        navlink.one('.accesshide .flagstate').setContent('');
     }
 };
 
@@ -126,35 +129,36 @@ M.mod_quiz.nav.init = function(Y) {
 
     Y.all('#quiznojswarning').remove();
 
-    Y.delegate('click', function(e) {
-        if (this.hasClass('thispage')) {
-            return;
-        }
+    var form = Y.one('#responseform');
+    if (form) {
+        Y.delegate('click', function(e) {
+            if (this.hasClass('thispage')) {
+                return;
+            }
 
-        e.preventDefault(e);
+            e.preventDefault();
 
-        var pageidmatch = this.get('href').match(/page=(\d+)/);
-        var pageno;
-        if (pageidmatch) {
-            pageno = pageidmatch[1];
-        } else {
-            pageno = 0;
-        }
-        Y.one('#nextpagehiddeninput').set('value', pageno);
+            var pageidmatch = this.get('href').match(/page=(\d+)/);
+            var pageno;
+            if (pageidmatch) {
+                pageno = pageidmatch[1];
+            } else {
+                pageno = 0;
+            }
+            Y.one('#nextpagehiddeninput').set('value', pageno);
 
-        var form = Y.one('#responseform');
+            var questionidmatch = this.get('href').match(/#q(\d+)/);
+            if (questionidmatch) {
+                form.set(action, form.get(action) + '#q' + questionidmatch[1]);
+            }
 
-        var questionidmatch = this.get('href').match(/#q(\d+)/);
-        if (questionidmatch) {
-            form.set(action, form.get(action) + '#q' + questionidmatch[1]);
-        }
-
-        form.submit();
-    }, document.body, '.qnbutton');
+            form.submit();
+        }, document.body, '.qnbutton');
+    }
 
     if (Y.one('a.endtestlink')) {
         Y.on('click', function(e) {
-            e.preventDefault();
+            e.preventDefault(e);
             Y.one('#nextpagehiddeninput').set('value', -1);
             Y.one('#responseform').submit();
         }, 'a.endtestlink');
@@ -201,9 +205,11 @@ M.mod_quiz.secure_window = {
     },
 
     prevent_mouse: function(e) {
-        if (e.button != 1 || !/^(INPUT|TEXTAREA|BUTTON|SELECT)$/i.test(e.target.get('tagName'))) {
-            alert(M.str.quiz.functiondisabledbysecuremode);
+        if (e.button == 1 && /^(INPUT|TEXTAREA|BUTTON|SELECT|LABEL|A)$/i.test(e.target.get('tagName'))) {
+            // Left click on a button or similar. No worries.
+            return;
         }
+        alert(M.str.quiz.functiondisabledbysecuremode);
         e.halt();
     },
 

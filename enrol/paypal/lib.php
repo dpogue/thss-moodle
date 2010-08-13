@@ -36,7 +36,7 @@ class enrol_paypal_plugin extends enrol_plugin {
 
 
     public function roles_protected() {
-        // users wit htole assign cap may tweak the roles later
+        // users with role assign cap may tweak the roles later
         return false;
     }
 
@@ -169,18 +169,19 @@ class enrol_paypal_plugin extends enrol_plugin {
                     $wwwroot = str_replace("http://", "https://", $CFG->wwwroot);
                 }
                 echo '<div class="mdl-align"><p>'.get_string('paymentrequired').'</p>';
-                echo '<p><b>'.get_string('cost').": $CFG->enrol_currency $cost".'</b></p>';
+                echo '<p><b>'.get_string('cost').": $instance->currency $cost".'</b></p>';
                 echo '<p><a href="'.$wwwroot.'/login/">'.get_string('loginsite').'</a></p>';
                 echo '</div>';
             } else {
                 //Sanitise some fields before building the PayPal form
-                $coursefullname  = $course->fullname;
+                $coursefullname  = format_string($course->fullname, true, array('context'=>$context));
                 $courseshortname = $course->shortname;
                 $userfullname    = fullname($USER);
                 $userfirstname   = $USER->firstname;
                 $userlastname    = $USER->lastname;
                 $useraddress     = $USER->address;
                 $usercity        = $USER->city;
+                $instancename    = $this->get_instance_name($instance);
 
                 include($CFG->dirroot.'/enrol/paypal/enrol.html');
             }

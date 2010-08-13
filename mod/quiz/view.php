@@ -277,7 +277,7 @@
 
             if ($feedbackcolumn && $attempt->timefinish > 0) {
                 if ($attemptoptions->overallfeedback) {
-                    $row[] = quiz_feedback_for_grade($attemptgrade, $quiz->id);
+                    $row[] = quiz_feedback_for_grade($attemptgrade, $quiz, $context, $cm);
                 } else {
                     $row[] = '';
                 }
@@ -330,7 +330,7 @@
         }
         if ($feedbackcolumn) {
             $resultinfo .= $OUTPUT->heading(get_string('overallfeedback', 'quiz'), 3, 'main');
-            $resultinfo .= '<p class="quizgradefeedback">'.quiz_feedback_for_grade($mygrade, $quiz->id)."</p>\n";
+            $resultinfo .= '<p class="quizgradefeedback">'.quiz_feedback_for_grade($mygrade, $quiz, $context, $cm)."</p>\n";
         }
 
         if ($resultinfo) {
@@ -346,13 +346,15 @@
         echo $OUTPUT->heading(get_string("noquestions", "quiz"));
     } else {
         if ($unfinished) {
-            if ($canattempt) {
-                $buttontext = get_string('continueattemptquiz', 'quiz');
-            } else if ($canpreview) {
+            if ($canpreview) {
                 $buttontext = get_string('continuepreview', 'quiz');
+            } else if ($canattempt) {
+                $buttontext = get_string('continueattemptquiz', 'quiz');
             }
         } else {
-            if ($canattempt) {
+            if ($canpreview) {
+                $buttontext = get_string('previewquiznow', 'quiz');
+            } else if ($canattempt) {
                 $messages = $accessmanager->prevent_new_attempt($numattempts, $lastfinishedattempt);
                 if ($messages) {
                     $accessmanager->print_messages($messages);
@@ -361,8 +363,6 @@
                 } else {
                     $buttontext = get_string('reattemptquiz', 'quiz');
                 }
-            } else if ($canpreview) {
-                $buttontext = get_string('previewquiznow', 'quiz');
             }
         }
 

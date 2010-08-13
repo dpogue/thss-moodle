@@ -456,21 +456,22 @@ function quiz_rescale_grade($rawgrade, $quiz, $round = true) {
  * @param integer $quizid the id of the quiz object.
  * @return string the comment that corresponds to this grade (empty string if there is not one.
  */
-function quiz_feedback_for_grade($grade, $quizid) {
+function quiz_feedback_for_grade($grade, $quiz, $context, $cm=null) {
     global $DB;
-    $feedback = $DB->get_field_select('quiz_feedback', 'feedbacktext',
-            "quizid = ? AND mingrade <= ? AND $grade < maxgrade", array($quizid, $grade));
 
-    if (empty($feedback)) {
-        $feedback = '';
+    $feedback = $DB->get_record_select('quiz_feedback', "quizid = ? AND mingrade <= ? AND $grade < maxgrade", array($quiz->id, $grade));
+
+    if (empty($feedback->feedbacktext)) {
+        $feedback->feedbacktext = '';
     }
 
     // Clean the text, ready for display.
     $formatoptions = new stdClass;
     $formatoptions->noclean = true;
-    $feedback = format_text($feedback, FORMAT_MOODLE, $formatoptions);
+    $feedbacktext = file_rewrite_pluginfile_urls($feedback->feedbacktext, 'pluginfile.php', $context->id, 'mod_quiz', 'feedback', $feedback->id);
+    $feedbacktext = format_text($feedbacktext, $feedback->feedbacktextformat, $formatoptions);
 
-    return $feedback;
+    return $feedbacktext;
 }
 
 /**
@@ -763,7 +764,7 @@ function quiz_question_action_icons($quiz, $cmid, $question, $returnurl) {
  * @param string $contentbeforeicon some HTML content to be added inside the link, before the icon.
  * @return the HTML for an edit icon, view icon, or nothing for a question (depending on permissions).
  */
-function quiz_question_edit_button($cmid, $question, $returnurl, $contentbeforeicon = '') {
+function quiz_question_edit_button($cmid, $question, $returnurl, $contentaftericon = '') {
     global $CFG, $OUTPUT;
 
     // Minor efficiency saving. Only get strings once, even if there are a lot of icons on one page.
@@ -789,10 +790,11 @@ function quiz_question_edit_button($cmid, $question, $returnurl, $contentbeforei
     if ($action) {
         $questionparams = array('returnurl' => $returnurl, 'cmid' => $cmid, 'id' => $question->id);
         $questionurl = new moodle_url("$CFG->wwwroot/question/question.php", $questionparams);
-        return '<a title="' . $action . '" href="' . $questionurl->out() . '">' . $contentbeforeicon .
-                '<img src="' . $OUTPUT->pix_url($icon) . '" alt="' . $action . '" /></a>';
+        return '<a title="' . $action . '" href="' . $questionurl->out() . '"><img src="' .
+                $OUTPUT->pix_url($icon) . '" alt="' . $action . '" />' . $contentaftericon .
+                '</a>';
     } else {
-        return $contentbeforeicon;
+        return $contentaftericon;
     }
 }
 
@@ -1260,6 +1262,7 @@ function quiz_get_js_module() {
         'strings' => array(
             array('timesup', 'quiz'),
             array('functiondisabledbysecuremode', 'quiz'),
+            array('flagged', 'question'),
         ),
     );
 }

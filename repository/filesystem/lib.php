@@ -84,7 +84,7 @@ class repository_filesystem extends repository {
                             'source' => $path.'/'.$file,
                             'size' => filesize($this->root_path.$file),
                             'date' => time(),
-                            'thumbnail' => $OUTPUT->pix_url(file_extension_icon($this->root_path.$file, 32)).''
+                            'thumbnail' => $OUTPUT->pix_url(file_extension_icon($this->root_path.$file, 32))->out(false)
                         );
                     } else {
                         if (!empty($path)) {
@@ -95,7 +95,7 @@ class repository_filesystem extends repository {
                         $list['list'][] = array(
                             'title' => $file,
                             'children' => array(),
-                            'thumbnail' => $OUTPUT->pix_url('f/folder-32').'',
+                            'thumbnail' => $OUTPUT->pix_url('f/folder-32')->out(false),
                             'path' => $current_path
                             );
                     }
@@ -163,6 +163,7 @@ class repository_filesystem extends repository {
                 }
                 if (empty($choices)) {
                     $mform->addElement('static', '', '', get_string('nosubdir', 'repository_filesystem', $path));
+                    $mform->addElement('hidden', 'fs_path', '');
                 } else {
                     $mform->addElement('select', 'fs_path', $fieldname, $choices);
                     $mform->addElement('static', null, '',  get_string('information','repository_filesystem', $path));
@@ -187,5 +188,11 @@ class repository_filesystem extends repository {
             require_capability('moodle/site:config', get_system_context());
             return false;
         }
+    }
+    public static function instance_form_validation($mform, $data, $errors) {
+        if (empty($data['fs_path'])) {
+            $errors['fs_path'] = get_string('invalidadminsettingname', 'error', 'fs_path');
+        }
+        return $errors;
     }
 }

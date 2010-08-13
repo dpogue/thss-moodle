@@ -1175,8 +1175,7 @@ class question_bank_view {
         echo '<div class="choosecategory">';
         $catmenu = question_category_options($contexts, false, 0, true);
 
-        $editurl = new moodle_url('/question/edit.php', $pageurl->params());
-        $select = new single_select($editurl, 'category', $catmenu, $current, null, 'catmenu');
+        $select = new single_select($this->baseurl, 'category', $catmenu, $current, null, 'catmenu');
         $select->set_label(get_string('selectacategory', 'question'));
         echo $OUTPUT->render($select);
         echo "</div>\n";
@@ -1402,7 +1401,7 @@ class question_bank_view {
                     $questionids[] = $key;
                 }
             }
-            if ($questionids){
+            if ($questionids) {
                 list($usql, $params) = $DB->get_in_or_equal($questionids);
                 $sql = "SELECT q.*, c.contextid FROM {question} q, {question_categories} c WHERE q.id $usql AND c.id = q.category";
                 if (!$questions = $DB->get_records_sql($sql, $params)){
@@ -1426,8 +1425,9 @@ class question_bank_view {
                 } else {
                     $returnurl = str_replace($CFG->wwwroot . '/', '', $returnurl);
                     $movecontexturl  = new moodle_url('/question/contextmoveq.php',
-                            array('returnurl' => $returnurl, 'ids' => $questionids,
-                            'tocatid' => $tocategoryid));
+                                                    array('returnurl' => $returnurl,
+                                                            'ids' => implode(',', $questionids),
+                                                            'tocatid' => $tocategoryid));
                     if (!empty($cm->id)){
                         $movecontexturl->param('cmid', $cm->id);
                     } else {

@@ -85,9 +85,9 @@ M.mod_chat_ajax.init = function(Y, cfg) {
                 }),
                 on : {
                     success : function(tid, outcome) {
-                        this.messageinput.focus();
                         this.messageinput.removeAttribute('disabled');
                         this.messageinput.set('value', '');
+                        this.messageinput.focus();
                         try {
                             var data = Y.JSON.parse(outcome.responseText);
                         } catch (ex) {
@@ -99,8 +99,9 @@ M.mod_chat_ajax.init = function(Y, cfg) {
                 context : this
             });
 
-            this.interval = setInterval(function(me){
-                me.update_messages();
+            var scope = this;
+            this.interval = setInterval(function() {
+                scope.update_messages();
             }, this.cfg.timer, this);
 
             // Create and initalise theme changing menu
@@ -177,7 +178,8 @@ M.mod_chat_ajax.init = function(Y, cfg) {
             }, this.cfg.timer, this);
         },
 
-        talkto : function (name) {
+        talkto: function (e, name) {
+            console.info(name);
             this.messageinput.set('value', "To "+name+": ");
             this.messageinput.focus();
         },
@@ -241,8 +243,10 @@ M.mod_chat_ajax.init = function(Y, cfg) {
                     li.all('td').item(1).append(Y.Node.create('<strong><a target="_blank" href="'+users[i].url+'">'+ users[i].name+'</a></strong>'));
                 } else {
                     li.all('td').item(1).append(Y.Node.create('<div><a target="_blank" href="'+users[i].url+'">'+users[i].name+'</a></div>'));
-                    var talk = Y.Node.create('<a href="###">'+M.str.chat.talk+'</a>').on('click', this.talkto, this, users[i].name);
-                    var beep = Y.Node.create('<a href="###">'+M.str.chat.beep+'</a>').on('click', this.send, this, users[i].id);
+                    var talk = Y.Node.create('<a href="###">'+M.str.chat.talk+'</a>&nbsp;');
+                    talk.on('click', this.talkto, this, users[i].name);
+                    var beep = Y.Node.create('<a href="###">'+M.str.chat.beep+'</a>');
+                    beep.on('click', this.send, this, users[i].id);
                     li.all('td').item(1).append(Y.Node.create('<div></div>').append(talk).append(beep));
                 }
                 list.append(li);

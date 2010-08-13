@@ -709,7 +709,7 @@ function clean_param($param, $type) {
             //problem, so remove *all* backslash.
             //$param = str_replace('\\', '', $param);
             //remove some nasties
-            $param = preg_replace('~[[:cntrl:]]|[<>`]~', '', $param);
+            $param = preg_replace('~[[:cntrl:]]|[<>`]~u', '', $param);
             //convert many whitespace chars into one
             $param = preg_replace('/\s+/', ' ', $param);
             $textlib = textlib_get_instance();
@@ -4015,6 +4015,12 @@ function remove_course_contents($courseid, $showfeedback=true) {
         }
     }
 
+/// Remove all data from gradebook - this needs to be done before course modules
+/// because while deleting this information, the system may need to reference
+/// the course modules that own the grades.
+    remove_course_grades($courseid, $showfeedback);
+    remove_grade_letters($context, $showfeedback);
+
 /// Delete every instance of every module
 
     if ($allmods = $DB->get_records('modules') ) {
@@ -4087,10 +4093,6 @@ function remove_course_contents($courseid, $showfeedback=true) {
 
 /// Delete questions and question categories
     question_delete_course($course, $showfeedback);
-
-/// Remove all data from gradebook
-    remove_course_grades($courseid, $showfeedback);
-    remove_grade_letters($context, $showfeedback);
 
 /// Delete course tags
     require_once($CFG->dirroot.'/tag/coursetagslib.php');
@@ -5794,6 +5796,10 @@ class core_string_manager implements string_manager {
             include("$location/lang/en/$file.php");
             $originalkeys = array_keys($string);
             $originalkeys = array_flip($originalkeys);
+            // and then corresponding local english if present
+            if (file_exists("$this->localroot/en_local/$file.php")) {
+                include("$this->localroot/en_local/$file.php");
+            }
 
             // now loop through all langs in correct order
             $deps = $this->get_language_dependencies($lang);

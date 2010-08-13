@@ -302,15 +302,11 @@ class embedded_cloze_qtype extends default_questiontype {
         // adding an icon with alt to warn user this is a fill in the gap question
         // MDL-7497
         if (!empty($USER->screenreader)) {
-            echo "<img src=\"$CFG->wwwroot/question/type/$question->qtype/icon.gif\" ".
+            echo "<img src=\"".$OUTPUT->pix_url('icon', 'qtype_'.$question->qtype)."\" ".
                 "class=\"icon\" alt=\"".get_string('clozeaid','qtype_multichoice')."\" />  ";
         }
 
         echo '<div class="ablock clearfix">';
-        // For this question type, we better print the image on top:
-        if ($image = get_question_image($question)) {
-            echo('<img class="qimage" src="' . $image . '" alt="" /><br />');
-        }
 
         $qtextremaining = format_text($question->questiontext,
                 $question->questiontextformat, $formatoptions, $cmoptions->course);
@@ -986,9 +982,7 @@ function qtype_multianswer_extract_question($text) {
     $question->options->questions = array();
     $question->defaultgrade = 0; // Will be increased for each answer norm
 
-    for ($positionkey=1
-        ; preg_match('/'.ANSWER_REGEX.'/', $question->questiontext, $answerregs)
-        ; ++$positionkey ) {
+    for ($positionkey=1; preg_match('/'.ANSWER_REGEX.'/', $question->questiontext['text'], $answerregs); ++$positionkey ) {
         $wrapped = new stdClass;
         if (isset($answerregs[ANSWER_REGEX_NORM])&& $answerregs[ANSWER_REGEX_NORM]!== ''){
             $wrapped->defaultgrade = $answerregs[ANSWER_REGEX_NORM];
@@ -1087,4 +1081,3 @@ function qtype_multianswer_extract_question($text) {
     $question->questiontext = $question->questiontext;
     return $question;
 }
-?>

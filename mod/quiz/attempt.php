@@ -105,8 +105,8 @@
     $PAGE->set_heading($attemptobj->get_course()->fullname);
     if ($accessmanager->securewindow_required($attemptobj->is_preview_user())) {
         $accessmanager->setup_secure_page($attemptobj->get_course()->shortname . ': ' .
-                format_string($attemptobj->get_quiz_name()), $headtags);
-    } elseif ($accessmanager->safebrowser_required($attemptobj->is_preview_user())) {
+                format_string($attemptobj->get_quiz_name()));
+    } else if ($accessmanager->safebrowser_required($attemptobj->is_preview_user())) {
         $PAGE->set_title($attemptobj->get_course()->shortname . ': '.format_string($attemptobj->get_quiz_name()));
         $PAGE->set_cacheable(false);
         echo $OUTPUT->header();
@@ -155,7 +155,7 @@
     // Some hidden fields to trach what is going on.
     echo '<input type="hidden" name="attempt" value="' . $attemptobj->get_attemptid() . '" />';
     echo '<input type="hidden" name="nextpage" id="nextpagehiddeninput" value="' . $nextpage . '" />';
-    echo '<input type="hidden" name="timeup" value="0" />';
+    echo '<input type="hidden" name="timeup" id="timeup" value="0" />';
     echo '<input type="hidden" name="sesskey" value="' . sesskey() . '" />';
 
     // Add a hidden field with questionids. Do this at the end of the form, so
