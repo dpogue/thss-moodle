@@ -82,8 +82,8 @@ $THEME->layouts = array(
     ),
     'standard' => array(
         'file' => 'general.php',
-        'regions' => array('side-pre'),
-        'defaultregion' => 'side-pre'
+        'regions' => array('side-post'),
+        'defaultregion' => 'side-post'
     ),
     // Course page
     'course' => array(
@@ -151,7 +151,13 @@ $THEME->layouts = array(
         'file' => 'general.php',
         'regions' => array(),
         'options' => array('nofooter'=>true, 'nonavbar'=>true, 'noblocks'=>true),
-    )
+    ),
+    // Should display the content and basic headers only.
+    'print' => array(
+        'file' => 'general.php',
+        'regions' => array(),
+        'options' => array('nofooter'=>true, 'nonavbar'=>false, 'noblocks'=>true),
+    ),
 );
 
 $THEME->rendererfactory = 'theme_overridden_renderer_factory';

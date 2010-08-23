@@ -1402,7 +1402,6 @@ class global_navigation extends navigation_node {
         }
 
         $viewhiddenactivities = has_capability('moodle/course:viewhiddenactivities', $this->page->context);
-
         $activities = array();
 
         foreach ($modinfo->sections[$sectionnumber] as $cmid) {
@@ -1419,7 +1418,9 @@ class global_navigation extends navigation_node {
             $activitynode = $sectionnode->add($cm->name, $url, navigation_node::TYPE_ACTIVITY, $cm->name, $cm->id, $icon);
             $activitynode->title(get_string('modulename', $cm->modname));
             $activitynode->hidden = (!$cm->visible);
-            if ($this->module_extends_navigation($cm->modname)) {
+            if ($cm->modname == 'label') {
+                $activitynode->display = false;
+            } else if ($this->module_extends_navigation($cm->modname)) {
                 $activitynode->nodetype = navigation_node::NODETYPE_BRANCH;
             }
             $activities[$cmid] = $activitynode;
@@ -1516,13 +1517,15 @@ class global_navigation extends navigation_node {
             if (!$issitecourse) {
                 // Not the current user so add it to the participants node for the current course
                 $usersnode = $coursenode->get('participants', navigation_node::TYPE_CONTAINER);
+                $userviewurl = new moodle_url('/user/view.php', $baseargs);
             } else {
                 // This is the site so add a users node to the root branch
                 $usersnode = $this->rootnodes['users'];
                 $usersnode->action = new moodle_url('/user/index.php', array('id'=>$course->id));
+                $userviewurl = new moodle_url('/user/profile.php', $baseargs);
             }
             // Add a branch for the current user
-            $usernode = $usersnode->add(fullname($user, true), null, self::TYPE_USER, null, $user->id);
+            $usernode = $usersnode->add(fullname($user, true), $userviewurl, self::TYPE_USER, null, $user->id);
 
             if ($this->page->context->contextlevel == CONTEXT_USER && $user->id == $this->page->context->instanceid) {
                 $usernode->make_active();
@@ -2855,8 +2858,7 @@ class settings_navigation extends navigation_node {
 
         // Import data from other courses
         if (has_capability('moodle/restore:restoretargetimport', $coursecontext)) {
-            $url = new moodle_url('/course/import.php', array('id'=>$course->id));
-            $url = null; // Disabled until restore is implemented. MDL-21432
+            $url = new moodle_url('/backup/import.php', array('id'=>$course->id));
             $coursenode->add(get_string('import'), $url, self::TYPE_SETTING, null, 'import', new pix_icon('i/restore', ''));
         }
 
@@ -3038,7 +3040,7 @@ class settings_navigation extends navigation_node {
             require_once($file);
         }
 
-        $modulenode = $this->add(get_string($this->page->activityname.'administration', $this->page->activityname));
+        $modulenode = $this->add(get_string('pluginadministration', $this->page->activityname));
         $modulenode->force_open();
 
         // Settings for the module
@@ -3260,8 +3262,16 @@ class settings_navigation extends navigation_node {
                 $url = new moodle_url('/user/editadvanced.php', array('id'=>$user->id, 'course'=>$course->id));
                 $usersetting->add(get_string('editmyprofile'), $url, self::TYPE_SETTING);
             } else if ((has_capability('moodle/user:editprofile', $usercontext) && !is_siteadmin($user)) || ($currentuser && has_capability('moodle/user:editownprofile', $systemcontext))) {
-                $url = new moodle_url('/user/edit.php', array('id'=>$user->id, 'course'=>$course->id));
-                $usersetting->add(get_string('editmyprofile'), $url, self::TYPE_SETTING);
+				if (!empty($user->auth)) {
+					$userauth = get_auth_plugin($user->auth);
+					if ($userauth->can_edit_profile()) {
+						$url = $userauth->edit_profile_url();
+						if (empty($url)) {
+							$url = new moodle_url('/user/edit.php', array('id'=>$user->id, 'course'=>$course->id));
+						}
+						$usersetting->add(get_string('editmyprofile'), $url, self::TYPE_SETTING);
+					}
+				}
             }
         }
 
@@ -3439,6 +3449,12 @@ class settings_navigation extends navigation_node {
             $url = new moodle_url('/'.$CFG->admin.'/roles/check.php', array('contextid'=>$this->context->id));
             $categorynode->add(get_string('checkpermissions', 'role'), $url, self::TYPE_SETTING);
         }
+
+        // Cohorts
+        if (has_capability('moodle/cohort:manage', $this->context) or has_capability('moodle/cohort:view', $this->context)) {
+            $categorynode->add(get_string('cohorts', 'cohort'), new moodle_url('/cohort/index.php', array('contextid' => $this->context->id)));
+        }
+
         // Manage filters
         if (has_capability('moodle/filter:manage', $this->context) && count(filter_get_available_in_context($this->context))>0) {
             $url = new moodle_url('/filter/manage.php', array('contextid'=>$this->context->id));

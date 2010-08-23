@@ -257,6 +257,23 @@ function default_exception_handler($ex) {
 }
 
 /**
+ * Default error handler, prevents some white screens.
+ * @param int $errno
+ * @param string $errstr
+ * @param string $errfile
+ * @param int $errline
+ * @param array $errcontext
+ * @return bool false means use default error handler
+ */
+function default_error_handler($errno, $errstr, $errfile, $errline, $errcontext) {
+    if ($errno == 4096) {
+        //fatal catchable error
+        throw new coding_exception('PHP catchable fatal error', $errstr);
+    }
+    return false;
+}
+
+/**
  * Unconditionally abort all database transactions, this function
  * should be called from exception handlers only.
  * @return void
@@ -540,7 +557,9 @@ function initialise_fullme() {
         if (($rurl['host'] != $wwwroot['host']) or
                 (!empty($wwwroot['port']) and $rurl['port'] != $wwwroot['port'])) {
             // Explain the problem and redirect them to the right URL
-            define('NO_MOODLE_COOKIES', true);
+            if (!defined('NO_MOODLE_COOKIES')) {
+                define('NO_MOODLE_COOKIES', true);
+            }
             redirect($CFG->wwwroot, get_string('wwwrootmismatch', 'error', $CFG->wwwroot), 3);
         }
     }
@@ -961,18 +980,24 @@ class bootstrap_renderer {
             $recursing = is_early_init($backtrace);
         }
 
+        $earlymethods = array(
+            'fatal_error' => 'early_error',
+            'notification' => 'early_notification',
+        );
+
         // If lib/outputlib.php has been loaded, call it.
         if (!empty($PAGE) && !$recursing) {
+            if (array_key_exists($method, $earlymethods)) {
+                //prevent PAGE->context warnings - exceptions might appear before we set any context
+                $PAGE->set_context(null);
+            }
             $PAGE->initialise_theme_and_output();
             return call_user_func_array(array($OUTPUT, $method), $arguments);
         }
 
         $this->initialising = true;
+
         // Too soon to initialise $OUTPUT, provide a couple of key methods.
-        $earlymethods = array(
-            'fatal_error' => 'early_error',
-            'notification' => 'early_notification',
-        );
         if (array_key_exists($method, $earlymethods)) {
             return call_user_func_array(array('bootstrap_renderer', $earlymethods[$method]), $arguments);
         }

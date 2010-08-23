@@ -62,8 +62,6 @@ class core_course_renderer extends plugin_renderer_base {
      * @return string
      */
     public function course_category_tree(array $structure) {
-        $this->strings->allowguests = get_string('allowguests');
-        $this->strings->requireskey = get_string('requireskey');
         $this->strings->summary = get_string('summary');
 
         // Generate an id and the required JS call to make this a nice widget
@@ -128,9 +126,15 @@ class core_course_renderer extends plugin_renderer_base {
                 $content .= html_writer::link(new moodle_url('/course/view.php', array('id'=>$course->id)), s($course->fullname), array('class'=>'course_link'));
                 $content .= html_writer::start_tag('div', array('class'=>'course_info clearfix'));
 
-                //TODO: add enrol info
                 $content .= html_writer::tag('div', '', array('class'=>'course_info_spacer'));
                 $content .= html_writer::tag('div', '', array('class'=>'course_info_spacer'));
+
+                // print enrol info
+                if ($icons = enrol_get_course_info_icons($course)) {
+                    foreach ($icons as $pix_icon) {
+                        $content .= $this->render($pix_icon);
+                    }
+                }
 
                 if ($course->summary) {
                     $image = html_writer::empty_tag('img', array('src'=>$this->output->pix_url('i/info'), 'alt'=>$this->strings->summary));

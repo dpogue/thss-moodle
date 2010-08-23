@@ -355,7 +355,7 @@ class core_renderer extends renderer_base {
             $output .= html_writer::tag('div', get_string('legacythemeinuse'), array('class'=>'legacythemeinuse'));
         }
         if (!empty($CFG->debugpageinfo)) {
-            $output .= '<div class="performanceinfo">This page is: ' . $this->page->debug_summary() . '</div>';
+            $output .= '<div class="performanceinfo pageinfo">This page is: ' . $this->page->debug_summary() . '</div>';
         }
         if (debugging(null, DEBUG_DEVELOPER) and has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM))) {  // Only in developer mode
             $output .= '<div class="purgecaches"><a href="'.$CFG->wwwroot.'/admin/purgecaches.php?confirm=1&amp;sesskey='.sesskey().'">'.get_string('purgecaches', 'admin').'</a></div>';
@@ -721,6 +721,17 @@ class core_renderer extends renderer_base {
      * The content is described
      * by a {@link block_contents} object.
      *
+     * <div id="inst{$instanceid}" class="block_{$blockname} block">
+     *      <div class="header"></div>
+     *      <div class="content">
+     *          ...CONTENT...
+     *          <div class="footer">
+     *          </div>
+     *      </div>
+     *      <div class="annotation">
+     *      </div>
+     * </div>
+     *
      * @param block_contents $bc HTML for the content
      * @param string $region the region the block is appearing in.
      * @return string the HTML to be output.
@@ -788,14 +799,15 @@ class core_renderer extends renderer_base {
      */
     protected function init_block_hider_js(block_contents $bc) {
         if (!empty($bc->attributes['id']) and $bc->collapsible != block_contents::NOT_HIDEABLE) {
-            $userpref = 'block' . $bc->blockinstanceid . 'hidden';
-            user_preference_allow_ajax_update($userpref, PARAM_BOOL);
-            $this->page->requires->yui2_lib('dom');
-            $this->page->requires->yui2_lib('event');
-            $plaintitle = strip_tags($bc->title);
-            $this->page->requires->js_function_call('new block_hider', array($bc->attributes['id'], $userpref,
-                    get_string('hideblocka', 'access', $plaintitle), get_string('showblocka', 'access', $plaintitle),
-                    $this->pix_url('t/switch_minus')->out(false), $this->pix_url('t/switch_plus')->out(false)));
+            $config = new stdClass;
+            $config->id = $bc->attributes['id'];
+            $config->title = strip_tags($bc->title);
+            $config->preference = 'block' . $bc->blockinstanceid . 'hidden';
+            $config->tooltipVisible = get_string('hideblocka', 'access', $config->title);
+            $config->tooltipHidden = get_string('showblocka', 'access', $config->title);
+
+            $this->page->requires->js_init_call('M.util.init_block_hider', array($config));
+            user_preference_allow_ajax_update($config->preference, PARAM_BOOL);
         }
     }
 
@@ -1321,11 +1333,20 @@ class core_renderer extends renderer_base {
         $ratinghtml = ''; //the string we'll return
 
         //permissions check - can they view the aggregate?
-        if ( ($rating->itemuserid==$USER->id
-                && $rating->settings->permissions->view && $rating->settings->pluginpermissions->view)
-            || ($rating->itemuserid!=$USER->id
-                && $rating->settings->permissions->viewany && $rating->settings->pluginpermissions->viewany) ) {
+        $canviewaggregate = false;
 
+        //if its the current user's item and they have permission to view the aggregate on their own items
+        if ( $rating->itemuserid==$USER->id && $rating->settings->permissions->view && $rating->settings->pluginpermissions->view) {
+            $canviewaggregate = true;
+        }
+
+        //if the item doesnt belong to anyone or its another user's items and they can see the aggregate on items they don't own
+        //Note that viewany doesnt mean you can see the aggregate or ratings of your own items
+        if ( (empty($rating->itemuserid) or $rating->itemuserid!=$USER->id) && $rating->settings->permissions->viewany && $rating->settings->pluginpermissions->viewany ) {
+            $canviewaggregate = true;
+        }
+
+        if ($canviewaggregate==true) {
             $aggregatelabel = '';
             switch ($rating->settings->aggregationmethod) {
                 case RATING_AGGREGATE_AVERAGE :
@@ -1490,6 +1511,7 @@ class core_renderer extends renderer_base {
     /**
      * Print a help icon.
      *
+     * @deprecated since Moodle 2.0
      * @param string $page The keyword that defines a help page
      * @param string $title A descriptive text for accessibility only
      * @param string $component component name
@@ -1497,6 +1519,7 @@ class core_renderer extends renderer_base {
      * @return string HTML fragment
      */
     public function old_help_icon($helpidentifier, $title, $component = 'moodle', $linktext = '') {
+        debugging('The method old_help_icon() is deprecated, please fix the code and use help_icon() method instead', DEBUG_DEVELOPER);
         $icon = new old_help_icon($helpidentifier, $title, $component);
         if ($linktext === true) {
             $icon->linktext = $title;
@@ -1962,6 +1985,7 @@ EOD;
                 // can not be used from command line or when outputting custom XML
                 @header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
             }
+            $this->page->set_context(null); // ugly hack - make sure page context is set to something, we do not want bogus warnings here
             $this->page->set_url('/'); // no url
             //$this->page->set_pagelayout('base'); //TODO: MDL-20676 blocks on error pages are weird, unfortunately it somehow detect the pagelayout from URL :-(
             $this->page->set_title(get_string('error'));
@@ -2579,6 +2603,9 @@ class core_renderer_ajax extends core_renderer {
      */
     public function fatal_error($message, $moreinfourl, $link, $backtrace, $debuginfo = null) {
         global $FULLME, $USER;
+
+        $this->page->set_context(null); // ugly hack - make sure page context is set to something, we do not want bogus warnings here
+
         $e = new stdClass();
         $e->error      = $message;
         $e->stacktrace = NULL;

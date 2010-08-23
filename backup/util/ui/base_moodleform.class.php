@@ -93,16 +93,25 @@ abstract class base_moodleform extends moodleform {
     /**
      * Definition applied after the data is organised.. why's it here? because I want
      * to add elements on the fly.
+     * @global moodle_page $PAGE
      */
     function definition_after_data() {
+        global $PAGE;
         $buttonarray=array();
+        $buttonarray[] = $this->_form->createElement('submit', 'submitbutton', get_string($this->uistage->get_ui()->get_name().'stage'.$this->uistage->get_stage().'action', 'backup'), array('class'=>'proceedbutton'));
         if (!$this->uistage->is_first_stage()) {
             $buttonarray[] = $this->_form->createElement('submit', 'previous', get_string('previousstage','backup'));
         }
-        $buttonarray[] = $this->_form->createElement('submit', 'submitbutton', get_string($this->uistage->get_ui()->get_name().'stage'.$this->uistage->get_stage().'action', 'backup'));
-        $buttonarray[] = $this->_form->createElement('cancel');
+        $buttonarray[] = $this->_form->createElement('cancel', 'cancel', get_string('cancel'), array('class'=>'confirmcancel'));
         $this->_form->addGroup($buttonarray, 'buttonar', '', array(' '), false);
         $this->_form->closeHeaderBefore('buttonar');
+
+        $config = new stdClass;
+        $config->title = get_string('confirmcancel', 'backup');
+        $config->question = get_string('confirmcancelquestion', 'backup');
+        $config->yesLabel = get_string('confirmcancelyes', 'backup');
+        $config->noLabel = get_string('confirmcancelno', 'backup');
+        $PAGE->requires->yui_module('moodle-backup-confirmcancel', 'M.core_backup.watch_cancel_buttons', array($config));
     }
     /**
      * Closes any open divs
@@ -256,5 +265,50 @@ abstract class base_moodleform extends moodleform {
      */
     public function is_cancelled() {
         return (optional_param('cancel', false, PARAM_BOOL) || parent::is_cancelled());
+    }
+
+    /**
+     * Removes an element from the form if it exists
+     * @param string $elementName
+     * @return bool
+     */
+    public function remove_element($elementName) {
+        if ($this->_form->elementExists($elementname)) {
+            return $this->_form->removeElement($elementName);
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Gets an element from the form if it exists
+     *
+     * @param string $elementname
+     * @return HTML_QuickForm_input|MoodleQuickForm_group
+     */
+    public function get_element($elementname) {
+        if ($this->_form->elementExists($elementname)) {
+            return $this->_form->getElement($elementname);
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Displays the form
+     */
+    public function display() {
+        $this->require_definition_after_data();
+        parent::display();
+    }
+
+    /**
+     * Ensures the the definition after data is loaded
+     */
+    public function require_definition_after_data() {
+        if (!$this->_definition_finalized) {
+            $this->_definition_finalized = true;
+            $this->definition_after_data();
+        }
     }
 }

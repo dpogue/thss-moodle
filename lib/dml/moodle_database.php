@@ -106,7 +106,7 @@ abstract class moodle_database {
     protected $last_type;
     /** @var string last extra info */
     protected $last_extrainfo;
-    /** @var float last time in seconds with milisecond precision */
+    /** @var float last time in seconds with millisecond precision */
     protected $last_time;
     /** @var bool flag indicating logging of query in progress, prevents infinite loops */
     private $loggingquery = false;
@@ -237,6 +237,16 @@ abstract class moodle_database {
     }
 
     /**
+     * Diagnose database and tables, this function is used
+     * to verify database and driver settings, db engine types, etc.
+     *
+     * @return string null means everything ok, string means problem found.
+     */
+    public function diagnose() {
+        return null;
+    }
+
+    /**
      * Connect to db
      * Must be called before other methods.
      * @param string $dbhost
@@ -286,6 +296,7 @@ abstract class moodle_database {
      * Close database connection and release all resources
      * and memory (especially circular memory references).
      * Do NOT use connect() again, create a new instance if needed.
+     * @return void
      */
     public function dispose() {
         if ($this->transactions) {
@@ -436,12 +447,13 @@ abstract class moodle_database {
 
     /**
      * Returns supported query parameter types
-     * @return bitmask
+     * @return int bitmask
      */
     protected abstract function allowed_param_types();
 
     /**
      * Returns last error reported by database engine.
+     * @return string error message
      */
     public abstract function get_last_error();
 
@@ -450,6 +462,7 @@ abstract class moodle_database {
      * @param string $sql query which caused problems
      * @param array $params optional query parameters
      * @param mixed $obj optional library specific object
+     * @return void
      */
     protected function print_debug($sql, array $params=null, $obj=null) {
         if (!$this->get_debug()) {
@@ -605,6 +618,7 @@ abstract class moodle_database {
      * Normalizes sql query parameters and verifies parameters.
      * @param string $sql query or part of it
      * @param array $params query parameters
+     * @return array (sql, params, type of params)
      */
     public function fix_sql_params($sql, array $params=null) {
         $params = (array)$params; // mke null array if needed
@@ -892,7 +906,7 @@ abstract class moodle_database {
      * @param string $fields a comma separated list of fields to return (optional, by default all fields are returned).
      * @param int $limitfrom return a subset of records, starting at this point (optional, required if $limitnum is set).
      * @param int $limitnum return a subset comprising this many records (optional, required if $limitfrom is set).
-     * @return object moodle_recordset instance
+     * @return moodle_recordset instance
      * @throws dml_exception if error
      */
     public function get_recordset($table, array $conditions=null, $sort='', $fields='*', $limitfrom=0, $limitnum=0) {
@@ -915,7 +929,7 @@ abstract class moodle_database {
      * @param string $fields a comma separated list of fields to return (optional, by default all fields are returned).
      * @param int $limitfrom return a subset of records, starting at this point (optional, required if $limitnum is set).
      * @param int $limitnum return a subset comprising this many records (optional, required if $limitfrom is set).
-     * @return object moodle_recordset instance
+     * @return moodle_recordset instance
      * @throws dml_exception if error
      */
     public function get_recordset_list($table, $field, array $values, $sort='', $fields='*', $limitfrom=0, $limitnum=0) {
@@ -942,7 +956,7 @@ abstract class moodle_database {
      * @param string $fields a comma separated list of fields to return (optional, by default all fields are returned).
      * @param int $limitfrom return a subset of records, starting at this point (optional, required if $limitnum is set).
      * @param int $limitnum return a subset comprising this many records (optional, required if $limitfrom is set).
-     * @return object moodle_recordset instance
+     * @return moodle_recordset instance
      * @throws dml_exception if error
      */
     public function get_recordset_select($table, $select, array $params=null, $sort='', $fields='*', $limitfrom=0, $limitnum=0) {
@@ -969,7 +983,7 @@ abstract class moodle_database {
      * @param array $params array of sql parameters
      * @param int $limitfrom return a subset of records, starting at this point (optional, required if $limitnum is set).
      * @param int $limitnum return a subset comprising this many records (optional, required if $limitfrom is set).
-     * @return object moodle_recordset instance
+     * @return moodle_recordset instance
      * @throws dml_exception if error
      */
     public abstract function get_recordset_sql($sql, array $params=null, $limitfrom=0, $limitnum=0);
@@ -1305,7 +1319,7 @@ abstract class moodle_database {
      * @param string $return the field we are intered in
      * @param string $select A fragment of SQL to be used in a where clause in the SQL call.
      * @param array $params array of sql parameters
-     * @return mixed array of values
+     * @return array of values
      * @throws dml_exception if error
      */
     public function get_fieldset_select($table, $return, $select, array $params=null) {
@@ -1320,7 +1334,7 @@ abstract class moodle_database {
      *
      * @param string $sql The SQL query
      * @param array $params array of sql parameters
-     * @return mixed array of values
+     * @return array of values
      * @throws dml_exception if error
      */
     public abstract function get_fieldset_sql($sql, array $params=null);
@@ -1332,7 +1346,7 @@ abstract class moodle_database {
      * @param bool $returnit return it of inserted record
      * @param bool $bulk true means repeated inserts expected
      * @param bool $customsequence true if 'id' included in $params, disables $returnid
-     * @return mixed true or new id
+     * @return bool|int true or new id
      * @throws dml_exception if error
      */
     public abstract function insert_record_raw($table, $params, $returnid=true, $bulk=false, $customsequence=false);
@@ -1346,7 +1360,7 @@ abstract class moodle_database {
      * @param string $table The database table to be inserted into
      * @param object $data A data object with values for one or more fields in the record
      * @param bool $returnid Should the id of the newly created record entry be returned? If this option is not requested then true/false is returned.
-     * @return mixed true or new id
+     * @return bool|int true or new id
      * @throws dml_exception if error
      */
     public abstract function insert_record($table, $dataobject, $returnid=true, $bulk=false);
@@ -1542,7 +1556,7 @@ abstract class moodle_database {
      *
      * @param string $table the table to delete from.
      * @param string $field The field to search
-     * @param string $values array of values
+     * @param array $values array of values
      * @return bool true.
      * @throws dml_exception if error
      */
@@ -1574,6 +1588,7 @@ abstract class moodle_database {
      *
      * To be used in queries not having FROM clause to provide cross_db
      * Most DBs don't need it, hence the default is ''
+     * @return string
      */
     public function sql_null_from_clause() {
         return '';
@@ -1586,8 +1601,8 @@ abstract class moodle_database {
      * NOTE: The SQL result is a number and can not be used directly in
      *       SQL condition, please compare it to some number to get a bool!!
      *
-     * @param integer int1 first integer in the operation
-     * @param integer int2 second integer in the operation
+     * @param int $int1 first integer in the operation
+     * @param int $int2 second integer in the operation
      * @return string the piece of SQL code to be used in your statement
      */
     public function sql_bitand($int1, $int2) {
@@ -1598,7 +1613,7 @@ abstract class moodle_database {
      * Returns the SQL text to be used in order to perform one bitwise NOT operation
      * with 1 integer.
      *
-     * @param integer int1 integer in the operation
+     * @param int $int1 integer in the operation
      * @return string the piece of SQL code to be used in your statement.
      */
     public function sql_bitnot($int1) {
@@ -1612,8 +1627,8 @@ abstract class moodle_database {
      * NOTE: The SQL result is a number and can not be used directly in
      *       SQL condition, please compare it to some number to get a bool!!
      *
-     * @param integer int1 first integer in the operation
-     * @param integer int2 second integer in the operation
+     * @param int $int1 first integer in the operation
+     * @param int $int2 second integer in the operation
      * @return string the piece of SQL code to be used in your statement.
      */
     public function sql_bitor($int1, $int2) {
@@ -1627,8 +1642,8 @@ abstract class moodle_database {
      * NOTE: The SQL result is a number and can not be used directly in
      *       SQL condition, please compare it to some number to get a bool!!
      *
-     * @param integer int1 first integer in the operation
-     * @param integer int2 second integer in the operation
+     * @param int $int1 first integer in the operation
+     * @param int $int2 second integer in the operation
      * @return string the piece of SQL code to be used in your statement.
      */
     public function sql_bitxor($int1, $int2) {
@@ -1639,8 +1654,8 @@ abstract class moodle_database {
      * Returns the SQL text to be used in order to perform module '%'
      * operation - remainder after division
      *
-     * @param integer int1 first integer in the operation
-     * @param integer int2 second integer in the operation
+     * @param int $int1 first integer in the operation
+     * @param int $int2 second integer in the operation
      * @return string the piece of SQL code to be used in your statement.
      */
     public function sql_modulo($int1, $int2) {
@@ -1650,7 +1665,7 @@ abstract class moodle_database {
     /**
      * Returns the correct CEIL expression applied to fieldname.
      *
-     * @param string fieldname the field (or expression) we are going to ceil
+     * @param string $fieldname the field (or expression) we are going to ceil
      * @return string the piece of SQL code to be used in your ceiling statement
      * Most DB use CEIL(), hence it's the default.
      */
@@ -1664,8 +1679,8 @@ abstract class moodle_database {
      * Be aware that the CHAR column you're trying to cast contains really
      * int values or the RDBMS will throw an error!
      *
-     * @param string fieldname the name of the field to be casted
-     * @param boolean text to specify if the original column is one TEXT (CLOB) column (true). Defaults to false.
+     * @param string $fieldname the name of the field to be casted
+     * @param bool $text to specify if the original column is one TEXT (CLOB) column (true). Defaults to false.
      * @return string the piece of SQL code to be used in your statement.
      */
     public function sql_cast_char2int($fieldname, $text=false) {
@@ -1678,8 +1693,8 @@ abstract class moodle_database {
      * Be aware that the CHAR column you're trying to cast contains really
      * numbers or the RDBMS will throw an error!
      *
-     * @param string fieldname the name of the field to be casted
-     * @param boolean text to specify if the original column is one TEXT (CLOB) column (true). Defaults to false.
+     * @param string $fieldname the name of the field to be casted
+     * @param bool $text to specify if the original column is one TEXT (CLOB) column (true). Defaults to false.
      * @return string the piece of SQL code to be used in your statement.
      */
     public function sql_cast_char2real($fieldname, $text=false) {
@@ -1692,7 +1707,7 @@ abstract class moodle_database {
      * (Only MySQL needs this. MySQL things that 1 * -1 = 18446744073709551615
      * if the 1 comes from an unsigned column).
      *
-     * @param string fieldname the name of the field to be cast
+     * @param string $fieldname the name of the field to be cast
      * @return string the piece of SQL code to be used in your statement.
      */
     public function sql_cast_2signed($fieldname) {
@@ -1704,8 +1719,8 @@ abstract class moodle_database {
      * one varchar column, because some RDBMS doesn't support such direct
      * comparisons.
      *
-     * @param string fieldname the name of the TEXT field we need to order by
-     * @param string number of chars to use for the ordering (defaults to 32)
+     * @param string $fieldname the name of the TEXT field we need to order by
+     * @param int $numchars of chars to use for the ordering (defaults to 32)
      * @return string the piece of SQL code to be used in your statement.
      */
     public function sql_compare_text($fieldname, $numchars=32) {
@@ -1729,7 +1744,8 @@ abstract class moodle_database {
      * Returns the proper SQL to do CONCAT between the elements passed
      * Can take many parameters
      *
-     * @param string $element
+     * This function accepts variable number of string parameters.
+     *
      * @return string
      */
     public abstract function sql_concat();
@@ -1747,9 +1763,10 @@ abstract class moodle_database {
     /**
      * Returns the proper SQL (for the dbms in use) to concatenate $firstname and $lastname
      * TODO: Does this really need to be here? Eloy 20070727.
+     * TODO: we definitely do not! (skodak)
      *
-     * @param string $firstname User's first name
-     * @param string $lastname User's last name
+     * @param string $first User's first name
+     * @param string $last User's last name
      * @return string
      */
     function sql_fullname($first='firstname', $last='lastname') {
@@ -1762,8 +1779,9 @@ abstract class moodle_database {
      *
      * Note that the use or queries being ordered by TEXT columns must be minimised,
      * because it's really slooooooow.
-     * @param string fieldname the name of the TEXT field we need to order by
-     * @param string number of chars to use for the ordering (defaults to 32)
+     *
+     * @param string $fieldname the name of the TEXT field we need to order by
+     * @param string $numchars of chars to use for the ordering (defaults to 32)
      * @return string the piece of SQL code to be used in your statement.
      */
     public function sql_order_by_text($fieldname, $numchars=32) {
@@ -1772,7 +1790,7 @@ abstract class moodle_database {
 
     /**
      * Returns the SQL text to be used to calculate the length in characters of one expression.
-     * @param string fieldname or expression to calculate its length in characters.
+     * @param string $fieldname or expression to calculate its length in characters.
      * @return string the piece of SQL code to be used in the statement.
      */
     public function sql_length($fieldname) {
@@ -1817,6 +1835,7 @@ abstract class moodle_database {
      * Returns the empty string char used by every supported DB. To be used when
      * we are searching for that values in our queries. Only Oracle uses this
      * for now (will be out, once we migrate to proper NULLs if that days arrives)
+     * @return string
      */
     function sql_empty() {
         return '';
@@ -1887,6 +1906,7 @@ abstract class moodle_database {
 
     /**
      * Does this driver suppoer regex syntax when searching
+     * @return bool
      */
     public function sql_regex_supported() {
         return false;
@@ -2020,7 +2040,7 @@ abstract class moodle_database {
      *
      * @param moodle_transaction $transaction
      * @param Exception $e exception that caused the problem
-     * @return does not return, exception is rethrown
+     * @return void - does not return, exception is rethrown
      */
     public function rollback_delegated_transaction(moodle_transaction $transaction, Exception $e) {
         if ($transaction->is_disposed()) {
@@ -2092,7 +2112,7 @@ abstract class moodle_database {
     /**
      * Obtain session lock
      * @param int $rowid id of the row with session record
-     * @return success
+     * @return bool success
      */
     public function get_session_lock($rowid) {
         $this->used_for_db_sessions = true;
@@ -2101,7 +2121,7 @@ abstract class moodle_database {
     /**
      * Release session lock
      * @param int $rowid id of the row with session record
-     * @return success
+     * @return bool success
      */
     public function release_session_lock($rowid) {
     }

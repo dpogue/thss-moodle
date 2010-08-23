@@ -352,7 +352,7 @@ function prepare_choice_show_results($choice, $course, $cm, $allresponses, $forc
         if (array_key_exists($optionid, $allresponses)) {
             $display->options[$optionid]->user = $allresponses[$optionid]; //->user;
             $totaluser += count($allresponses[$optionid]);
-    }
+        }
     }
     unset($display->option);
     unset($display->maxanswers);
@@ -504,9 +504,9 @@ function prepare_choice_show_results($choice, $course, $cm, $allresponses, $forc
                 echo "</form></div>";
             }
             break;
-                }
+    }
     return $display;
-            }
+}
 
 /**
  * @global object
@@ -681,8 +681,8 @@ function choice_reset_userdata($data) {
 
     if (!empty($data->reset_choice)) {
         $choicessql = "SELECT ch.id
-                         FROM {choice} ch
-                        WHERE ch.course=?";
+                       FROM {choice} ch
+                       WHERE ch.course=?";
 
         $DB->delete_records_select('choice_answers', "choiceid IN ($choicessql)", array($data->courseid));
         $status[] = array('component'=>$componentstr, 'item'=>get_string('removeresponses', 'choice'), 'error'=>false);
@@ -739,9 +739,6 @@ function choice_get_response_data($choice, $cm, $groupmode) {
                 unset($allresponses[0][$response->userid]);   // Remove from unanswered column
             }
         }
-    }
-    if (empty($allresponses[0])) {
-        unset($allresponses[0]);
     }
     return $allresponses;
 }
