@@ -34,18 +34,6 @@ $string['aggregatemax'] = 'Maximum rating';
 $string['aggregatemin'] = 'Minimum rating';
 $string['aggregatenone'] = 'No ratings';
 $string['aggregatesum'] = 'Sum of ratings';
-$string['aggregatetype'] = 'Aggregate type';
-$string['aggregatetype_help'] = 'Forum aggregation defines how all the ratings given to posts in a forum are combined to form the final grade (for each post and for the whole forum activity).
-
-There are 5 aggregate types:
-
-* Average - The mean of all the ratings given to posts in the forum (useful with peer grading when there are a lot of ratings being made)
-* Count - The number of rated posts becomes the final grade (useful when the number of posts is important). Note that the total cannot exceed the maximum grade for the forum.
-* Max - The highest rating is returned as the final grade (useful for emphasising the best post)
-* Min - The smallest rating is returned as the final grade (for promoting a culture of high quality for all posts)
-* Sum - All ratings for a particular student are added together. Note that the total cannot exceed the maximum grade for the forum.
-
-If "No ratings" is selected, then the forum activity will not appear in the gradebook.';
 $string['ajaxrating'] = 'Enable AJAX rating';
 $string['allforums'] = 'All forums';
 $string['allowdiscussions'] = 'Can a {$a} post to this forum?';
@@ -61,9 +49,9 @@ $string['attachment_help'] = 'You can optionally attach one or more files to a f
 $string['attachmentnopost'] = 'You cannot export attachments without a post id';
 $string['attachments'] = 'Attachments';
 $string['blockafter'] = 'Post threshold for blocking';
-$string['blockafter_help'] = 'This setting specifies the maximum number of posts which a student can post in the given time period. Only applies to users with the capability mod/forum:throttlingapplies.';
+$string['blockafter_help'] = 'This setting specifies the maximum number of posts which a user can post in the given time period. Users with the capability mod/forum:postwithoutthrottling are exempt from post limits.';
 $string['blockperiod'] = 'Time period for blocking';
-$string['blockperiod_help'] = 'Students can be blocked from posting more than a given number of posts in a given time period. Only applies to users with the capability mod/forum:throttlingapplies.';
+$string['blockperiod_help'] = 'Students can be blocked from posting more than a given number of posts in a given time period. Users with the capability mod/forum:postwithoutthrottling are exempt from post limits.';
 $string['blockperioddisabled'] = 'Don\'t block';
 $string['blogforum'] = 'Standard forum displayed in a blog-like format';
 $string['bynameondate'] = 'by {$a->name} - {$a->date}';
@@ -179,6 +167,7 @@ $string['forum:initialsubscriptions'] = 'Initial subscription';
 $string['forumintro'] = 'Forum introduction';
 $string['forum:managesubscriptions'] = 'Manage subscriptions';
 $string['forum:movediscussions'] = 'Move discussions';
+$string['forum:postwithoutthrottling'] = 'Exempt from post threshold';
 $string['forumname'] = 'Forum name';
 $string['forumposts'] = 'Forum posts';
 $string['forum:rate'] = 'Rate posts';
@@ -337,8 +326,6 @@ $string['ratingpublic'] = '{$a} can see everyone\'s ratings';
 $string['ratingpublicnot'] = '{$a} can only see their own ratings';
 $string['ratings'] = 'Ratings';
 $string['ratingssaved'] = 'Ratings saved';
-$string['ratingsuse'] = 'Use ratings';
-$string['ratingtime'] = 'Restrict ratings to posts with dates in this range:';
 $string['re'] = 'Re:';
 $string['readtherest'] = 'Read the rest of this topic';
 $string['replies'] = 'Replies';
@@ -433,7 +420,7 @@ $string['unsubscribeshort'] = 'Unsubscribe';
 $string['usermarksread'] = 'Manual message read marking';
 $string['viewalldiscussions'] = 'View all discussions';
 $string['warnafter'] = 'Post threshold for warning';
-$string['warnafter_help'] = 'Students can be warned as they approach the maximum number of posts allowed in a given period. This setting specifies after how many posts they are warned. Only applies to users with the capability mod/forum:throttlingapplies.';
+$string['warnafter_help'] = 'Students can be warned as they approach the maximum number of posts allowed in a given period. This setting specifies after how many posts they are warned. Users with the capability mod/forum:postwithoutthrottling are exempt from post limits.';
 $string['youratedthis'] = 'You rated this';
 $string['yournewquestion'] = 'Your new question';
 $string['yournewtopic'] = 'Your new discussion topic';

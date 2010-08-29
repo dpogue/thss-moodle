@@ -399,7 +399,7 @@ class core_renderer extends renderer_base {
         if (session_is_loggedinas()) {
             $realuser = session_get_realuser();
             $fullname = fullname($realuser, true);
-            $realuserinfo = " [<a href=\"$CFG->wwwroot/course/loginas.php?id=$course->id&amp;return=1&amp;sesskey=".sesskey()."\">$fullname</a>] ";
+            $realuserinfo = " [<a href=\"$CFG->wwwroot/course/loginas.php?id=$course->id&amp;sesskey=".sesskey()."\">$fullname</a>] ";
         } else {
             $realuserinfo = '';
         }
@@ -418,10 +418,10 @@ class core_renderer extends renderer_base {
             if (is_mnet_remote_user($USER) and $idprovider = $DB->get_record('mnet_host', array('id'=>$USER->mnethostid))) {
                 $username .= " from <a href=\"{$idprovider->wwwroot}\">{$idprovider->name}</a>";
             }
-            if (isset($USER->username) && $USER->username == 'guest') {
+            if (isguestuser()) {
                 $loggedinas = $realuserinfo.get_string('loggedinasguest').
                           " (<a href=\"$loginurl\">".get_string('login').'</a>)';
-            } else if (!empty($USER->access['rsw'][$context->path])) {
+            } else if (is_role_switched($course->id)) { // Has switched roles
                 $rolename = '';
                 if ($role = $DB->get_record('role', array('id'=>$USER->access['rsw'][$context->path]))) {
                     $rolename = ': '.format_string($role->name);
@@ -442,7 +442,7 @@ class core_renderer extends renderer_base {
         if (isset($SESSION->justloggedin)) {
             unset($SESSION->justloggedin);
             if (!empty($CFG->displayloginfailures)) {
-                if (!empty($USER->username) and $USER->username != 'guest') {
+                if (!isguestuser()) {
                     if ($count = count_login_failures($CFG->displayloginfailures, $USER->username, $USER->lastlogin)) {
                         $loggedinas .= '&nbsp;<div class="loginfailures">';
                         if (empty($count->accounts)) {
@@ -567,6 +567,10 @@ class core_renderer extends renderer_base {
      */
     public function header() {
         global $USER, $CFG;
+
+        if (session_is_loggedinas()) {
+            $this->page->add_body_class('userloggedinas');
+        }
 
         $this->page->set_state(moodle_page::STATE_PRINTING_HEADER);
 

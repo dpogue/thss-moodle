@@ -40,7 +40,17 @@
  * @global object $CFG
  * @name $CFG
  */
-global $CFG;
+global $CFG; // this should be done much earlier in config.php before creating new $CFG instance
+
+if (!isset($CFG)) {
+    if (defined('PHPUNIT_SCRIPT') and PHPUNIT_SCRIPT) {
+        echo('There is a missing "global $CFG;" at the beginning of the config.php file.'."\n");
+        exit(1);
+    } else {
+        // this should never happen, maybe somebody is accessing this file directly...
+        exit(1);
+    }
+}
 
 // We can detect real dirroot path reliably since PHP 4.0.2,
 // it can not be anything else, there is no point in having this in config.php
@@ -48,22 +58,27 @@ $CFG->dirroot = dirname(dirname(__FILE__));
 
 // Normalise dataroot - we do not want any symbolic links, trailing / or any other weirdness there
 if (!isset($CFG->dataroot)) {
-    header($_SERVER['SERVER_PROTOCOL'] . ' 503 Service Unavailable');
-    echo('Fatal error: $CFG->dataroot is not specified in config.php! Exiting.');
+    if (isset($_SERVER['REMOTE_ADDR'])) {
+        header($_SERVER['SERVER_PROTOCOL'] . ' 503 Service Unavailable');
+    }
+    echo('Fatal error: $CFG->dataroot is not specified in config.php! Exiting.'."\n");
     exit(1);
 }
 $CFG->dataroot = realpath($CFG->dataroot);
 if ($CFG->dataroot === false) {
-    header($_SERVER['SERVER_PROTOCOL'] . ' 503 Service Unavailable');
-    echo('Fatal error: $CFG->dataroot is not configured properly, directory does not exist or is not accessible! Exiting.');
+    if (isset($_SERVER['REMOTE_ADDR'])) {
+        header($_SERVER['SERVER_PROTOCOL'] . ' 503 Service Unavailable');
+    }
+    echo('Fatal error: $CFG->dataroot is not configured properly, directory does not exist or is not accessible! Exiting.'."\n");
     exit(1);
 }
 
 // wwwroot is mandatory
 if (!isset($CFG->wwwroot) or $CFG->wwwroot === 'http://example.com/moodle') {
-    // trigger_error() is not correct here, no need to log this
-    header($_SERVER['SERVER_PROTOCOL'] . ' 503 Service Unavailable');
-    echo('Fatal error: $CFG->wwwroot is not configured! Exiting.');
+    if (isset($_SERVER['REMOTE_ADDR'])) {
+        header($_SERVER['SERVER_PROTOCOL'] . ' 503 Service Unavailable');
+    }
+    echo('Fatal error: $CFG->wwwroot is not configured! Exiting.'."\n");
     exit(1);
 }
 
@@ -96,6 +111,15 @@ if (!defined('NO_DEBUG_DISPLAY')) {
 // This is a quick hack.  Ideally we should ask the admin for a value.  See MDL-22625 for more on this.
 if (function_exists('date_default_timezone_set') and function_exists('date_default_timezone_get')) {
     @date_default_timezone_set(@date_default_timezone_get());
+}
+
+// PHPUnit scripts are a special case, for now we treat them as normal CLI scripts,
+// please note you must install PHPUnit library separately via PEAR
+if (!defined('PHPUNIT_SCRIPT')) {
+    define('PHPUNIT_SCRIPT', false);
+}
+if (PHPUNIT_SCRIPT) {
+    define('CLI_SCRIPT', true);
 }
 
 // Detect CLI scripts - CLI scripts are executed from command line, do not have session and we do not want HTML in output

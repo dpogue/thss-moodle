@@ -2061,7 +2061,129 @@ class dml_test extends UnitTestCase {
         $this->assertEqual(count($records), 2);
     }
 
-    function test_ilike() {
+    function test_unique_index_collation_trouble() {
+        // note: this is a work in progress, we should probably move this to ddl test
+
+        $DB = $this->tdb;
+        $dbman = $DB->get_manager();
+
+        $table = $this->get_test_table();
+        $tablename = $table->getName();
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_index('name', XMLDB_INDEX_UNIQUE, array('name'));
+        $dbman->create_table($table);
+        $this->tables[$tablename] = $table;
+
+        $DB->insert_record($tablename, array('name'=>'aaa'));
+
+        try {
+            $DB->insert_record($tablename, array('name'=>'AAA'));
+        } catch (Exception $e) {
+            //TODO: ignore case insensitive uniqueness problems for now
+            //$this->fail("Unique index is case sensitive - this may cause problems in some tables");
+        }
+
+        try {
+            $DB->insert_record($tablename, array('name'=>'aäa'));
+            $DB->insert_record($tablename, array('name'=>'aáa'));
+            $this->assertTrue(true);
+        } catch (Exception $e) {
+            $family = $DB->get_dbfamily();
+            if ($family === 'mysql' or $family === 'mssql') {
+                $this->fail("Unique index is accent insensitive, this may cause problems for non-ascii languages. This is usually caused by accent insensitive default collation.");
+            } else {
+                // this should not happen, PostgreSQL and Oracle do not support accent insensitive uniqueness.
+                $this->fail("Unique index is accent insensitive, this may cause problems for non-ascii languages.");
+            }
+            throw($e);
+        }
+    }
+
+    function test_sql_binary_equal() {
+        $DB = $this->tdb;
+        $dbman = $DB->get_manager();
+
+        $table = $this->get_test_table();
+        $tablename = $table->getName();
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $dbman->create_table($table);
+        $this->tables[$tablename] = $table;
+
+        $DB->insert_record($tablename, array('name'=>'aaa'));
+        $DB->insert_record($tablename, array('name'=>'aáa'));
+        $DB->insert_record($tablename, array('name'=>'aäa'));
+        $DB->insert_record($tablename, array('name'=>'bbb'));
+        $DB->insert_record($tablename, array('name'=>'BBB'));
+
+        $records = $DB->get_records_sql("SELECT * FROM {{$tablename}} WHERE name = ?", array('aaa'));
+        $this->assertEqual(count($records), 1, 'SQL operator "=" is expected to be accent sensitive');
+
+        $records = $DB->get_records_sql("SELECT * FROM {{$tablename}} WHERE name = ?", array('bbb'));
+        $this->assertEqual(count($records), 1, 'SQL operator "=" is expected to be case sensitive');
+    }
+
+    function test_sql_like() {
+        $DB = $this->tdb;
+        $dbman = $DB->get_manager();
+
+        $table = $this->get_test_table();
+        $tablename = $table->getName();
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $dbman->create_table($table);
+        $this->tables[$tablename] = $table;
+
+        $DB->insert_record($tablename, array('name'=>'SuperDuperRecord'));
+        $DB->insert_record($tablename, array('name'=>'Nodupor'));
+        $DB->insert_record($tablename, array('name'=>'ouch'));
+        $DB->insert_record($tablename, array('name'=>'ouc_'));
+        $DB->insert_record($tablename, array('name'=>'ouc%'));
+        $DB->insert_record($tablename, array('name'=>'aui'));
+        $DB->insert_record($tablename, array('name'=>'aüi'));
+        $DB->insert_record($tablename, array('name'=>'aÜi'));
+
+        $sql = "SELECT * FROM {{$tablename}} WHERE ".$DB->sql_like('name', '?', false);
+        $records = $DB->get_records_sql($sql, array("%dup_r%"));
+        $this->assertEqual(count($records), 2);
+
+        $sql = "SELECT * FROM {{$tablename}} WHERE ".$DB->sql_like('name', '?', true);
+        $records = $DB->get_records_sql($sql, array("%dup%"));
+        $this->assertEqual(count($records), 1);
+
+        $sql = "SELECT * FROM {{$tablename}} WHERE ".$DB->sql_like('name', '?'); // defaults
+        $records = $DB->get_records_sql($sql, array("%dup%"));
+        $this->assertEqual(count($records), 1);
+
+        $sql = "SELECT * FROM {{$tablename}} WHERE ".$DB->sql_like('name', '?', true);
+        $records = $DB->get_records_sql($sql, array("ouc\\_"));
+        $this->assertEqual(count($records), 1);
+
+        $sql = "SELECT * FROM {{$tablename}} WHERE ".$DB->sql_like('name', '?', true, true, '|');
+        $records = $DB->get_records_sql($sql, array($DB->sql_like_escape("ouc%", '|')));
+        $this->assertEqual(count($records), 1);
+
+        $sql = "SELECT * FROM {{$tablename}} WHERE ".$DB->sql_like('name', '?', true, true);
+        $records = $DB->get_records_sql($sql, array('aui'));
+        $this->assertEqual(count($records), 1);
+
+        // TODO: we do not require accent insensitivness yet, just make sure it does not throw errors
+        $sql = "SELECT * FROM {{$tablename}} WHERE ".$DB->sql_like('name', '?', true, false);
+        $records = $DB->get_records_sql($sql, array('aui'));
+        //$this->assertEqual(count($records), 2, 'Accent insensitive LIKE searches may not be supported in all databases, this is not a problem.');
+        $sql = "SELECT * FROM {{$tablename}} WHERE ".$DB->sql_like('name', '?', false, false);
+        $records = $DB->get_records_sql($sql, array('aui'));
+        //$this->assertEqual(count($records), 3, 'Accent insensitive LIKE searches may not be supported in all databases, this is not a problem.');
+    }
+
+    function test_sql_ilike() {
         $DB = $this->tdb;
         $dbman = $DB->get_manager();
 
@@ -2081,7 +2203,7 @@ class dml_test extends UnitTestCase {
         $sql = "SELECT * FROM {".$tablename."} WHERE name ".$DB->sql_ilike()." ?";
         $params = array("%dup_r%");
         $records = $DB->get_records_sql($sql, $params);
-        $this->assertEqual(count($records), 2);
+        $this->assertEqual(count($records), 2, 'DB->sql_ilike() is deprecated, ignore this problem.');
     }
 
     function test_sql_concat() {

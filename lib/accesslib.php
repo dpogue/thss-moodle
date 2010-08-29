@@ -190,6 +190,7 @@ if (!defined('MAX_CONTEXT_CACHE_SIZE')) {
  * @global stdClass $ACCESSLIB_PRIVATE
  * @name $ACCESSLIB_PRIVATE
  */
+global $ACCESSLIB_PRIVATE;
 $ACCESSLIB_PRIVATE = new stdClass;
 $ACCESSLIB_PRIVATE->contexts = array(); // Cache of context objects by level and instance
 $ACCESSLIB_PRIVATE->contextsbyid = array(); // Cache of context objects by id
@@ -1412,7 +1413,9 @@ function compact_rdefs(&$rdefs) {
  * @global object
  */
 function load_all_capabilities() {
-    global $USER, $CFG, $ACCESSLIB_PRIVATE;
+    global $CFG, $ACCESSLIB_PRIVATE;
+
+    //NOTE: we can not use $USER here because it may no be linked to $_SESSION['USER'] yet!
 
     // roles not installed yet - we are in the middle of installation
     if (during_initial_install()) {
@@ -1421,18 +1424,18 @@ function load_all_capabilities() {
 
     $base = '/'.SYSCONTEXTID;
 
-    if (isguestuser()) {
+    if (isguestuser($_SESSION['USER'])) {
         $guest = get_guest_role();
 
         // Load the rdefs
-        $USER->access = get_role_access($guest->id);
+        $_SESSION['USER']->access = get_role_access($guest->id);
         // Put the ghost enrolment in place...
-        $USER->access['ra'][$base] = array($guest->id);
+        $_SESSION['USER']->access['ra'][$base] = array($guest->id);
 
 
-    } else if (isloggedin()) {
+    } else if (empty($_SESSION['USER']->id)) { // can not use isloggedin() yet
 
-        $accessdata = get_user_access_sitewide($USER->id);
+        $accessdata = get_user_access_sitewide($_SESSION['USER']->id);
 
         //
         // provide "default role" & set 'dr'
@@ -1461,19 +1464,19 @@ function load_all_capabilities() {
                 array_push($accessdata['ra'][$base], $CFG->defaultfrontpageroleid);
             }
         }
-        $USER->access = $accessdata;
+        $_SESSION['USER']->access = $accessdata;
 
     } else if (!empty($CFG->notloggedinroleid)) {
-        $USER->access = get_role_access($CFG->notloggedinroleid);
-        $USER->access['ra'][$base] = array($CFG->notloggedinroleid);
+        $_SESSION['USER']->access = get_role_access($CFG->notloggedinroleid);
+        $_SESSION['USER']->access['ra'][$base] = array($CFG->notloggedinroleid);
     }
 
     // Timestamp to read dirty context timestamps later
-    $USER->access['time'] = time();
+    $_SESSION['USER']->access['time'] = time();
     $ACCESSLIB_PRIVATE->dirtycontexts = array();
 
     // Clear to force a refresh
-    unset($USER->mycourses);
+    unset($_SESSION['USER']->mycourses);
 }
 
 /**
@@ -2915,7 +2918,7 @@ function is_enrolled($context, $user = NULL, $withcapability = '', $onlyactive =
  * @return array list($sql, $params)
  */
 function get_enrolled_sql($context, $withcapability = '', $groupid = 0, $onlyactive = false) {
-    global $DB;
+    global $DB, $CFG;
 
     // use unique prefix just in case somebody makes some SQL magic with the result
     static $i = 0;
@@ -3034,7 +3037,8 @@ function get_enrolled_sql($context, $withcapability = '', $groupid = 0, $onlyact
 
     }
 
-    $wheres[] = "{$prefix}u.deleted = 0 AND {$prefix}u.username <> 'guest'";
+    $wheres[] = "{$prefix}u.deleted = 0 AND {$prefix}u.id <> :{$prefix}guestid";
+    $params["{$prefix}guestid"] = $CFG->siteguest;
 
     if ($isfrontpage) {
         // all users are "enrolled" on the frontpage
@@ -4832,8 +4836,9 @@ function get_users_by_capability($context, $capability, $fields='', $sort='', $l
         }
     }
 
-    /// We never return deleted users or guest acount.
-    $wherecond[] = "u.deleted = 0 AND u.username <> 'guest'";
+    /// We never return deleted users or guest account.
+    $wherecond[] = "u.deleted = 0 AND u.id <> :guestid";
+    $params['guestid'] = $CFG->siteguest;
 
     /// Groups
     if ($groups) {
@@ -5280,13 +5285,28 @@ function role_switch($roleid, $context) {
     return true;
 }
 
+/**
+ * Checks if the user has switched roles within the given course.
+ *
+ * Note: You can only switch roles within the course, hence it takes a courseid
+ * rather than a context. On that note Petr volunteered to implement this across
+ * all other contexts, all requests for this should be forwarded to him ;)
+ *
+ * @param int $courseid The id of the course to check
+ * @return bool True if the user has switched roles within the course.
+ */
+function is_role_switched($courseid) {
+    global $USER;
+    $context = get_context_instance(CONTEXT_COURSE, $courseid, MUST_EXIST);
+    return (!empty($USER->access['rsw'][$context->path]));
+}
 
 /**
  * Get any role that has an override on exact context
  *
- * @global object
- * @param object $context
- * @return array
+ * @global moodle_database
+ * @param stdClass $context The context to check
+ * @return array An array of roles
  */
 function get_roles_with_override_on_context($context) {
     global $DB;

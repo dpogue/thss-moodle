@@ -982,7 +982,8 @@ class global_navigation extends navigation_node {
                 // If the user is not enrolled then we only want to show the
                 // course node and not populate it.
                 $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
-                if (!is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext)) {
+                // Not enrolled, can't view, and hasn't switched roles
+                if (!is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext) && !is_role_switched($course->id)) {
                     $coursenode->make_active();
                     $canviewcourseprofile = false;
                     break;
@@ -1473,7 +1474,6 @@ class global_navigation extends navigation_node {
     protected function load_for_user($user=null, $forceforcontext=false) {
         global $DB, $CFG, $USER;
 
-        $iscurrentuser = false;
         if ($user === null) {
             // We can't require login here but if the user isn't logged in we don't
             // want to show anything
@@ -1481,11 +1481,13 @@ class global_navigation extends navigation_node {
                 return false;
             }
             $user = $USER;
-            $iscurrentuser = true;
         } else if (!is_object($user)) {
             // If the user is not an object then get them from the database
             $user = $DB->get_record('user', array('id'=>(int)$user), '*', MUST_EXIST);
         }
+
+        $iscurrentuser = ($user->id == $USER->id);
+
         $usercontext = get_context_instance(CONTEXT_USER, $user->id);
 
         // Get the course set against the page, by default this will be the site
@@ -1523,6 +1525,14 @@ class global_navigation extends navigation_node {
                 $usersnode = $this->rootnodes['users'];
                 $usersnode->action = new moodle_url('/user/index.php', array('id'=>$course->id));
                 $userviewurl = new moodle_url('/user/profile.php', $baseargs);
+            }
+            if (!$usersnode) {
+                // We should NEVER get here, if the course hasn't been populated
+                // with a participants node then the navigaiton either wasn't generated
+                // for it (you are missing a require_login or set_context call) or
+                // you don't have access.... in the interests of no leaking informatin
+                // we simply quit...
+                return false;
             }
             // Add a branch for the current user
             $usernode = $usersnode->add(fullname($user, true), $userviewurl, self::TYPE_USER, null, $user->id);
@@ -2098,6 +2108,9 @@ class global_navigation extends navigation_node {
  */
 class global_navigation_for_ajax extends global_navigation {
 
+    protected $branchtype;
+    protected $instanceid;
+
     /** @var array */
     protected $expandable = array();
 
@@ -2108,17 +2121,17 @@ class global_navigation_for_ajax extends global_navigation {
         $this->page = $page;
         $this->cache = new navigation_cache(NAVIGATION_CACHE_NAME);
         $this->children = new navigation_node_collection();
-        $this->initialise($branchtype, $id);
+        $this->branchtype = $branchtype;
+        $this->instanceid = $id;
+        $this->initialise();
     }
     /**
      * Initialise the navigation given the type and id for the branch to expand.
      *
-     * @param int $branchtype One of navigation_node::TYPE_*
-     * @param int $id
      * @return array The expandable nodes
      */
-    public function initialise($branchtype, $id) {
-        global $CFG, $DB, $PAGE, $SITE, $USER;
+    public function initialise() {
+        global $CFG, $DB, $SITE;
 
         if ($this->initialised || during_initial_install()) {
             return $this->expandable;
@@ -2130,22 +2143,21 @@ class global_navigation_for_ajax extends global_navigation {
         $this->rootnodes['courses'] = $this->add(get_string('courses'), null, self::TYPE_ROOTNODE, null, 'courses');
 
         // Branchtype will be one of navigation_node::TYPE_*
-        switch ($branchtype) {
+        switch ($this->branchtype) {
             case self::TYPE_CATEGORY :
-                $this->load_all_categories($id);
+                $this->load_all_categories($this->instanceid);
                 $limit = 20;
                 if (!empty($CFG->navcourselimit)) {
                     $limit = (int)$CFG->navcourselimit;
                 }
-                $courses = $DB->get_records('course', array('category' => $id), 'sortorder','*', 0, $limit);
+                $courses = $DB->get_records('course', array('category' => $this->instanceid), 'sortorder','*', 0, $limit);
                 foreach ($courses as $course) {
                     $this->add_course($course);
                 }
                 break;
             case self::TYPE_COURSE :
-                $course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
+                $course = $DB->get_record('course', array('id' => $this->instanceid), '*', MUST_EXIST);
                 require_course_login($course);
-                $this->page = $PAGE;
                 $this->page->set_context(get_context_instance(CONTEXT_COURSE, $course->id));
                 $coursenode = $this->add_course($course);
                 $this->add_course_essentials($coursenode, $course);
@@ -2158,9 +2170,8 @@ class global_navigation_for_ajax extends global_navigation {
                         FROM {course} c
                         LEFT JOIN {course_sections} cs ON cs.course = c.id
                         WHERE cs.id = ?';
-                $course = $DB->get_record_sql($sql, array($id), MUST_EXIST);
+                $course = $DB->get_record_sql($sql, array($this->instanceid), MUST_EXIST);
                 require_course_login($course);
-                $this->page = $PAGE;
                 $this->page->set_context(get_context_instance(CONTEXT_COURSE, $course->id));
                 $coursenode = $this->add_course($course);
                 $this->add_course_essentials($coursenode, $course);
@@ -2168,10 +2179,9 @@ class global_navigation_for_ajax extends global_navigation {
                 $this->load_section_activities($sections[$course->sectionnumber]->sectionnode, $course->sectionnumber, get_fast_modinfo($course));
                 break;
             case self::TYPE_ACTIVITY :
-                $cm = get_coursemodule_from_id(false, $id, 0, false, MUST_EXIST);
+                $cm = get_coursemodule_from_id(false, $this->instanceid, 0, false, MUST_EXIST);
                 $course = $DB->get_record('course', array('id'=>$cm->course), '*', MUST_EXIST);
                 require_course_login($course, true, $cm);
-                $this->page = $PAGE;
                 $this->page->set_context(get_context_instance(CONTEXT_MODULE, $cm->id));
                 $coursenode = $this->load_course($course);
                 $sections = $this->load_course_sections($course, $coursenode);
@@ -3541,9 +3551,7 @@ class settings_navigation extends navigation_node {
 
         // Restore to this course
         if (has_capability('moodle/restore:restorecourse', $coursecontext)) {
-            $url = new moodle_url('/files/index.php', array('contextid'=>$coursecontext->id, 'itemid'=>0, 'component' => 'backup', 'filearea'=>'course'));
-
-            $url = null; // Disabled until restore is implemented. MDL-21432
+            $url = new moodle_url('/backup/restorefile.php', array('contextid'=>$coursecontext->id));
             $frontpage->add(get_string('restore'), $url, self::TYPE_SETTING, null, null, new pix_icon('i/restore', ''));
         }
 

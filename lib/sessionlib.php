@@ -471,7 +471,7 @@ class database_session extends session_stub {
             $ignoretimeout = false;
             if (!empty($record->userid)) { // skips not logged in
                 if ($user = $this->database->get_record('user', array('id'=>$record->userid))) {
-                    if ($user->username !== 'guest') {
+                    if (!isguestuser($user)) {
                         $authsequence = get_enabled_auth_plugins(); // auths, in sequence
                         foreach($authsequence as $authname) {
                             $authplugin = get_auth_plugin($authname);
@@ -727,8 +727,8 @@ function session_gc() {
         $sql = "SELECT u.*, s.sid, s.timecreated AS s_timecreated, s.timemodified AS s_timemodified
                   FROM {user} u
                   JOIN {sessions} s ON s.userid = u.id
-                 WHERE s.timemodified + ? < ? AND u.username <> 'guest'";
-        $params = array($maxlifetime, time());
+                 WHERE s.timemodified + ? < ? AND u.id <> ?";
+        $params = array($maxlifetime, time(), $CFG->siteguest);
 
         $authplugins = array();
         foreach($auth_sequence as $authname) {
@@ -758,13 +758,12 @@ function session_gc() {
  * @return string
  */
 function sesskey() {
-    global $USER;
-
-    if (empty($USER->sesskey)) {
-        $USER->sesskey = random_string(10);
+    // note: do not use $USER because it may not be initialised yet
+    if (empty($_SESSION['USER']->sesskey)) {
+        $_SESSION['USER']->sesskey = random_string(10);
     }
 
-    return $USER->sesskey;
+    return $_SESSION['USER']->sesskey;
 }
 
 
@@ -916,22 +915,6 @@ function session_loginas($userid, $context) {
     $user->realuser       = $_SESSION['REALUSER']->id;
     $user->loginascontext = $context;
     session_set_user($user);
-}
-
-/**
- * Terminate login-as session
- * @return void
- */
-function session_unloginas() {
-    if (!session_is_loggedinas()) {
-        return;
-    }
-
-    $_SESSION['SESSION'] = $_SESSION['REALSESSION'];
-    unset($_SESSION['REALSESSION']);
-
-    $_SESSION['USER'] = $_SESSION['REALUSER'];
-    unset($_SESSION['REALUSER']);
 }
 
 /**

@@ -94,17 +94,16 @@ class repository_upload extends repository {
             }
         }
 
-        $userquota = file_get_user_used_space();
-        if (filesize($_FILES[$elname]['tmp_name'])+$userquota>=(int)$CFG->userquota) {
-            throw new file_exception('userquotalimit');
-        }
-
         if (empty($record->itemid)) {
             $record->itemid = 0;
         }
 
         if ($file = $fs->get_file($context->id, $record->component, $record->filearea, $record->itemid, $record->filepath, $record->filename)) {
-            throw new moodle_exception('fileexists');
+            return array(
+                'url'=>moodle_url::make_draftfile_url($file->get_itemid(), $file->get_filepath(), $file->get_filename())->out(),
+                'id'=>$file->get_itemid(),
+                'file'=>$file->get_filename()
+            );
         }
 
         $record->contextid = $context->id;
