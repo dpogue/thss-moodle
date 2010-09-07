@@ -79,7 +79,7 @@ abstract class moodleform_mod extends moodleform {
         $this->_features = new object();
         $this->_features->groups            = plugin_supports('mod', $this->_modname, FEATURE_GROUPS, true);
         $this->_features->groupings         = plugin_supports('mod', $this->_modname, FEATURE_GROUPINGS, false);
-        $this->_features->groupmembersonly  = plugin_supports('mod', $this->_modname, FEATURE_GROUPMEMBERSONLY, false);
+        $this->_features->groupmembersonly  = (!empty($CFG->enablegroupmembersonly) and plugin_supports('mod', $this->_modname, FEATURE_GROUPMEMBERSONLY, false));
         $this->_features->outcomes          = (!empty($CFG->enableoutcomes) and plugin_supports('mod', $this->_modname, FEATURE_GRADE_OUTCOMES, true));
         $this->_features->hasgrades         = plugin_supports('mod', $this->_modname, FEATURE_GRADE_HAS_GRADE, false);
         $this->_features->idnumber          = plugin_supports('mod', $this->_modname, FEATURE_IDNUMBER, true);
@@ -346,7 +346,7 @@ abstract class moodleform_mod extends moodleform {
             }
         }
 
-        
+
         if ($this->_features->rating) {
             require_once($CFG->dirroot.'/rating/lib.php');
             $rm = new rating_manager();
@@ -354,19 +354,16 @@ abstract class moodleform_mod extends moodleform {
             $mform->addElement('header', 'modstandardratings', get_string('ratings', 'rating'));
 
             $permission=CAP_ALLOW;
-            $context = get_context_instance(CONTEXT_MODULE, $this->_cm->id);
+            $rolenamestring = null;
+            if (!empty($this->_cm)) {
+                $context = get_context_instance(CONTEXT_MODULE, $this->_cm->id);
 
-            $roles1 = get_roles_with_capability('moodle/rating:rate', $permission, $context);
-            $roles2 = get_roles_with_capability('mod/'.$this->_cm->modname.':rate', $permission, $context);
-
-            $rolesthatcanrate = array();
-            foreach($roles1 as $k1=>$v1) {
-                if (array_key_exists($k1, $roles2)) {
-                    $rolesthatcanrate[] = $v1->name;
-                }
+                $rolenames = get_role_names_with_caps_in_context($context, array('moodle/rating:rate', 'mod/'.$this->_cm->modname.':rate'));
+                $rolenamestring = implode(', ', $rolenames);
+            } else {
+                $rolenamestring = get_string('capabilitychecknotavailable','rating');
             }
-
-            $mform->addElement('static', 'rolewarning', get_string('rolewarning','rating'), implode(', ', $rolesthatcanrate));
+            $mform->addElement('static', 'rolewarning', get_string('rolewarning','rating'), $rolenamestring);
             $mform->addHelpButton('rolewarning', 'rolewarning', 'rating');
 
             $mform->addElement('select', 'assessed', get_string('aggregatetype', 'rating') , $rm->get_aggregate_types());

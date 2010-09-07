@@ -110,22 +110,21 @@ function chat_add_instance($chat) {
 
     $chat->timemodified = time();
 
-    if ($returnid = $DB->insert_record("chat", $chat)) {
+    $returnid = $DB->insert_record("chat", $chat);
 
-        $event = NULL;
-        $event->name        = $chat->name;
-        $event->description = format_module_intro('chat', $chat, $chat->coursemodule);
-        $event->courseid    = $chat->course;
-        $event->groupid     = 0;
-        $event->userid      = 0;
-        $event->modulename  = 'chat';
-        $event->instance    = $returnid;
-        $event->eventtype   = 'chattime';
-        $event->timestart   = $chat->chattime;
-        $event->timeduration = 0;
+    $event = NULL;
+    $event->name        = $chat->name;
+    $event->description = format_module_intro('chat', $chat, $chat->coursemodule);
+    $event->courseid    = $chat->course;
+    $event->groupid     = 0;
+    $event->userid      = 0;
+    $event->modulename  = 'chat';
+    $event->instance    = $returnid;
+    $event->eventtype   = 'chattime';
+    $event->timestart   = $chat->chattime;
+    $event->timeduration = 0;
 
-        calendar_event::create($event);
-    }
+    calendar_event::create($event);
 
     return $returnid;
 }
@@ -137,7 +136,7 @@ function chat_add_instance($chat) {
  *
  * @global object
  * @param object $chat
- * @return int
+ * @return bool
  */
 function chat_update_instance($chat) {
     global $DB;
@@ -146,22 +145,21 @@ function chat_update_instance($chat) {
     $chat->id = $chat->instance;
 
 
-    if ($returnid = $DB->update_record("chat", $chat)) {
+    $DB->update_record("chat", $chat);
 
-        $event = new object();
+    $event = new object();
 
-        if ($event->id = $DB->get_field('event', 'id', array('modulename'=>'chat', 'instance'=>$chat->id))) {
+    if ($event->id = $DB->get_field('event', 'id', array('modulename'=>'chat', 'instance'=>$chat->id))) {
 
-            $event->name        = $chat->name;
-            $event->description = format_module_intro('chat', $chat, $chat->coursemodule);
-            $event->timestart   = $chat->chattime;
+        $event->name        = $chat->name;
+        $event->description = format_module_intro('chat', $chat, $chat->coursemodule);
+        $event->timestart   = $chat->chattime;
 
-            $calendarevent = calendar_event::load($event->id);
-            $calendarevent->update($event);
-        }
+        $calendarevent = calendar_event::load($event->id);
+        $calendarevent->update($event);
     }
 
-    return $returnid;
+    return true;
 }
 
 /**

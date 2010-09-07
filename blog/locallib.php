@@ -340,18 +340,17 @@ class blog_entry {
         $this->created      = time();
 
         // Insert the new blog entry.
-        if ($this->id = $DB->insert_record('post', $this)) {
+        $this->id = $DB->insert_record('post', $this);
 
-            // Update tags.
-            $this->add_tags_info();
+        // Update tags.
+        $this->add_tags_info();
 
-            if (!empty($CFG->useblogassociations)) {
-                $this->add_associations();
-                add_to_log(SITEID, 'blog', 'add', 'index.php?userid='.$this->userid.'&entryid='.$this->id, $this->subject);
-            }
-
-            tag_set('post', $this->id, $this->tags);
+        if (!empty($CFG->useblogassociations)) {
+            $this->add_associations();
+            add_to_log(SITEID, 'blog', 'add', 'index.php?userid='.$this->userid.'&entryid='.$this->id, $this->subject);
         }
+
+        tag_set('post', $this->id, $this->tags);
     }
 
     /**
@@ -1144,10 +1143,9 @@ class blog_filter_search extends blog_filter {
 
     public function __construct($searchterm) {
         global $DB;
-        $ilike = $DB->sql_ilike();
-        $this->conditions = array("(p.summary $ilike ? OR
-                                    p.content $ilike ? OR
-                                    p.subject $ilike ?)");
+        $this->conditions = array("(".$DB->sql_like('p.summary', '?', false)." OR
+                                    ".$DB->sql_like('p.content', '?', false)." OR
+                                    ".$DB->sql_like('p.subject', '?', false).")");
         $this->params[] = "%$searchterm%";
         $this->params[] = "%$searchterm%";
         $this->params[] = "%$searchterm%";

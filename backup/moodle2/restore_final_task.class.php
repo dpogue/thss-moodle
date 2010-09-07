@@ -43,8 +43,11 @@ class restore_final_task extends restore_task {
         }
 
         // Gradebook
-        //how do I check if I need to restore the gradebook
-        //$this->add_step(new restore_gradebook_step('gradebook_step','gradebook.xml'));
+        $this->add_step(new restore_gradebook_step('gradebook_step','gradebook.xml'));
+
+        // Review all the module_availability records in backup_ids in order
+        // to match them with existing modules / grade items.
+        $this->add_step(new restore_process_course_modules_availability('process_modules_availability'));
 
         // Decode all the interlinks
         $this->add_step(new restore_decode_interlinks('decode_interlinks'));

@@ -24,7 +24,7 @@
  *   edit      - edit the definition of a role
  *   view      - view the definition of a role
  *
- * @package    moodlecore
+ * @package    core
  * @subpackage role
  * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -620,7 +620,7 @@ class define_role_table_advanced extends capability_table_with_risks {
         }
 
         // Description.
-        $description = optional_param('description', null, PARAM_CLEAN);
+        $description = optional_param('description', null, PARAM_RAW);
         if (!is_null($description)) {
             $this->role->description = $description;
         }

@@ -295,7 +295,7 @@
 
     $PAGE->set_title($title);
     $PAGE->set_heading($course->fullname);
-    
+
     echo $OUTPUT->header();
 
 /// Check to see if groups are being used here
@@ -407,9 +407,8 @@ if ($showactivity) {
                 if ($approverecord->dataid == $data->id) {                       // Must be from this database
                     $newrecord->id = $approverecord->id;
                     $newrecord->approved = 1;
-                    if ($DB->update_record('data_records', $newrecord)) {
-                        echo $OUTPUT->notification(get_string('recordapproved','data'), 'notifysuccess');
-                    }
+                    $DB->update_record('data_records', $newrecord);
+                    echo $OUTPUT->notification(get_string('recordapproved','data'), 'notifysuccess');
                 }
             }
         }
@@ -449,8 +448,6 @@ if ($showactivity) {
         } else {
             $groupselect = ' ';
         }
-
-        $ilike = $DB->sql_ilike(); //Be case-insensitive
 
         // Init some variables to be used by advanced search
         $advsearchselect = '';
@@ -502,7 +499,7 @@ if ($showactivity) {
                 foreach($search_array as $key => $val) {                              //what does $search_array hold?
                     if ($key == DATA_FIRSTNAME or $key == DATA_LASTNAME) {
                         $i++;
-                        $searchselect .= " AND $val->field $ilike :search_flname_$i";
+                        $searchselect .= " AND ".$DB->sql_like($val->field, ":search_flname_$i", false);
                         $params['search_flname_'.$i] = "%$val->data%";
                         continue;
                     }
@@ -512,7 +509,7 @@ if ($showactivity) {
                     $advparams = array_merge($advparams, $val->params);
                 }
             } else if ($search) {
-                $searchselect = " AND (cs.content $ilike :search1 OR u.firstname $ilike :search2 OR u.lastname $ilike :search3 ) ";
+                $searchselect = " AND (".$DB->sql_like('cs.content', ':search1', false)." OR ".$DB->sql_like('u.firstname', ':search2', false)." OR ".$DB->sql_like('u.lastname', ':search3', false)." ) ";
                 $params['search1'] = "%$search%";
                 $params['search2'] = "%$search%";
                 $params['search3'] = "%$search%";
@@ -548,7 +545,7 @@ if ($showactivity) {
                 foreach($search_array as $key => $val) {                              //what does $search_array hold?
                     if ($key == DATA_FIRSTNAME or $key == DATA_LASTNAME) {
                         $i++;
-                        $searchselect .= " AND $val->field $ilike :search_flname_$i";
+                        $searchselect .= " AND ".$DB->sql_like($val->field, ":search_flname_$i", false);
                         $params['search_flname_'.$i] = "%$val->data%";
                         continue;
                     }
@@ -558,7 +555,7 @@ if ($showactivity) {
                     $advparams = array_merge($advparams, $val->params);
                 }
             } else if ($search) {
-                $searchselect = " AND (cs.content $ilike :search1 OR u.firstname $ilike :search2 OR u.lastname $ilike :search3 ) ";
+                $searchselect = " AND (".$DB->sql_like('cs.content', ':search1', false)." OR ".$DB->sql_like('u.firstname', ':search2', false)." OR ".$DB->sql_like('u.lastname', ':search3', false)." ) ";
                 $params['search1'] = "%$search%";
                 $params['search2'] = "%$search%";
                 $params['search3'] = "%$search%";

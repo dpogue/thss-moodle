@@ -162,6 +162,15 @@ class enrol_self_plugin extends enrol_plugin {
             return null;
         }
 
+        if ($instance->customint3 > 0) {
+            // max enrol limit specified
+            $count = $DB->count_records('user_enrolments', array('enrolid'=>$instance->id));
+            if ($count >= $instance->customint3) {
+                // bad luck, no more self enrolments here
+                return $OUTPUT->notification(get_string('maxenrolledreached', 'enrol_self'));
+            }
+        }
+
         require_once("$CFG->dirroot/enrol/self/locallib.php");
         require_once("$CFG->dirroot/group/lib.php");
 
@@ -195,7 +204,7 @@ class enrol_self_plugin extends enrol_plugin {
                     }
                 }
                 // send welcome
-                if ($this->get_config('sendcoursewelcomemessage')) {
+                if ($instance->customint4) {
                     $this->email_welcome_message($instance, $USER);
                 }
             }
@@ -218,6 +227,8 @@ class enrol_self_plugin extends enrol_plugin {
 
         $fields = array('customint1'  => $this->get_config('groupkey'),
                         'customint2'  => $this->get_config('longtimenosee'),
+                        'customint3'  => $this->get_config('maxenrolled'),
+                        'customint4'  => $this->get_config('sendcoursewelcomemessage'),
                         'enrolperiod' => $this->get_config('enrolperiod', 0),
                         'status'      => $this->get_config('status'),
                         'roleid'      => $this->get_config('roleid', 0));
@@ -241,20 +252,22 @@ class enrol_self_plugin extends enrol_plugin {
 
         $course = $DB->get_record('course', array('id'=>$instance->courseid), '*', MUST_EXIST);
 
-        if (!empty($instance->customtext1)) {
-            //note: there is no gui for this yet, do we really need it?
-            $message = formaat_string($instance->customtext1);
+        $a = new object();
+        $a->coursename = format_string($course->fullname);
+        $a->profileurl = "$CFG->wwwroot/user/view.php?id=$user->id&course=$course->id";
+
+        if (trim($instance->customtext1) !== '') {
+            $message = $instance->customtext1;
+            $message = str_replace('{$a->coursename}', $a->coursename, $message);
+            $message = str_replace('{$a->profileurl}', $a->profileurl, $message);
         } else {
-            $a = new object();
-            $a->coursename = format_string($course->fullname);
-            $a->profileurl = "$CFG->wwwroot/user/view.php?id=$user->id&course=$course->id";
-            $message = get_string("welcometocoursetext", 'enrol_self', $a);
+            $message = get_string('welcometocoursetext', 'enrol_self', $a);
         }
 
         $subject = get_string('welcometocourse', 'enrol_self', format_string($course->fullname));
 
         $context = get_context_instance(CONTEXT_COURSE, $course->id);
-        $rusers = null;
+        $rusers = array();
         if (!empty($CFG->coursecontact)) {
             $croles = explode(',', $CFG->coursecontact);
             $rusers = get_role_users($croles, $context, true, '', 'r.sortorder ASC, u.lastname ASC');

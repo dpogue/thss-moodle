@@ -578,7 +578,9 @@ class block_manager {
      */
     public function add_block($blockname, $region, $weight, $showinsubcontexts, $pagetypepattern = NULL, $subpagepattern = NULL) {
         global $DB;
-        $this->check_known_block_type($blockname);
+        // Allow invisible blocks because this is used when adding default page blocks, which
+        // might include invisible ones if the user makes some default blocks invisible
+        $this->check_known_block_type($blockname, true);
         $this->check_region_is_known($region);
 
         if (empty($pagetypepattern)) {
@@ -1494,7 +1496,7 @@ function block_add_block_ui($page, $output) {
             $menu[$block->name] = $blockobject->get_title();
         }
     }
-    asort($menu, SORT_LOCALE_STRING);
+    textlib_get_instance()->asort($menu);
 
     $actionurl = new moodle_url($page->url, array('sesskey'=>sesskey()));
     $select = new single_select($actionurl, 'bui_addblock', $menu, null, array(''=>get_string('adddots')), 'add_block');
@@ -1824,7 +1826,6 @@ function blocks_add_default_course_blocks($course) {
     } else {
         $pagetypepattern = 'course-view-*';
     }
-
     $page = new moodle_page();
     $page->set_course($course);
     $page->blocks->add_blocks($blocknames, $pagetypepattern);

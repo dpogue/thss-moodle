@@ -79,7 +79,7 @@ class data_field_checkbox extends data_field_base {
         foreach (explode("\n",$this->field->param1) as $checkbox) {
             $checkbox = trim($checkbox);
 
-            if (in_array(addslashes($checkbox), $content)) {
+            if (in_array($checkbox, $content)) {
                 $str .= html_writer::checkbox('f_'.$this->field->id.'[]', s($checkbox), true, $checkbox);
             } else {
                 $str .= html_writer::checkbox('f_'.$this->field->id.'[]', s($checkbox), false, $checkbox);
@@ -184,7 +184,7 @@ class data_field_checkbox extends data_field_base {
             if ($key === 'xxx') {
                 continue;
             }
-            if (!in_array(stripslashes($val), $options)) {
+            if (!in_array($val, $options)) {
                 continue;
 
             }

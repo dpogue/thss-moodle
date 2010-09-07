@@ -1196,8 +1196,6 @@ function forum_user_complete($course, $user, $mod, $forum) {
 function forum_print_overview($courses,&$htmlarray) {
     global $USER, $CFG, $DB, $SESSION;
 
-    //$LIKE = $DB->sql_ilike();//no longer using like in queries. MDL-20578
-
     if (empty($courses) || !is_array($courses) || count($courses) == 0) {
         return array();
     }
@@ -2944,10 +2942,8 @@ function forum_get_course_forum($courseid, $type) {
         echo $OUTPUT->notification("Could not add the new course module to that section");
         return false;
     }
-    if (! $DB->set_field("course_modules", "section", $sectionid, array("id" => $mod->coursemodule))) {
-        echo $OUTPUT->notification("Could not update the course module with the correct section");
-        return false;
-    }
+    $DB->set_field("course_modules", "section", $sectionid, array("id" => $mod->coursemodule));
+
     include_once("$CFG->dirroot/course/lib.php");
     rebuild_course_cache($courseid);
 
@@ -6762,9 +6758,8 @@ function forum_discussion_update_last_post($discussionid) {
         $discussionobject->id           = $discussionid;
         $discussionobject->usermodified = $lastpost->userid;
         $discussionobject->timemodified = $lastpost->modified;
-        if ($DB->update_record('forum_discussions', $discussionobject)) {
-            return $lastpost->id;
-        }
+        $DB->update_record('forum_discussions', $discussionobject);
+        return $lastpost->id;
     }
 
 // To get here either we couldn't find a post for the discussion (weird)

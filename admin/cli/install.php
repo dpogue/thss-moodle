@@ -95,6 +95,12 @@ $olddir = getcwd();
 // change directory so that includes bellow work properly
 chdir(dirname($_SERVER['argv'][0]));
 
+// Servers should define a default timezone in php.ini, but if they don't then make sure something is defined.
+// This is a quick hack.  Ideally we should ask the admin for a value.  See MDL-22625 for more on this.
+if (function_exists('date_default_timezone_set') and function_exists('date_default_timezone_get')) {
+    @date_default_timezone_set(@date_default_timezone_get());
+}
+
 // make sure PHP errors are displayed - helps with diagnosing of problems
 @error_reporting(E_ALL);
 @ini_set('display_errors', '1');
@@ -343,7 +349,7 @@ if ($interactive) {
             $CFG->dataroot = '';
             $error = get_string('pathsunsecuredataroot', 'install')."\n";
         } else {
-            if (make_upload_directory('lang', false)) {
+            if (install_init_dataroot($CFG->dataroot, $CFG->directorypermissions)) {
                 $error = '';
             } else {
                 $a = (object)array('dataroot' => $CFG->dataroot);
@@ -357,7 +363,7 @@ if ($interactive) {
     if (is_dataroot_insecure()) {
         cli_error(get_string('pathsunsecuredataroot', 'install'));
     }
-    if (!make_upload_directory('lang', false)) {
+    if (!install_init_dataroot($CFG->dataroot, $CFG->directorypermissions)) {
         $a = (object)array('dataroot' => $CFG->dataroot);
         cli_error(get_string('pathserrcreatedataroot', 'install', $a));
     }
@@ -566,10 +572,16 @@ if (!file_exists($configfile)) {
     cli_error('Can not create config file.');
 }
 
+// remember selected language
+$installlang = $CFG->lang;
 // return back to original dir before executing setup.php which changes the dir again
 chdir($olddir);
 // We have config.php, it is a real php script from now on :-)
 require($configfile);
+
+// use selected language
+$CFG->lang = $installlang;
+$SESSION->lang = $CFG->lang;
 
 install_cli_database($options, $interactive);
 

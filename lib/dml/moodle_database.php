@@ -156,8 +156,8 @@ abstract class moodle_database {
 
     /**
      * Loads and returns a database instance with the specified type and library.
-     * @param string $type database type of the driver (mysql, postgres7, mssql, etc)
-     * @param string $library database library of the driver (adodb, pdo, native, etc)
+     * @param string $type database type of the driver (mysqli, pgsql, mssql, sqldrv, oci, etc.)
+     * @param string $library database library of the driver (native, pdo, etc.)
      * @return moodle_database driver object or null if error
      */
     public static function get_driver_instance($type, $library) {
@@ -184,7 +184,7 @@ abstract class moodle_database {
     /**
      * Returns more specific database driver type
      * Note: can be used before connect()
-     * @return string db type mysql, mysqli, postgres7
+     * @return string db type mysqli, pgsql, oci, mssql, sqlsrv
      */
     protected abstract function get_dbtype();
 
@@ -632,6 +632,11 @@ abstract class moodle_database {
         // convert table names
         $sql = $this->fix_table_names($sql);
 
+        // cast booleans to 1/0 int
+        foreach ($params as $key => $value) {
+            $params[$key] = is_bool($value) ? (int)$value : $value;
+        }
+
         // NICOLAS C: Fixed regexp for negative backwards lookahead of double colons. Thanks for Sam Marshall's help
         $named_count = preg_match_all('/(?<!:):[a-z][a-z0-9_]*/', $sql, $named_matches); // :: used in pgsql casts
         $dollar_count = preg_match_all('/\$[1-9][0-9]*/', $sql, $dollar_matches);
@@ -775,10 +780,10 @@ abstract class moodle_database {
     public abstract function get_indexes($table);
 
     /**
-     * Returns datailed information about columns in table. This information is cached internally.
+     * Returns detailed information about columns in table. This information is cached internally.
      * @param string $table name
      * @param bool $usecache
-     * @return array array of database_column_info objects indexed with column names
+     * @return array of database_column_info objects indexed with column names
      */
     public abstract function get_columns($table, $usecache=true);
 
@@ -804,7 +809,7 @@ abstract class moodle_database {
     /**
      * Returns sql generator used for db manipulation.
      * Used mostly in upgrade.php scripts.
-     * @return object database_manager instance
+     * @return database_manager instance
      */
     public function get_manager() {
         global $CFG;
@@ -840,6 +845,7 @@ abstract class moodle_database {
     /**
      * Enable/disable very detailed debugging
      * @param bool $state
+     * @return void
      */
     public function set_debug($state) {
         $this->debug = $state;
@@ -1739,15 +1745,17 @@ abstract class moodle_database {
      * @param string $param usually bound query parameter (?, :named)
      * @param bool $casesensitive use case sensitive search
      * @param bool $accensensitive use accent sensitive search (not all databases support accent insensitive)
+     * @param bool $notlike true means "NOT LIKE"
      * @param string $escapechar escape char for '%' and '_'
      * @return string SQL code fragment
      */
-    public function sql_like($fieldname, $param, $casesensitive = true, $accentsensitive = true, $escapechar = '\\') {
+    public function sql_like($fieldname, $param, $casesensitive = true, $accentsensitive = true, $notlike = false, $escapechar = '\\') {
         if (strpos($param, '%') !== false) {
-            debugging('Potential SQL injection detected, sql_ilike() expects bound parameters (? or :named)');
+            debugging('Potential SQL injection detected, sql_like() expects bound parameters (? or :named)');
         }
+        $LIKE = $notlike ? 'NOT LIKE' : 'LIKE';
         // by default ignore any sensitiveness - each database does it in a different way
-        return "$fieldname LIKE $param ESCAPE '$escapechar'";
+        return "$fieldname $LIKE $param ESCAPE '$escapechar'";
     }
 
     /**
@@ -1773,7 +1781,7 @@ abstract class moodle_database {
      * @return string
      */
     public function sql_ilike() {
-        //TODO: debugging('sql_ilike() is deprecated, please use sql_like() instead');
+        debugging('sql_ilike() is deprecated, please use sql_like() instead');
         return 'LIKE';
     }
 

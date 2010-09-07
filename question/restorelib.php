@@ -253,7 +253,7 @@
                     } else {
                         $updateobj->parent = 0;
                     }
-                    $status = $status && $DB->update_record('question_categories', $updateobj);
+                    $DB->update_record('question_categories', $updateobj);
                 }
             }
             //now we have recoded all parents, check through all parents and set parent to be
@@ -291,7 +291,7 @@
                 $updateobj = new object();
                 $updateobj->id = $id;
                 $updateobj->parent = $parent;
-                $status = $status && $DB->update_record('question_categories', $updateobj);
+                $DB->update_record('question_categories', $updateobj);
             }
         }
         return $status;
@@ -417,7 +417,7 @@
             //                   see: $QTYPES['random']->get_question_options()
             if ($question->qtype == 'random' && $creatingnewquestion) {
                 $question->parent = $question->id;
-                $status = $DB->set_field('question', 'parent', $question->parent, array('id'=>$question->id));
+                $DB->set_field('question', 'parent', $question->parent, array('id'=>$question->id));
             }
 
             //Save newid to backup tables
@@ -457,10 +457,7 @@
                     if ($parent = backup_getid($restore->backup_unique_code,"question",$question->parent)) {
                         $question->parent = $parent->new_id;
                         if ($question->parent != $restored_questions[$i]->parent) {
-                            if (!$DB->set_field('question', 'parent', $question->parent, array('id'=>$newid))) {
-                                echo 'Could not update parent '.$question->parent.' for question '.$oldid.'<br />';
-                                $status = false;
-                            }
+                            $DB->set_field('question', 'parent', $question->parent, array('id'=>$newid));
                         }
                     } else {
                         echo 'Could not recode parent '.$question->parent.' for question '.$oldid.'<br />';

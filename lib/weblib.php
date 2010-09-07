@@ -1362,7 +1362,7 @@ function format_module_intro($module, $activity, $cmid, $filter=true) {
     global $CFG;
     require_once("$CFG->libdir/filelib.php");
     $context = get_context_instance(CONTEXT_MODULE, $cmid);
-    $options = (object)array('noclean'=>true, 'para'=>false, 'filter'=>true, 'context'=>$context);
+    $options = (object)array('noclean'=>true, 'para'=>false, 'filter'=>$filter, 'context'=>$context);
     $intro = file_rewrite_pluginfile_urls($activity->intro, 'pluginfile.php', $context->id, 'mod_'.$module, 'intro', null);
     return trim(format_text($intro, $activity->introformat, $options, null));
 }
@@ -1493,11 +1493,11 @@ function purify_html($text) {
 
     // this can not be done only once because we sometimes need to reset the cache
     $cachedir = $CFG->dataroot.'/cache/htmlpurifier';
-    $status = check_dir_exists($cachedir, true, true);
+    check_dir_exists($cachedir);
 
     static $purifier = false;
-    static $config;
     if ($purifier === false) {
+        check_dir_exists($cachedir);
         require_once $CFG->libdir.'/htmlpurifier/HTMLPurifier.safe-includes.php';
         $config = HTMLPurifier_Config::createDefault();
         $config->set('Output.Newline', "\n");
@@ -1774,15 +1774,18 @@ function markdown_to_html($text) {
  * @param string $html The text to be converted.
  * @param integer $width Width to wrap the text at. (optional, default 75 which
  *      is a good value for email. 0 means do not limit line length.)
+ * @param boolean $dolinks By default, any links in the HTML are collected, and
+ *      printed as a list at the end of the HTML. If you don't want that, set this
+ *      argument to false.
  * @return string plain text equivalent of the HTML.
  */
-function html_to_text($html, $width = 75) {
+function html_to_text($html, $width = 75, $dolinks = true) {
 
     global $CFG;
 
     require_once($CFG->libdir .'/html2text.php');
 
-    $h2t = new html2text($html, false, true, $width);
+    $h2t = new html2text($html, false, $dolinks, $width);
     $result = $h2t->get_text();
 
     return $result;

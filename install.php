@@ -46,6 +46,12 @@ if (file_exists($configfile)) {
 define('CLI_SCRIPT', false); // prevents some warnings later
 define('AJAX_SCRIPT', false); // prevents some warnings later
 
+// Servers should define a default timezone in php.ini, but if they don't then make sure something is defined.
+// This is a quick hack.  Ideally we should ask the admin for a value.  See MDL-22625 for more on this.
+if (function_exists('date_default_timezone_set') and function_exists('date_default_timezone_get')) {
+    @date_default_timezone_set(@date_default_timezone_get());
+}
+
 // make sure PHP errors are displayed - helps with diagnosing of problems
 @error_reporting(E_ALL);
 @ini_set('display_errors', '1');
@@ -304,7 +310,7 @@ if ($config->stage == INSTALL_DOWNLOADLANG) {
             $hint_dataroot = get_string('pathsroparentdataroot', 'install', $a);
             $config->stage = INSTALL_PATHS;
         } else {
-            if (!make_upload_directory('lang', false)) {
+            if (!install_init_dataroot($CFG->dataroot, $CFG->directorypermissions)) {
                 $hint_dataroot = get_string('pathserrcreatedataroot', 'install', $a);
                 $config->stage = INSTALL_PATHS;
             }
@@ -344,12 +350,8 @@ if ($config->stage == INSTALL_DATABASETYPE) {
 if ($config->stage == INSTALL_DOWNLOADLANG) {
     $downloaderror = '';
 
-// Create necessary lang dir
-    if (!make_upload_directory('lang', false)) {
-        $downloaderror = get_string('cannotcreatelangdir', 'error');
-
-// Download and install lang component
-    } else if ($cd = new component_installer('http://download.moodle.org', 'langpack/2.0', $CFG->lang.'.zip', 'languages.md5', 'lang')) {
+// Download and install lang component, lang dir was already created in install_init_dataroot
+    if ($cd = new component_installer('http://download.moodle.org', 'langpack/2.0', $CFG->lang.'.zip', 'languages.md5', 'lang')) {
         if ($cd->install() == COMPONENT_ERROR) {
             if ($cd->get_error() == 'remotedownloaderror') {
                 $a = new stdClass();

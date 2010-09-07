@@ -557,6 +557,9 @@ class qformat_default {
     function importimagefile( $path, $base64 ) {
         global $CFG;
 
+        //TODO: MDL-16094
+        throw new coding_exception('importimagefile() was not converted to new file api yet, sorry - see MDL-16094');
+
         // all this to get the destination directory
         // and filename!
         $fullpath = "{$CFG->dataroot}/{$this->course->id}/$path";
@@ -805,8 +808,7 @@ class qformat_default {
      * back into an array of category names.
      *
      * Each category name is cleaned by a call to clean_param(, PARAM_MULTILANG),
-     * which matches the cleaning in question/category_form.php. Not that this
-     * addslashes the names, ready for insertion into the database.
+     * which matches the cleaning in question/category_form.php.
      *
      * @param string $path
      * @return array of category names.

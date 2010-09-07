@@ -1091,7 +1091,6 @@ function message_search_users($courseid, $searchtext, $sort='', $exceptions='') 
     global $CFG, $USER, $DB;
 
     $fullname = $DB->sql_fullname();
-    $LIKE     = $DB->sql_ilike();
 
     if (!empty($exceptions)) {
         $except = ' AND u.id NOT IN ('. $exceptions .') ';
@@ -1113,7 +1112,7 @@ function message_search_users($courseid, $searchtext, $sort='', $exceptions='') 
                                        LEFT JOIN {message_contacts} mc
                                             ON mc.contactid = u.id AND mc.userid = ?
                                       WHERE u.deleted = '0' AND u.confirmed = '1'
-                                            AND ($fullname $LIKE ?)
+                                            AND (".$DB->sql_like($fullname, '?', false).")
                                             $except
                                      $order", $params);
     } else {
@@ -1130,7 +1129,7 @@ function message_search_users($courseid, $searchtext, $sort='', $exceptions='') 
                                               ON mc.contactid = u.id AND mc.userid = ?
                                         WHERE u.deleted = '0' AND u.confirmed = '1'
                                               AND ra.contextid $contextlists
-                                              AND ($fullname $LIKE ?)
+                                              AND (".$DB->sql_like($fullname, '?', false).")
                                               $except
                                        $order", $params);
 
@@ -1156,8 +1155,6 @@ function message_search($searchterms, $fromme=true, $tome=true, $courseid='none'
         $NOTREGEXP = $DB->sql_regex(false);
     }
 
-    $LIKE = $DB->sql_ilike();
-
     $searchcond = array();
     $params = array();
     $i = 0;
@@ -1174,7 +1171,7 @@ function message_search($searchterms, $fromme=true, $tome=true, $courseid='none'
     foreach ($searchterms as $searchterm) {
         $i++;
 
-        $NOT = ''; /// Initially we aren't going to perform NOT LIKE searches, only MSSQL and Oracle
+        $NOT = false; /// Initially we aren't going to perform NOT LIKE searches, only MSSQL and Oracle
 
         if ($dropshortwords && strlen($searchterm) < 2) {
             continue;
@@ -1183,7 +1180,7 @@ function message_search($searchterms, $fromme=true, $tome=true, $courseid='none'
     /// simpler LIKE search
         if (!$DB->sql_regex_supported()) {
             if (substr($searchterm, 0, 1) == '-') {
-                $NOT = ' NOT ';
+                $NOT = true;
             }
             $searchterm = trim($searchterm, '+-');
         }
@@ -1201,13 +1198,13 @@ function message_search($searchterms, $fromme=true, $tome=true, $courseid='none'
             $params['ss'.$i] = "(^|[^a-zA-Z0-9])$searchterm([^a-zA-Z0-9]|$)";
 
         } else {
-            $searchcond[] = "m.fullmessage $NOT $LIKE :ss$i";
+            $searchcond[] = $DB->sql_like("m.fullmessage", ":ss$i", false, true, $NOT);
             $params['ss'.$i] = "%$searchterm%";
         }
     }
 
     if (empty($searchcond)) {
-        $searchcond = " m.fullmessage $LIKE :ss1";
+        $searchcond = " ".$DB->sql_like('m.fullmessage', ':ss1', false);
         $params['ss1'] = "%";
     } else {
         $searchcond = implode(" AND ", $searchcond);
@@ -1643,12 +1640,9 @@ function message_move_userfrom_unread2read($userid) {
             $message->timeread = 0; //the message was never read
             $messageid = $message->id;
             unset($message->id);
-            if ($DB->insert_record('message_read', $message)) {
-                $DB->delete_records('message', array('id' => $messageid));
-                $DB->delete_records('message_working', array('unreadmessageid' => $messageid));
-            } else {
-                return false;
-            }
+            $DB->insert_record('message_read', $message);
+            $DB->delete_records('message', array('id' => $messageid));
+            $DB->delete_records('message_working', array('unreadmessageid' => $messageid));
         }
     }
     return true;
@@ -1678,9 +1672,8 @@ function message_get_popup_messages($destuserid, $fromuserid=NULL){
             //delete what we've processed and check if can move message
             $DB->delete_records('message_working', array('id' => $msgp->id));
             if ( $DB->count_records('message_working', array('unreadmessageid'=>$messageid)) == 0){
-                if ($DB->insert_record('message_read', $message)) {
-                    $DB->delete_records('message', array('id' => $messageid));
-                }
+                $DB->insert_record('message_read', $message);
+                $DB->delete_records('message', array('id' => $messageid));
             }
         }
     }
@@ -1706,9 +1699,8 @@ function message_mark_messages_read($touserid, $fromuserid){
 
         //have all message processors completed dealing with this message?
         if ( $DB->count_records('message_working', array('unreadmessageid'=>$messageid)) == 0){
-            if ($DB->insert_record('message_read', $message)) {
-                $DB->delete_records('message', array('id' => $messageid));
-            }
+            $DB->insert_record('message_read', $message);
+            $DB->delete_records('message', array('id' => $messageid));
         }
     }
 }

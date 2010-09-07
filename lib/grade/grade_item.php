@@ -431,10 +431,9 @@ class grade_item extends grade_object {
                 if (!empty($cm->idnumber)) {
                     return false;
                 }
-                if ($DB->set_field('course_modules', 'idnumber', $idnumber, array('id' => $cm->id))) {
-                    $this->idnumber = $idnumber;
-                    return $this->update();
-                }
+                $DB->set_field('course_modules', 'idnumber', $idnumber, array('id' => $cm->id));
+                $this->idnumber = $idnumber;
+                return $this->update();
             } else {
                 $this->idnumber = $idnumber;
                 return $this->update();
@@ -1951,7 +1950,7 @@ class grade_item extends grade_object {
         global $USER;
 
         // Determine which display type to use for this average
-        if (isset($USER->gradeediting) && $USER->gradeediting[$this->courseid]) {
+        if (isset($USER->gradeediting) && array_key_exists($this->courseid, $USER->gradeediting) && $USER->gradeediting[$this->courseid]) {
             $displaytype = GRADE_DISPLAY_TYPE_REAL;
 
         } else if ($rangesdisplaytype == GRADE_REPORT_PREFERENCE_INHERIT) { // no ==0 here, please resave report and user prefs

@@ -36,9 +36,9 @@ define('UPGRADE_LOG_ERROR',  2);
 /**
  * Exception indicating unknown error during upgrade.
  *
- * @package    moodlecore
+ * @package    core
  * @subpackage upgrade
- * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * @copyright  2009 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class upgrade_exception extends moodle_exception {
@@ -52,9 +52,9 @@ class upgrade_exception extends moodle_exception {
 /**
  * Exception indicating downgrade error during upgrade.
  *
- * @package    moodlecore
+ * @package    core
  * @subpackage upgrade
- * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * @copyright  2009 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class downgrade_exception extends moodle_exception {
@@ -67,9 +67,9 @@ class downgrade_exception extends moodle_exception {
 }
 
 /**
- * @package    moodlecore
+ * @package    core
  * @subpackage upgrade
- * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * @copyright  2009 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class upgrade_requires_exception extends moodle_exception {
@@ -85,9 +85,9 @@ class upgrade_requires_exception extends moodle_exception {
 }
 
 /**
- * @package    moodlecore
+ * @package    core
  * @subpackage upgrade
- * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * @copyright  2009 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class plugin_defective_exception extends moodle_exception {
@@ -290,6 +290,8 @@ function upgrade_plugins($type, $startcallback, $endcallback, $verbose) {
         if (!empty($plugin->requires)) {
             if ($plugin->requires > $CFG->version) {
                 throw new upgrade_requires_exception($component, $plugin->version, $CFG->version, $plugin->requires);
+            } else if ($plugin->requires < 2010000000) {
+                throw new plugin_defective_exception($component, 'Plugin is not compatible with Moodle 2.x or later.');
             }
         }
 
@@ -419,6 +421,8 @@ function upgrade_plugins_modules($startcallback, $endcallback, $verbose) {
         if (!empty($module->requires)) {
             if ($module->requires > $CFG->version) {
                 throw new upgrade_requires_exception($component, $module->version, $CFG->version, $module->requires);
+            } else if ($module->requires < 2010000000) {
+                throw new plugin_defective_exception($component, 'Plugin is not compatible with Moodle 2.x or later.');
             }
         }
 
@@ -552,6 +556,14 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
         $plugin->cron    = 0;
         include($fullblock.'/version.php');
         $block = $plugin;
+
+        if (!empty($plugin->requires)) {
+            if ($plugin->requires > $CFG->version) {
+                throw new upgrade_requires_exception($component, $plugin->version, $CFG->version, $plugin->requires);
+            } else if ($plugin->requires < 2010000000) {
+                throw new plugin_defective_exception($component, 'Plugin is not compatible with Moodle 2.x or later.');
+            }
+        }
 
         if (!is_readable($fullblock.'/block_'.$blockname.'.php')) {
             throw new plugin_defective_exception('block/'.$blockname, 'Missing main block class file.');

@@ -19,6 +19,7 @@
  * @package    core
  * @subpackage session
  * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @copyright  2008, 2009 Petr Skoda  {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -60,9 +61,12 @@ function session_get_instance() {
 }
 
 /**
- * @package   moodlecore
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Moodle session abstraction
+ *
+ * @package    core
+ * @subpackage session
+ * @copyright  2008 Petr Skoda  {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 interface moodle_session {
     /**
@@ -89,9 +93,10 @@ interface moodle_session {
 /**
  * Class handling all session and cookies related stuff.
  *
- * @package   moodlecore
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    core
+ * @subpackage session
+ * @copyright  2009 Petr Skoda  {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 abstract class session_stub implements moodle_session {
     protected $justloggedout;
@@ -320,9 +325,10 @@ abstract class session_stub implements moodle_session {
 /**
  * Legacy moodle sessions stored in files, not recommended any more.
  *
- * @package   moodlecore
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    core
+ * @subpackage session
+ * @copyright  2009 Petr Skoda  {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class legacy_file_session extends session_stub {
     protected function init_session_storage() {
@@ -339,12 +345,9 @@ class legacy_file_session extends session_stub {
 
         ini_set('session.gc_maxlifetime', $CFG->sessiontimeout);
 
-        if (!file_exists($CFG->dataroot .'/sessions')) {
-            make_upload_directory('sessions');
-        }
-        if (!is_writable($CFG->dataroot .'/sessions/')) {
-            print_error('sessionnotwritable', 'error');
-        }
+        // make sure sessions dir exists and is writable, throws exception if not
+        make_upload_directory('sessions');
+
         // Need to disable debugging since disk_free_space()
         // will fail on very large partitions (see MDL-19222)
         $freespace = @disk_free_space($CFG->dataroot.'/sessions');
@@ -360,19 +363,18 @@ class legacy_file_session extends session_stub {
      */
     public function session_exists($sid){
         $sid = clean_param($sid, PARAM_FILE);
-        $sessionfile = clean_param("$CFG->dataroot/sessions/sess_$sid", PARAM_FILE);
+        $sessionfile = "$CFG->dataroot/sessions/sess_$sid";
         return file_exists($sessionfile);
     }
-
-
 }
 
 /**
  * Recommended moodle session storage.
  *
- * @package   moodlecore
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    core
+ * @subpackage session
+ * @copyright  2009 Petr Skoda  {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class database_session extends session_stub {
     protected $record   = null;

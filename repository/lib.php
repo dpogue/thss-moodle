@@ -21,10 +21,10 @@
  * and was introduced as part of the changes occuring in Moodle 2.0
  *
  * @since 2.0
- * @package moodlecore
+ * @package    core
  * @subpackage repository
- * @copyright 2009 Dongsheng Cai <dongsheng@moodle.com>
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2009 Dongsheng Cai <dongsheng@moodle.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once(dirname(dirname(__FILE__)) . '/config.php');
@@ -739,12 +739,17 @@ abstract class repository {
                         $is_supported = false;
                     }
                 }
+
                 if (!$onlyvisible || ($repository->is_visible() && !$repository->disabled)) {
                     // check capability in current context
                     if (!empty($current_context)) {
                         $capability = has_capability('repository/'.$record->repositorytype.':view', $current_context);
                     } else {
                         $capability = has_capability('repository/'.$record->repositorytype.':view', get_system_context());
+                    }
+                    if ($record->repositorytype == 'coursefiles') {
+                        // coursefiles plugin needs managefiles permission
+                        $capability = $capability && has_capability('moodle/course:managefiles', $current_context);
                     }
                     if ($is_supported && $capability) {
                         $repositories[$repository->id] = $repository;
@@ -1312,19 +1317,18 @@ abstract class repository {
             $DB->update_record('repository_instances', $r);
             unset($options['name']);
         }
-        $result = true;
         foreach ($options as $name=>$value) {
             if ($id = $DB->get_field('repository_instance_config', 'id', array('name'=>$name, 'instanceid'=>$this->id))) {
-                $result = $result && $DB->set_field('repository_instance_config', 'value', $value, array('id'=>$id));
+                $DB->set_field('repository_instance_config', 'value', $value, array('id'=>$id));
             } else {
                 $config = new object();
                 $config->instanceid = $this->id;
                 $config->name   = $name;
                 $config->value  = $value;
-                $result = $result && $DB->insert_record('repository_instance_config', $config);
+                $DB->insert_record('repository_instance_config', $config);
             }
         }
-        return $result;
+        return true;
     }
 
     /**

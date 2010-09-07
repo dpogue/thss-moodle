@@ -18,7 +18,7 @@
 /**
  * Main administration script.
  *
- * @package    moodlecore
+ * @package    core
  * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -240,7 +240,9 @@ if ($version > $CFG->version) {  // upgrade
         echo $OUTPUT->box_end();
         print_plugin_tables();
         print_upgrade_reload('index.php?confirmupgrade=1&amp;confirmrelease=1');
-        echo $OUTPUT->continue_button('index.php?confirmupgrade=1&confirmrelease=1&confirmplugincheck=1');
+        $button = new single_button(new moodle_url('index.php', array('confirmupgrade'=>1, 'confirmrelease'=>1, 'confirmplugincheck'=>1)), get_string('upgradestart', 'admin'), 'get');
+        $button->class = 'continuebutton';
+        echo $OUTPUT->render($button);
         echo $OUTPUT->footer();
         die();
 
@@ -249,7 +251,8 @@ if ($version > $CFG->version) {  // upgrade
         upgrade_core($version, true);
     }
 } else if ($version < $CFG->version) {
-    echo $OUTPUT->notification('WARNING!!!  The code you are using is OLDER than the version that made these databases!');
+    // better stop here, we can not continue with plugin upgrades or anything else
+    throw new moodle_exception('downgradedcore', 'error', new moodle_url('/admin/'));
 }
 
 // Updated human-readable release version if necessary
@@ -257,8 +260,33 @@ if ($release <> $CFG->release) {  // Update the release version
     set_config('release', $release);
 }
 
-// upgrade all plugins and other parts
-upgrade_noncore(true);
+if (moodle_needs_upgrading()) {
+    if (!$PAGE->headerprinted) {
+        // means core upgrade or installation was not already done
+        if (!$confirmplugins) {
+            $PAGE->set_pagelayout('maintenance');
+            $strplugincheck = get_string('plugincheck');
+            $PAGE->navbar->add($strplugincheck);
+            $PAGE->set_title($strplugincheck);
+            $PAGE->set_heading($strplugincheck);
+            $PAGE->set_cacheable(false);
+            echo $OUTPUT->header();
+            echo $OUTPUT->heading($strplugincheck);
+            echo $OUTPUT->box_start('generalbox', 'notice');
+            print_string('pluginchecknotice');
+            echo $OUTPUT->box_end();
+            print_plugin_tables();
+            print_upgrade_reload('index.php');
+            $button = new single_button(new moodle_url('index.php', array('confirmplugincheck'=>1)), get_string('upgradestart', 'admin'), 'get');
+            $button->class = 'continuebutton';
+            echo $OUTPUT->render($button);
+            echo $OUTPUT->footer();
+            die();
+        }
+    }
+    // install/upgrade all plugins and other parts
+    upgrade_noncore(true);
+}
 
 // If this is the first install, indicate that this site is fully configured
 // except the admin password

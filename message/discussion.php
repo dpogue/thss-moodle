@@ -98,7 +98,7 @@
 /// user wants simple frame&js-less mode
 
     $start    = optional_param('start', time(), PARAM_INT);
-    $message  = optional_param('message', '', PARAM_CLEAN);
+    $message  = optional_param('message', '', PARAM_CLEAN); //TODO: this is wrong we must use text_format() instead
     $format   = optional_param('format', FORMAT_MOODLE, PARAM_INT);
     $refresh  = optional_param('refresh', '', PARAM_RAW);
     $last     = optional_param('last', 0, PARAM_INT);
@@ -343,9 +343,8 @@
             $messageid = $message->id;
             unset($message->id);
             $message->timeread = time();
-            if ($DB->insert_record('message_read', $message)) {
-                $DB->delete_records('message', array('id'=>$messageid));
-            }
+            $DB->insert_record('message_read', $message);
+            $DB->delete_records('message', array('id'=>$messageid));
             if ($message->timecreated < $start) {
                 $start = $message->timecreated; // move start back so that we see all current history
             }

@@ -563,9 +563,7 @@ function is_dataroot_insecure($fetchtest=false) {
     preg_match('|(https?://[^/]+)|i', $CFG->wwwroot, $matches);
     $httpdocroot = $matches[1];
     $datarooturl = $httpdocroot.'/'. substr($dataroot, strlen($siteroot));
-    if (make_upload_directory('diag', false) === false) {
-        return INSECURE_DATAROOT_WARNING;
-    }
+    make_upload_directory('diag');
     $testfile = $CFG->dataroot.'/diag/public.txt';
     if (!file_exists($testfile)) {
         file_put_contents($testfile, 'test file, do not delete');
@@ -1624,7 +1622,7 @@ class admin_setting_configtext extends admin_setting {
         if (!is_null($size)) {
             $this->size  = $size;
         } else {
-            $this->size  = ($paramtype == PARAM_INT) ? 5 : 30;
+            $this->size  = ($paramtype === PARAM_INT) ? 5 : 30;
         }
         parent::__construct($name, $visiblename, $description, $defaultsetting);
     }
@@ -1670,7 +1668,7 @@ class admin_setting_configtext extends admin_setting {
 
         } else {
             $cleaned = clean_param($data, $this->paramtype);
-            if ("$data" == "$cleaned") { // implicit conversion to string is needed to do exact comparison
+            if ("$data" === "$cleaned") { // implicit conversion to string is needed to do exact comparison
                 return true;
             } else {
                 return get_string('validateerror', 'admin');

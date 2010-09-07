@@ -148,8 +148,6 @@ function build_mnet_logs_array($hostid, $course, $user=0, $date=0, $order="l.tim
     //    $groupid = 0;
     //}
 
-    $ILIKE = $DB->sql_ilike();
-
     $groupid = 0;
 
     $joins = array();
@@ -185,12 +183,12 @@ function build_mnet_logs_array($hostid, $course, $user=0, $date=0, $order="l.tim
 
     if ($modaction) {
         $firstletter = substr($modaction, 0, 1);
-        if (preg_match('/[[:alpha:]]/', $firstletter)) {
-            $where .= " AND lower(l.action) $ILIKE :modaction";
-            $params['modaction'] = "%$modaction%";
-        } else if ($firstletter == '-') {
-            $where .= " AND lower(l.action) NOT $ILIKE :modaction";
-            $params['modaction'] = "%$modaction%";
+        if ($firstletter == '-') {
+            $where .= " AND ".$DB->sql_like('l.action', ':modaction', false, true, true);
+            $params['modaction'] = '%'.substr($modaction, 1).'%';
+        } else {
+            $where .= " AND ".$DB->sql_like('l.action', ':modaction', false);
+            $params['modaction'] = '%'.$modaction.'%';
         }
     }
 
@@ -266,14 +264,13 @@ function build_logs_array($course, $user=0, $date=0, $order="l.time ASC", $limit
     }
 
     if ($modaction) {
-        $ILIKE = $DB->sql_ilike();
         $firstletter = substr($modaction, 0, 1);
-        if (preg_match('/[[:alpha:]]/', $firstletter)) {
-            $joins[] = "l.action $ILIKE :modaction";
-            $params['modaction'] = '%'.$modaction.'%';
-        } else if ($firstletter == '-') {
-            $joins[] = "l.action NOT $ILIKE :modaction";
+        if ($firstletter == '-') {
+            $joins[] = $DB->sql_like('l.action', ':modaction', false, true, true);
             $params['modaction'] = '%'.substr($modaction, 1).'%';
+        } else {
+            $joins[] = $DB->sql_like('l.action', ':modaction', false);
+            $params['modaction'] = '%'.$modaction.'%';
         }
     }
 
@@ -1147,7 +1144,7 @@ function get_all_mods($courseid, &$mods, &$modnames, &$modnamesplural, &$modname
                 $modnamesplural[$mod->name] = get_string("modulenameplural", "$mod->name");
             }
         }
-        asort($modnames, SORT_LOCALE_STRING);
+        textlib_get_instance()->asort($modnames);
     } else {
         print_error("nomodules", 'debug');
     }
@@ -1172,7 +1169,7 @@ function get_all_mods($courseid, &$mods, &$modnames, &$modnamesplural, &$modname
             $modnamesused[$mod->modname] = $modnames[$mod->modname];
         }
         if ($modnamesused) {
-            asort($modnamesused, SORT_LOCALE_STRING);
+            textlib_get_instance()->asort($modnamesused);
         }
     }
 }
@@ -1735,9 +1732,7 @@ function rebuild_course_cache($courseid=0, $clearonly=false) {
     if ($rs = $DB->get_recordset("course", $select,'','id,fullname')) {
         foreach ($rs as $course) {
             $modinfo = serialize(get_array_of_activities($course->id));
-            if (!$DB->set_field("course", "modinfo", $modinfo, array("id"=>$course->id))) {
-                echo $OUTPUT->notification("Could not cache module information for course '" . format_string($course->fullname) . "'!");
-            }
+            $DB->set_field("course", "modinfo", $modinfo, array("id"=>$course->id));
             // update cached global COURSE too ;-)
             if ($course->id == $COURSE->id) {
                 $COURSE->modinfo = $modinfo;
@@ -2547,11 +2542,8 @@ function add_mod_to_section($mod, $beforemod=NULL) {
             $newsequence = "$section->sequence,$mod->coursemodule";
         }
 
-        if ($DB->set_field("course_sections", "sequence", $newsequence, array("id"=>$section->id))) {
-            return $section->id;     // Return course_sections ID that was used.
-        } else {
-            return 0;
-        }
+        $DB->set_field("course_sections", "sequence", $newsequence, array("id"=>$section->id));
+        return $section->id;     // Return course_sections ID that was used.
 
     } else {  // Insert a new record
         $section->course   = $mod->course;
@@ -2581,7 +2573,7 @@ function set_coursemodule_idnumber($id, $idnumber) {
 * the course module back to what it was originally.
 */
 function set_coursemodule_visible($id, $visible, $prevstateoverrides=false) {
-    global $DB;
+    global $DB, $CFG;
     if (!$cm = $DB->get_record('course_modules', array('id'=>$id))) {
         return false;
     }
@@ -2597,6 +2589,14 @@ function set_coursemodule_visible($id, $visible, $prevstateoverrides=false) {
             }
         }
     }
+
+    //hide the grade item so the teacher doesn't also have to go to the gradebook and hide it there
+    require_once($CFG->libdir.'/gradelib.php');
+    $grade_item = grade_item::fetch(array('itemtype'=>'mod', 'itemmodule'=>$modulename, 'iteminstance'=>$cm->instance, 'courseid'=>$cm->course));
+    if ($grade_item !== false) {
+        $grade_item->set_hidden(!$visible);
+    }
+
     if ($prevstateoverrides) {
         if ($visible == '0') {
             // Remember the current visible state so we can toggle this back.
@@ -2637,6 +2637,11 @@ function delete_course_module($id) {
             $grade_item->delete('moddelete');
         }
     }
+    // Delete completion and availability data; it is better to do this even if the
+    // features are not turned on, in case they were turned on previously (these will be
+    // very quick on an empty table)
+    $DB->delete_records('course_modules_completion', array('coursemoduleid' => $cm->id));
+    $DB->delete_records('course_modules_availability', array('coursemoduleid'=> $cm->id));
 
     delete_context(CONTEXT_MODULE, $cm->id);
     return $DB->delete_records('course_modules', array('id'=>$cm->id));
@@ -2690,12 +2695,9 @@ function move_section($course, $section, $move) {
         return false;
     }
 
-    if (!$DB->set_field("course_sections", "section", $sectiondest, array("id"=>$sectionrecord->id))) {
-        return false;
-    }
-    if (!$DB->set_field("course_sections", "section", $section, array("id"=>$sectiondestrecord->id))) {
-        return false;
-    }
+    $DB->set_field("course_sections", "section", $sectiondest, array("id"=>$sectionrecord->id));
+    $DB->set_field("course_sections", "section", $section, array("id"=>$sectiondestrecord->id));
+
     // if the focus is on the section that is being moved, then move the focus along
     if (isset($USER->display[$course->id]) and ($USER->display[$course->id] == $section)) {
         course_set_display($course->id, $sectiondest);
@@ -2707,9 +2709,7 @@ function move_section($course, $section, $move) {
     $n = 0;
     foreach ($sections as $section) {
         if ($section->section != $n) {
-            if (!$DB->set_field('course_sections', 'section', $n, array('id'=>$section->id))) {
-                return false;
-            }
+            $DB->set_field('course_sections', 'section', $n, array('id'=>$section->id));
         }
         $n++;
     }

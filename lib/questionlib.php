@@ -213,7 +213,7 @@ function question_type_menu() {
 /**
  * Sort an array of question type names according to the question type sort order stored in
  * config_plugins. Entries for which there is no xxx_sortorder defined will go
- * at the end, sorted according to asort($inarray, SORT_LOCALE_STRING).
+ * at the end, sorted according to textlib_get_instance()->asort($inarray).
  * @param $inarray an array $qtype => $QTYPES[$qtype]->local_name().
  * @param $config get_config('question'), if you happen to have it around, to save one DB query.
  * @return array the sorted version of $inarray.
@@ -237,7 +237,7 @@ function question_sort_qtype_array($inarray, $config = null) {
         $outarray[$name] = $inarray[$name];
         unset($inarray[$name]);
     }
-    asort($inarray, SORT_LOCALE_STRING);
+    textlib_get_instance()->asort($inarray);
     return array_merge($outarray, $inarray);
 }
 
@@ -748,9 +748,7 @@ function question_delete_course_category($category, $newcategory, $feedback=true
         if (!$newcontext = get_context_instance(CONTEXT_COURSECAT, $newcategory->id)) {
             return false;
         }
-        if (!$DB->set_field('question_categories', 'contextid', $newcontext->id, array('contextid'=>$context->id))) {
-            return false;
-        }
+        $DB->set_field('question_categories', 'contextid', $newcontext->id, array('contextid'=>$context->id));
         if ($feedback) {
             $a = new stdClass;
             $a->oldplace = print_context_name($context);
@@ -855,7 +853,7 @@ function question_delete_activity($cm, $feedback=true) {
  */
 function question_move_questions_to_category($questionids, $newcategoryid) {
     global $DB, $QTYPES;
-    $result = true;
+
     $ids = explode(',', $questionids);
     foreach ($ids as $questionid) {
         $questionid = (int)$questionid;
@@ -872,14 +870,14 @@ function question_move_questions_to_category($questionids, $newcategoryid) {
 
 
     // Move the questions themselves.
-    $result = $result && $DB->set_field_select('question', 'category', $newcategoryid, "id IN ($questionids)");
+    $DB->set_field_select('question', 'category', $newcategoryid, "id IN ($questionids)");
 
     // Move any subquestions belonging to them.
-    $result = $result && $DB->set_field_select('question', 'category', $newcategoryid, "parent IN ($questionids)");
+    $DB->set_field_select('question', 'category', $newcategoryid, "parent IN ($questionids)");
 
     // TODO Deal with datasets.
 
-    return $result;
+    return true;
 }
 
 /**
@@ -1957,9 +1955,7 @@ function question_process_comment($question, &$state, &$attempt, $comment, $grad
     $comment = trim($comment);
     $state->manualcomment = $comment;
     $state->newflaggedstate = $state->flagged;
-    if (!$DB->set_field('question_sessions', 'manualcomment', $comment, array('attemptid'=>$attempt->uniqueid, 'questionid'=>$question->id))) {
-        return get_string('errorsavingcomment', 'question', $question);
-    }
+    $DB->set_field('question_sessions', 'manualcomment', $comment, array('attemptid'=>$attempt->uniqueid, 'questionid'=>$question->id));
 
     // Update the attempt if the score has changed.
     if ($grade !== '' && (abs($state->last_graded->grade - $grade) > 0.002 || $state->last_graded->event != QUESTION_EVENTMANUALGRADE)) {

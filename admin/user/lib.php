@@ -7,7 +7,7 @@ if (!defined('MAX_BULK_USERS')) {
 }
 
 function add_selection_all($ufiltering) {
-    global $SESSION, $DB;
+    global $SESSION, $DB, $CFG;
 
     list($sqlwhere, $params) = $ufiltering->get_sql_filter("id<>:exguest AND deleted <> 1", array('exguest'=>$CFG->siteguest));
 
@@ -22,7 +22,7 @@ function add_selection_all($ufiltering) {
 }
 
 function get_selection_data($ufiltering) {
-    global $SESSION, $DB;
+    global $SESSION, $DB, $CFG;
 
     // get the SQL filter
     list($sqlwhere, $params) = $ufiltering->get_sql_filter("id<>:exguest AND deleted <> 1", array('exguest'=>$CFG->siteguest));

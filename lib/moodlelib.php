@@ -117,7 +117,7 @@ define('PARAM_BOOL',     'bool');
 define('PARAM_CAPABILITY',   'capability');
 
 /**
- * PARAM_CLEANHTML - cleans submitted HTML code and removes slashes. It stays as HTML.
+ * PARAM_CLEANHTML - cleans submitted HTML code. use only for text in HTML format. This cleaning may fix xhtml strictness too.
  */
 define('PARAM_CLEANHTML', 'cleanhtml');
 
@@ -208,7 +208,7 @@ define('PARAM_TAG',   'tag');
 define('PARAM_TAGLIST',   'taglist');
 
 /**
- * PARAM_TEXT - general plain text compatible with multilang filter, no other html tags.
+ * PARAM_TEXT - general plain text compatible with multilang filter, no other html tags. Please note '<', or '>' are allowed here.
  */
 define('PARAM_TEXT',  'text');
 
@@ -236,6 +236,7 @@ define('PARAM_STRINGID',    'stringid');
 /**
  * PARAM_CLEAN - obsoleted, please use a more specific type of parameter.
  * It was one of the first types, that is why it is abused so much ;-)
+ * @deprecated since 2.0
  */
 define('PARAM_CLEAN',    'clean');
 
@@ -429,12 +430,18 @@ define('HUB_MOODLEORGHUBURL', "http://hub.moodle.org");
  * used like this:
  *    $id = required_param('id', PARAM_INT);
  *
- * @param string $parname the name of the page parameter we want,
- *                        default PARAM_CLEAN
- * @param int $type expected type of parameter
+ * Please note the $type parameter is now required,
+ * for now PARAM_CLEAN is used for backwards compatibility only.
+ *
+ * @param string $parname the name of the page parameter we want
+ * @param string $type expected type of parameter
  * @return mixed
  */
-function required_param($parname, $type=PARAM_CLEAN) {
+function required_param($parname, $type) {
+    if (!isset($type)) {
+        debugging('required_param() requires $type to be specified.');
+        $type = PARAM_CLEAN; // for now let's use this deprecated type
+    }
     if (isset($_POST[$parname])) {       // POST has precedence
         $param = $_POST[$parname];
     } else if (isset($_GET[$parname])) {
@@ -455,12 +462,23 @@ function required_param($parname, $type=PARAM_CLEAN) {
  * used like this:
  *    $name = optional_param('name', 'Fred', PARAM_TEXT);
  *
+ * Please note $default and $type parameters are now required,
+ * for now PARAM_CLEAN is used for backwards compatibility only.
+ *
  * @param string $parname the name of the page parameter we want
  * @param mixed  $default the default value to return if nothing is found
- * @param int $type expected type of parameter, default PARAM_CLEAN
+ * @param string $type expected type of parameter
  * @return mixed
  */
-function optional_param($parname, $default=NULL, $type=PARAM_CLEAN) {
+function optional_param($parname, $default, $type) {
+    if (!isset($type)) {
+        debugging('optional_param() requires $default and $type to be specified.');
+        $type = PARAM_CLEAN; // for now let's use this deprecated type
+    }
+    if (!isset($default)) {
+        $default = null;
+    }
+
     if (isset($_POST[$parname])) {       // POST has precedence
         $param = $_POST[$parname];
     } else if (isset($_GET[$parname])) {
@@ -512,7 +530,7 @@ function validate_param($param, $type, $allownull=NULL_NOT_ALLOWED, $debuginfo='
  * an options field.
  * <code>
  * $course->format = clean_param($course->format, PARAM_ALPHA);
- * $selectedgrade_item = clean_param($selectedgrade_item, PARAM_CLEAN);
+ * $selectedgrade_item = clean_param($selectedgrade_item, PARAM_INT);
  * </code>
  *
  * @param mixed $param the variable we are cleaning
@@ -536,13 +554,14 @@ function clean_param($param, $type) {
             return $param;
 
         case PARAM_CLEAN:        // General HTML cleaning, try to use more specific type if possible
+            // this is deprecated!, please use more specific type instead
             if (is_numeric($param)) {
                 return $param;
             }
             return clean_text($param);     // Sweep for scripts, etc
 
-        case PARAM_CLEANHTML:    // prepare html fragment for display, do not store it into db!!
-            $param = clean_text($param);     // Sweep for scripts, etc
+        case PARAM_CLEANHTML:    // clean html fragment
+            $param = clean_text($param, FORMAT_HTML);     // Sweep for scripts, etc
             return trim($param);
 
         case PARAM_INT:
@@ -582,7 +601,67 @@ function clean_param($param, $type) {
             return strip_tags($param);
 
         case PARAM_TEXT:    // leave only tags needed for multilang
-            return clean_param(strip_tags($param, '<lang><span>'), PARAM_CLEAN);
+            // if the multilang syntax is not correct we strip all tags
+            // because it would break xhtml strict which is required for accessibility standards
+            // please note this cleaning does not strip unbalanced '>' for BC compatibility reasons
+            do {
+                if (strpos($param, '</lang>') !== false) {
+                    // old and future mutilang syntax
+                    $param = strip_tags($param, '<lang>');
+                    if (!preg_match_all('/<.*>/suU', $param, $matches)) {
+                        break;
+                    }
+                    $open = false;
+                    foreach ($matches[0] as $match) {
+                        if ($match === '</lang>') {
+                            if ($open) {
+                                $open = false;
+                                continue;
+                            } else {
+                                break 2;
+                            }
+                        }
+                        if (!preg_match('/^<lang lang="[a-zA-Z0-9_-]+"\s*>$/u', $match)) {
+                            break 2;
+                        } else {
+                            $open = true;
+                        }
+                    }
+                    if ($open) {
+                        break;
+                    }
+                    return $param;
+
+                } else if (strpos($param, '</span>') !== false) {
+                    // current problematic multilang syntax
+                    $param = strip_tags($param, '<span>');
+                    if (!preg_match_all('/<.*>/suU', $param, $matches)) {
+                        break;
+                    }
+                    $open = false;
+                    foreach ($matches[0] as $match) {
+                        if ($match === '</span>') {
+                            if ($open) {
+                                $open = false;
+                                continue;
+                            } else {
+                                break 2;
+                            }
+                        }
+                        if (!preg_match('/^<span(\s+lang="[a-zA-Z0-9_-]+"|\s+class="multilang"){2}\s*>$/u', $match)) {
+                            break 2;
+                        } else {
+                            $open = true;
+                        }
+                    }
+                    if ($open) {
+                        break;
+                    }
+                    return $param;
+                }
+            } while (false);
+            // easy, just strip all tags, if we ever want to fix orphaned '&' we have to do that in format_string()
+            return strip_tags($param);
 
         case PARAM_SAFEDIR:      // Remove everything not a-zA-Z0-9_-
             return preg_replace('/[^a-zA-Z0-9_-]/i', '', $param);
@@ -1079,12 +1158,8 @@ function purge_all_caches() {
     // purge all other caches: rss, simplepie, etc.
     remove_dir($CFG->dataroot.'/cache', true);
 
-    // some more diagnostics in case site is misconfigured
-    if (!check_dir_exists($CFG->dataroot.'/cache', true, true)) {
-        debugging('Can not create cache directory, please check permissions in dataroot.');
-    } else if (!is_writeable($CFG->dataroot.'/cache')) {
-        debugging('Cache directory is not writeable, please verify permissions in dataroot.');
-    }
+    // make sure cache dir is writable, throws exception if not
+    make_upload_directory('cache');
 
     clearstatcache();
 }
@@ -4027,6 +4102,16 @@ function remove_course_contents($courseid, $showfeedback=true) {
     remove_course_grades($courseid, $showfeedback);
     remove_grade_letters($context, $showfeedback);
 
+/// Remove all data from availability and completion tables that is associated
+/// with course-modules belonging to this course. Note this is done even if the
+/// features are not enabled now, in case they were enabled previously
+    $DB->delete_records_select('course_modules_completion',
+           'coursemoduleid IN (SELECT id from {course_modules} WHERE course=?)',
+           array($courseid));
+    $DB->delete_records_select('course_modules_availability',
+           'coursemoduleid IN (SELECT id from {course_modules} WHERE course=?)',
+           array($courseid));
+
 /// Delete every instance of every module
 
     if ($allmods = $DB->get_records('modules') ) {
@@ -5110,81 +5195,6 @@ function get_file_packer($mimetype='application/zip') {
 }
 
 /**
- * Makes a directory for a particular user.
- *
- * @global object
- * @param int $userid The id of the user in question - maps to id field of 'user' table.
- * @param bool $test Whether we are only testing the return value (do not create the directory)
- * @return string|false Returns full path to directory if successful, false if not
- */
-function make_user_directory($userid, $test=false) {
-    global $CFG, $OUTPUT;
-
-    if (is_bool($userid) || $userid < 0 || !preg_match('/^[0-9]{1,10}$/', $userid) || $userid > 2147483647) {
-        if (!$test) {
-            echo $OUTPUT->notification("Given userid was not a valid integer! (" . gettype($userid) . " $userid)");
-        }
-        return false;
-    }
-
-    // Generate a two-level path for the userid. First level groups them by slices of 1000 users, second level is userid
-    $level1 = floor($userid / 1000) * 1000;
-
-    $userdir = "user/$level1/$userid";
-    if ($test) {
-        return $CFG->dataroot . '/' . $userdir;
-    } else {
-        return make_upload_directory($userdir);
-    }
-}
-
-/**
- * Returns an array of full paths to user directories, indexed by their userids.
- *
- * @global object
- * @param bool $only_non_empty Only return directories that contain files
- * @param bool $legacy Search for user directories in legacy location (dataroot/users/userid) instead of (dataroot/user/section/userid)
- * @return array An associative array: userid=>array(basedir => $basedir, userfolder => $userfolder)
- */
-function get_user_directories($only_non_empty=true, $legacy=false) {
-    global $CFG, $OUTPUT;
-
-    $rootdir = $CFG->dataroot."/user";
-
-    if ($legacy) {
-        $rootdir = $CFG->dataroot."/users";
-    }
-    $dirlist = array();
-
-    //Check if directory exists
-    if (check_dir_exists($rootdir, true)) {
-        if ($legacy) {
-            if ($userlist = get_directory_list($rootdir, '', true, true, false)) {
-                foreach ($userlist as $userid) {
-                    $dirlist[$userid] = array('basedir' => $rootdir, 'userfolder' => $userid);
-                }
-            } else {
-                echo $OUTPUT->notification("no directories found under $rootdir");
-            }
-        } else {
-            if ($grouplist =get_directory_list($rootdir, '', true, true, false)) { // directories will be in the form 0, 1000, 2000 etc...
-                foreach ($grouplist as $group) {
-                    if ($userlist = get_directory_list("$rootdir/$group", '', true, true, false)) {
-                        foreach ($userlist as $userid) {
-                            $dirlist[$userid] = array('basedir' => $rootdir, 'userfolder' => $group . '/' . $userid);
-                        }
-                    }
-                }
-            }
-        }
-    } else {
-        echo $OUTPUT->notification("$rootdir does not exist!");
-        return false;
-    }
-    return $dirlist;
-}
-
-/**
  * Returns current name of file on disk if it exists.
  *
  * @param string $newfile File to be verified
@@ -5834,7 +5844,7 @@ class core_string_manager implements string_manager {
         // caches so we do not need to do all this merging and dependencies resolving again
         $this->cache[$lang][$component] = $string;
         if ($this->usediskcache) {
-            check_dir_exists("$this->cacheroot/$lang", true, true);
+            check_dir_exists("$this->cacheroot/$lang");
             file_put_contents("$this->cacheroot/$lang/$component.php", "<?php \$this->cache['$lang']['$component'] = ".var_export($string, true).";");
         }
         return $string;
@@ -5987,8 +5997,7 @@ class core_string_manager implements string_manager {
         }
 
         $countries = $this->load_component_strings('core_countries', $lang);
-        asort($countries);
-
+        textlib_get_instance()->asort($countries);
         if (!$returnall and !empty($CFG->allcountrycodes)) {
             $enabled = explode(',', $CFG->allcountrycodes);
             $return = array();
@@ -6122,7 +6131,6 @@ class core_string_manager implements string_manager {
             $langdirs = array_merge($langdirs, array("$CFG->dirroot/lang/en"=>'en'));
             // Sort all
 
-            asort($langdirs);
             // Loop through all langs and get info
             foreach ($langdirs as $lang) {
                 if (strstr($lang, '_local') !== false) {
@@ -6138,6 +6146,8 @@ class core_string_manager implements string_manager {
                 unset($string);
             }
         }
+
+        textlib_get_instance()->asort($languages);
 
         return $languages;
     }
@@ -9097,33 +9107,6 @@ function remove_dir($dir, $content_only=false) {
         return $result;
     }
     return rmdir($dir); // if anything left the result will be false, no need for && $result
-}
-
-/**
- * Function to check if a directory exists and optionally create it.
- *
- * @param string absolute directory path (must be under $CFG->dataroot)
- * @param boolean create directory if does not exist
- * @param boolean create directory recursively
- * @return boolean true if directory exists or created
- */
-function check_dir_exists($dir, $create=false, $recursive=false) {
-    global $CFG;
-
-    if (strpos(str_replace('\\', '/', $dir), str_replace('\\', '/', $CFG->dataroot.'/')) !== 0) {
-        debugging('Warning. Wrong call to check_dir_exists(). $dir must be an absolute path under $CFG->dataroot ("' . $dir . '" is incorrect)', DEBUG_DEVELOPER);
-        return false;
-    }
-
-    if (is_dir($dir)) {
-        return true;
-    }
-
-    if (!$create) {
-        return false;
-    }
-
-    return mkdir($dir, $CFG->directorypermissions, $recursive);
 }
 
 /**

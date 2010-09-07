@@ -33,6 +33,8 @@
  */
 class test extends XMLDBAction {
 
+    //TODO: MDL-24116 content of this file is being migrated to DDL/DML functional tests, this script is not referenced from UI any more and will be deleted soon
+
     /**
      * Init method, every subclass will have its own
      */
@@ -968,23 +970,20 @@ class test extends XMLDBAction {
             $rec->name = 'texttest';
         /// Calculate its length
             $textlen = $textlib->strlen($fulltext);
-            if ($rec->id = $DB->insert_record('newnameforthetable', $rec)) {
-                if ($new = $DB->get_record('newnameforthetable', array('id'=>$rec->id))) {
-                    $DB->delete_records('newnameforthetable', array('id'=>$new->id));
-                    $newtextlen = $textlib->strlen($new->intro);
-                    if ($fulltext === $new->intro) {
-                        $test->sql = array($newtextlen . ' cc. (text) sent and received ok');
-                        $test->status = true;
-                    } else {
-                        $test->error = $DB->get_last_error();
-                        $test->sql = array($newtextlen . ' cc. (text) transfer failed. Data changed!');
-                        $test->status = false;
-                    }
+            $rec->id = $DB->insert_record('newnameforthetable', $rec);
+            if ($new = $DB->get_record('newnameforthetable', array('id'=>$rec->id))) {
+                $DB->delete_records('newnameforthetable', array('id'=>$new->id));
+                $newtextlen = $textlib->strlen($new->intro);
+                if ($fulltext === $new->intro) {
+                    $test->sql = array($newtextlen . ' cc. (text) sent and received ok');
+                    $test->status = true;
                 } else {
-                    $test->error = $DB->get_last_error().'xx';
+                    $test->error = $DB->get_last_error();
+                    $test->sql = array($newtextlen . ' cc. (text) transfer failed. Data changed!');
+                    $test->status = false;
                 }
             } else {
-                $test->error = $DB->get_last_error().'yy'.var_export($rec->id, true);
+                $test->error = $DB->get_last_error().'xx';
             }
             $tests['insert record '. $textlen . ' cc. (text)'] = $test;
         }
@@ -998,19 +997,16 @@ class test extends XMLDBAction {
             $rec->name = 'binarytest';
         /// Calculate its length
             $textlen = strlen($rec->avatar);
-            if ($rec->id = $DB->insert_record('newnameforthetable', $rec)) {
-                if ($new = $DB->get_record('newnameforthetable', array('id'=>$rec->id))) {
-                    $newtextlen = strlen($new->avatar);
-                    if ($rec->avatar === $new->avatar) {
-                        $test->sql = array($newtextlen . ' bytes (binary) sent and received ok');
-                        $test->status = true;
-                    } else {
-                        $test->error = $DB->get_last_error();
-                        $test->sql = array($newtextlen . ' bytes (binary) transfer failed. Data changed!');
-                        $test->status = false;
-                    }
+            $rec->id = $DB->insert_record('newnameforthetable', $rec);
+            if ($new = $DB->get_record('newnameforthetable', array('id'=>$rec->id))) {
+                $newtextlen = strlen($new->avatar);
+                if ($rec->avatar === $new->avatar) {
+                    $test->sql = array($newtextlen . ' bytes (binary) sent and received ok');
+                    $test->status = true;
                 } else {
                     $test->error = $DB->get_last_error();
+                    $test->sql = array($newtextlen . ' bytes (binary) transfer failed. Data changed!');
+                    $test->status = false;
                 }
             } else {
                 $test->error = $DB->get_last_error();
@@ -1030,27 +1026,24 @@ class test extends XMLDBAction {
         /// Calculate its length
             $textlen = $textlib->strlen($basetext);
             $imglen = strlen($basetext);
-            if ($DB->update_record('newnameforthetable', $rec)) {
-                if ($new = $DB->get_record('newnameforthetable', array('id'=>$rec->id))) {
-                    $newtextlen = $textlib->strlen($new->intro);
-                    $newimglen = strlen($new->avatar);
-                    if ($basetext === $new->avatar && $basetext === $new->intro) {
-                        $test->sql = array($newtextlen . ' cc. (text) sent and received ok',
-                                           $newimglen . ' bytes (binary) sent and received ok');
-                        $test->status = true;
-                    } else {
-                        if ($rec->avatar !== $new->avatar) {
-                            $test->error = $DB->get_last_error();
-                            $test->sql = array($newimglen . ' bytes (binary) transfer failed. Data changed!');
-                            $test->status = false;
-                        } else {
-                            $test->error = $DB->get_last_error();
-                            $test->sql = array($newtextlen . ' cc. (text) transfer failed. Data changed!');
-                            $test->status = false;
-                        }
-                    }
+            $DB->update_record('newnameforthetable', $rec);
+            if ($new = $DB->get_record('newnameforthetable', array('id'=>$rec->id))) {
+                $newtextlen = $textlib->strlen($new->intro);
+                $newimglen = strlen($new->avatar);
+                if ($basetext === $new->avatar && $basetext === $new->intro) {
+                    $test->sql = array($newtextlen . ' cc. (text) sent and received ok',
+                                       $newimglen . ' bytes (binary) sent and received ok');
+                    $test->status = true;
                 } else {
-                    $test->error = $DB->get_last_error();
+                    if ($rec->avatar !== $new->avatar) {
+                        $test->error = $DB->get_last_error();
+                        $test->sql = array($newimglen . ' bytes (binary) transfer failed. Data changed!');
+                        $test->status = false;
+                    } else {
+                        $test->error = $DB->get_last_error();
+                        $test->sql = array($newtextlen . ' cc. (text) transfer failed. Data changed!');
+                        $test->status = false;
+                    }
                 }
             } else {
                 $test->error = $DB->get_last_error();
@@ -1068,19 +1061,16 @@ class test extends XMLDBAction {
             $rec->name = 'updatelobs';
         /// Calculate its length
             $textlen = $textlib->strlen($fulltext);
-            if ($DB->set_field('newnameforthetable', 'intro', $rec->intro, array('name'=>$rec->name))) {
-                if ($new = $DB->get_record('newnameforthetable', array('id'=>$rec->id))) {
-                    $newtextlen = $textlib->strlen($new->intro);
-                    if ($fulltext === $new->intro) {
-                        $test->sql = array($newtextlen . ' cc. (text) sent and received ok');
-                        $test->status = true;
-                    } else {
-                        $test->error = $DB->get_last_error();
-                        $test->sql = array($newtextlen . ' cc. (text) transfer failed. Data changed!');
-                        $test->status = false;
-                    }
+            $DB->set_field('newnameforthetable', 'intro', $rec->intro, array('name'=>$rec->name));
+            if ($new = $DB->get_record('newnameforthetable', array('id'=>$rec->id))) {
+                $newtextlen = $textlib->strlen($new->intro);
+                if ($fulltext === $new->intro) {
+                    $test->sql = array($newtextlen . ' cc. (text) sent and received ok');
+                    $test->status = true;
                 } else {
                     $test->error = $DB->get_last_error();
+                    $test->sql = array($newtextlen . ' cc. (text) transfer failed. Data changed!');
+                    $test->status = false;
                 }
             } else {
                 $test->error = $DB->get_last_error();
@@ -1098,19 +1088,16 @@ class test extends XMLDBAction {
             $rec->name = 'updatelobs';
         /// Calculate its length
             $textlen = strlen($rec->avatar);
-            if ($DB->set_field('newnameforthetable', 'avatar', $rec->avatar, array('name'=>$rec->name))) {
-                if ($new = $DB->get_record('newnameforthetable', array('id'=>$rec->id))) {
-                    $newtextlen = strlen($new->avatar);
-                    if ($rec->avatar === $new->avatar) {
-                        $test->sql = array($newtextlen . ' bytes (binary) sent and received ok');
-                        $test->status = true;
-                    } else {
-                        $test->error = $DB->get_last_error();
-                        $test->sql = array($newtextlen . ' bytes (binary) transfer failed. Data changed!');
-                        $test->status = false;
-                    }
+            $DB->set_field('newnameforthetable', 'avatar', $rec->avatar, array('name'=>$rec->name));
+            if ($new = $DB->get_record('newnameforthetable', array('id'=>$rec->id))) {
+                $newtextlen = strlen($new->avatar);
+                if ($rec->avatar === $new->avatar) {
+                    $test->sql = array($newtextlen . ' bytes (binary) sent and received ok');
+                    $test->status = true;
                 } else {
                     $test->error = $DB->get_last_error();
+                    $test->sql = array($newtextlen . ' bytes (binary) transfer failed. Data changed!');
+                    $test->status = false;
                 }
             } else {
                 $test->error = $DB->get_last_error();

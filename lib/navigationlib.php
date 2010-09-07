@@ -1342,8 +1342,16 @@ class global_navigation extends navigation_node {
 
         require_once($CFG->dirroot.'/course/lib.php');
 
-        $modinfo = get_fast_modinfo($course);
-        $sections = array_slice(get_all_sections($course->id), 0, $course->numsections+1, true);
+        if (!$this->cache->cached('modinfo'.$course->id)) {
+            $this->cache->set('modinfo'.$course->id, get_fast_modinfo($course));
+        }
+        $modinfo = $this->cache->{'modinfo'.$course->id};
+
+        if (!$this->cache->cached('coursesections'.$course->id)) {
+            $this->cache->set('coursesections'.$course->id, array_slice(get_all_sections($course->id), 0, $course->numsections+1, true));
+        }
+        $sections = $this->cache->{'coursesections'.$course->id};
+
         $viewhiddensections = has_capability('moodle/course:viewhiddensections', $this->page->context);
 
         if (isloggedin() && !isguestuser()) {
@@ -2899,7 +2907,7 @@ class settings_navigation extends navigation_node {
         // Manage files
         if ($course->legacyfiles == 2 and has_capability('moodle/course:managefiles', $coursecontext)) {
             // hidden in new courses and courses where legacy files were turned off
-            $url = new moodle_url('/files/index.php', array('contextid'=>$coursecontext->id, 'itemid'=>0, 'component' => 'course', 'filearea'=>'legacy'));
+            $url = new moodle_url('/files/index.php', array('contextid'=>$coursecontext->id));
             $coursenode->add(get_string('courselegacyfiles'), $url, self::TYPE_SETTING, null, 'coursefiles', new pix_icon('i/files', ''));
         }
 
@@ -3272,16 +3280,16 @@ class settings_navigation extends navigation_node {
                 $url = new moodle_url('/user/editadvanced.php', array('id'=>$user->id, 'course'=>$course->id));
                 $usersetting->add(get_string('editmyprofile'), $url, self::TYPE_SETTING);
             } else if ((has_capability('moodle/user:editprofile', $usercontext) && !is_siteadmin($user)) || ($currentuser && has_capability('moodle/user:editownprofile', $systemcontext))) {
-				if (!empty($user->auth)) {
-					$userauth = get_auth_plugin($user->auth);
-					if ($userauth->can_edit_profile()) {
-						$url = $userauth->edit_profile_url();
-						if (empty($url)) {
-							$url = new moodle_url('/user/edit.php', array('id'=>$user->id, 'course'=>$course->id));
-						}
-						$usersetting->add(get_string('editmyprofile'), $url, self::TYPE_SETTING);
-					}
-				}
+                if (!empty($user->auth)) {
+                    $userauth = get_auth_plugin($user->auth);
+                    if ($userauth->can_edit_profile()) {
+                        $url = $userauth->edit_profile_url();
+                        if (empty($url)) {
+                            $url = new moodle_url('/user/edit.php', array('id'=>$user->id, 'course'=>$course->id));
+                        }
+                        $usersetting->add(get_string('editmyprofile'), $url, self::TYPE_SETTING);
+                    }
+                }
             }
         }
 
