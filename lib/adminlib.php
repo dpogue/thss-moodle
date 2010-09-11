@@ -1340,7 +1340,7 @@ abstract class admin_setting {
     public function __construct($name, $visiblename, $description, $defaultsetting) {
         $this->parse_setting_name($name);
         $this->visiblename    = $visiblename;
-        $this->description    = markdown_to_html($description);
+        $this->description    = $description;
         $this->defaultsetting = $defaultsetting;
     }
 
@@ -1589,7 +1589,7 @@ class admin_setting_heading extends admin_setting {
             $return .= $OUTPUT->heading($this->visiblename, 3, 'main');
         }
         if ($this->description != '') {
-            $return .= $OUTPUT->box(highlight($query, $this->description), 'generalbox formsettingheading');
+            $return .= $OUTPUT->box(highlight($query, markdown_to_html($this->description)), 'generalbox formsettingheading');
         }
         return $return;
     }
@@ -5177,7 +5177,7 @@ class admin_setting_managelicenses extends admin_setting {
         $txt = get_strings(array('administration', 'settings', 'name', 'enable', 'disable', 'none'));
         $licenses = license_manager::get_licenses();
 
-        $return = $OUTPUT->heading(get_string('managelicenses', 'admin'), 3, 'main', true);
+        $return = $OUTPUT->heading(get_string('availablelicenses', 'admin'), 3, 'main', true);
 
         $return .= $OUTPUT->box_start('generalbox editorsui');
 
@@ -5882,7 +5882,7 @@ function format_admin_setting($setting, $title='', $form='', $description='', $l
     </label>
   </div>
   <div class="form-setting">'.$form.$defaultinfo.'</div>
-  <div class="form-description">'.highlight($query, $description).'</div>
+  <div class="form-description">'.highlight($query, markdown_to_html($description)).'</div>
 </div>';
 
     $adminroot = admin_get_root();

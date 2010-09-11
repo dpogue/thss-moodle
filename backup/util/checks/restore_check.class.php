@@ -157,6 +157,26 @@ abstract class restore_check {
             }
         }
 
+        // Check the user has the ability to configure the restore. If not then we need
+        // to lock all settings by permission so that no changes can be made.
+        $hasconfigcap = has_capability('moodle/restore:configure', $coursectx, $userid);
+        if (!$hasconfigcap) {
+            $settings = $restore_controller->get_plan()->get_settings();
+            foreach ($settings as $setting) {
+                $setting->set_status(base_setting::LOCKED_BY_PERMISSION);
+            }
+        }
+
+        // Ensure the user has the rolldates capability. If not we want to lock this
+        // settings so that they cannot change it.
+        $hasrolldatescap = has_capability('moodle/restore:rolldates', $coursectx, $userid);
+        if ($type == backup::TYPE_1COURSE && !$hasrolldatescap) {
+            $datesetting = $restore_controller->get_plan()->get_setting('course_startdate');
+            if ($datesetting) {
+                $datesetting->set_status(base_setting::LOCKED_BY_PERMISSION);
+            }
+        }
+
         return true;
     }
 }
