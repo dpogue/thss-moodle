@@ -213,20 +213,10 @@ header #welcome p {
 	padding: 0 15px;
 	padding-top: 10px;
 	text-shadow: rgba(0, 0, 0, .5) 0.1em 0.15em 0.5em;
-    background: transparent linear-gradient(top, [[setting:welcomecolour]], [[setting:welcomecolourfade]]);
-}
-
-.gecko header div#welcome p {
-	background: transparent -moz-linear-gradient(top, [[setting:welcomecolour]] 0%, [[setting:welcomecolourfade]] 100%);
-}
-
-.safari header div#welcome p {
-	background: transparent -webkit-gradient(linear, left top, left bottom, from([[setting:welcomecolour]]), to([[setting:welcomecolourfade]]));
-}
-
-.opera header #welcome p,
-.ie header #welcome p {
     background: [[setting:welcomecolour]] none;
+	background: transparent -moz-linear-gradient(top, [[setting:welcomecolour]] 0%, [[setting:welcomecolourfade]] 100%);
+	background: transparent -webkit-gradient(linear, left top, left bottom, from([[setting:welcomecolour]]), to([[setting:welcomecolourfade]]));
+    background: transparent linear-gradient(top, [[setting:welcomecolour]], [[setting:welcomecolourfade]]);
 }
 
 header div#welcome p b {
@@ -296,7 +286,11 @@ header div#menubar .menu {
 /* Footer */
 body>footer {
 	background: #dbdbdb url([[pix:theme|footer]]) repeat-x top;
+	-moz-border-radius-topleft:15px;
+	-webkit-border-top-left-radius:15px;
 	border-top-left-radius:15px;
+	-moz-border-radius-topright:15px;
+	-webkit-border-top-right-radius:15px;
 	border-top-right-radius:15px;
 	width: 84%;
 	left: 8%;
@@ -306,16 +300,6 @@ body>footer {
 	margin: 0 auto;
 	/*position: absolute;
 	bottom: 0;*/
-}
-
-.safari footer {
-	-webkit-border-top-left-radius:15px;
-	-webkit-border-top-right-radius:15px;
-}
-
-.gecko footer {
-	-moz-border-radius-topleft:15px;
-	-moz-border-radius-topright:15px;
 }
 
 footer span.right {

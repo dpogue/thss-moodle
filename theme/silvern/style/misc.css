@@ -5,15 +5,9 @@
 	width: 50%;
 	overflow: hidden;
 	background: #f9f9f9;
-	border-radius: 2px;
-}
-
-.gecko .loginbox {
     -moz-border-radius: 2px;
-}
-
-.safari .loginbox {
     -webkit-border-radius: 2px;
+	border-radius: 2px;
 }
 
 .loginbox h2,

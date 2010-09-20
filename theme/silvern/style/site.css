@@ -145,16 +145,10 @@ a.skip-block, a.skip {
 	padding: 10px;
 	margin-bottom: 15px;
 	background: #f9f9f9;
+	-moz-border-radius: 2px;
+	-webkit-border-radius: 2px;
 	border-radius: 2px;
     border: 1px solid #a3a3a3;
-}
-
-.gecko .generalbox {
-	-moz-border-radius: 2px;
-}
-
-.webkit .generalbox {
-	-webkit-border-radius: 2px;
 }
 
 .boxaligncenter {
@@ -199,31 +193,19 @@ a.skip-block, a.skip {
 	background: #f9f9f9;
 	margin: 0.5em 20px;
 	border: 1px solid #a3a3a3;
-	border-radius: 2px;
-}
-
-.safari .categorybox {
-	-webkit-border-radius: 2px;
-}
-
-.gecko .categorybox {
 	-moz-border-radius: 2px;
+	-webkit-border-radius: 2px;
+	border-radius: 2px;
 }
 
 .course_category_tree {
     background: #f9f9f9;
     border: 1px solid #a3a3a3;
+	-moz-border-radius: 2px;
+	-webkit-border-radius: 2px;
     border-radius: 2px;
     margin: 0.5em 20px;
     padding: 10px;
-}
-
-.safari .course_category_tree {
-	-webkit-border-radius: 2px;
-}
-
-.gecko .course_category_tree {
-	-moz-border-radius: 2px;
 }
 
 .course_category_tree .controls {
@@ -233,14 +215,8 @@ a.skip-block, a.skip {
 .userprofile {
     background: #f9f9f9;
     border: 1px solid #a3a3a3;
+    -moz-border-radius: 2px;
+    -webkit-border-radius: 2px;
     border-radius: 2px;
     padding: 5px 10px;
-}
-
-.gecko .userprofile {
-    -moz-border-radius: 2px;
-}
-
-.safari .userprofile {
-    -webkit-border-radius: 2px;
 }
