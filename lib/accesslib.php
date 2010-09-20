@@ -731,7 +731,7 @@ function is_siteadmin($user_or_id = NULL) {
  * @return unknown_type
  */
 function has_coursecontact_role($userid) {
-    global $DB;
+    global $DB, $CFG;
 
     if (empty($CFG->coursecontact)) {
         return false;
@@ -739,7 +739,7 @@ function has_coursecontact_role($userid) {
     $sql = "SELECT 1
               FROM {role_assignments}
              WHERE userid = :userid AND roleid IN ($CFG->coursecontact)";
-    return $DB->record_exists($sql, array('userid'=>$userid));
+    return $DB->record_exists_sql($sql, array('userid'=>$userid));
 }
 
 /**
@@ -1686,7 +1686,7 @@ function create_context($contextlevel, $instanceid, $strictness=IGNORE_MISSING) 
     global $CFG, $DB;
 
     if ($contextlevel == CONTEXT_SYSTEM) {
-        return create_system_context();
+        return get_system_context();
     }
 
     $context = new object();
@@ -1895,36 +1895,43 @@ function get_system_context($cache=true) {
  *
  * @param int $level
  * @param int $instanceid
+ * @param bool $deleterecord false means keep record for now
  * @return bool returns true or throws an exception
  */
-function delete_context($contextlevel, $instanceid) {
+function delete_context($contextlevel, $instanceid, $deleterecord = true) {
     global $DB, $ACCESSLIB_PRIVATE, $CFG;
 
     // do not use get_context_instance(), because the related object might not exist,
     // or the context does not exist yet and it would be created now
     if ($context = $DB->get_record('context', array('contextlevel'=>$contextlevel, 'instanceid'=>$instanceid))) {
-        $DB->delete_records('role_assignments', array('contextid'=>$context->id));
-        $DB->delete_records('role_capabilities', array('contextid'=>$context->id));
-        $DB->delete_records('context', array('id'=>$context->id));
-        $DB->delete_records('role_names', array('contextid'=>$context->id));
+        // delete these first because they might fetch the context and try to recreate it!
+        blocks_delete_all_for_context($context->id);
+        filter_delete_all_for_context($context->id);
+        require_once($CFG->dirroot . '/comment/lib.php');
+        comment::delete_comments(array('contextid'=>$context->id));
 
         // delete all files attached to this context
         $fs = get_file_storage();
         $fs->delete_area_files($context->id);
 
+        // now delete stuff from role related tables, role_unassign_all
+        // and unenrol should be called earlier to do proper cleanup
+        $DB->delete_records('role_assignments', array('contextid'=>$context->id));
+        $DB->delete_records('role_capabilities', array('contextid'=>$context->id));
+        $DB->delete_records('role_names', array('contextid'=>$context->id));
+
+        // and finally it is time to delete the context record if requested
+        if ($deleterecord) {
+            $DB->delete_records('context', array('id'=>$context->id));
+            // purge static context cache if entry present
+            unset($ACCESSLIB_PRIVATE->contexts[$contextlevel][$instanceid]);
+            unset($ACCESSLIB_PRIVATE->contextsbyid[$context->id]);
+        }
+
         // do not mark dirty contexts if parents unknown
         if (!is_null($context->path) and $context->depth > 0) {
             mark_context_dirty($context->path);
         }
-
-        // purge static context cache if entry present
-        unset($ACCESSLIB_PRIVATE->contexts[$contextlevel][$instanceid]);
-        unset($ACCESSLIB_PRIVATE->contextsbyid[$context->id]);
-
-        blocks_delete_all_for_context($context->id);
-        filter_delete_all_for_context($context->id);
-        require_once($CFG->dirroot . '/comment/lib.php');
-        comment::delete_comments(array('contextid'=>$context->id));
     }
 
     return true;
@@ -2764,6 +2771,8 @@ function isguestuser($user = NULL) {
  * @return bool
  */
 function is_guest($context, $user = NULL) {
+    global $USER;
+
     // first find the course context
     $coursecontext = get_course_context($context);
 
@@ -2976,14 +2985,12 @@ function get_enrolled_sql($context, $withcapability = '', $groupid = 0, $onlyact
         // make lists of roles that are needed and prohibited
         $needed     = array(); // one of these is enough
         $prohibited = array(); // must not have any of these
-        if ($withcapability) {
-            foreach ($access as $roleid => $perm) {
-                if ($perm == CAP_PROHIBIT) {
-                    unset($needed[$roleid]);
-                    $prohibited[$roleid] = true;
-                } else if ($perm == CAP_ALLOW and empty($prohibited[$roleid])) {
-                    $needed[$roleid] = true;
-                }
+        foreach ($access as $roleid => $perm) {
+            if ($perm == CAP_PROHIBIT) {
+                unset($needed[$roleid]);
+                $prohibited[$roleid] = true;
+            } else if ($perm == CAP_ALLOW and empty($prohibited[$roleid])) {
+                $needed[$roleid] = true;
             }
         }
 
@@ -2995,7 +3002,7 @@ function get_enrolled_sql($context, $withcapability = '', $groupid = 0, $onlyact
         if ($isfrontpage) {
             if (!empty($prohibited[$defaultuserroleid]) or !empty($prohibited[$defaultfrontpageroleid])) {
                 $nobody = true;
-            } else if (!empty($neded[$defaultuserroleid]) or !empty($neded[$defaultfrontpageroleid])) {
+            } else if (!empty($needed[$defaultuserroleid]) or !empty($needed[$defaultfrontpageroleid])) {
                 // everybody not having prohibit has the capability
                 $needed = array();
             } else if (empty($needed)) {
@@ -3004,7 +3011,7 @@ function get_enrolled_sql($context, $withcapability = '', $groupid = 0, $onlyact
         } else {
             if (!empty($prohibited[$defaultuserroleid])) {
                 $nobody = true;
-            } else if (!empty($neded[$defaultuserroleid])) {
+            } else if (!empty($needed[$defaultuserroleid])) {
                 // everybody not having prohibit has the capability
                 $needed = array();
             } else if (empty($needed)) {
@@ -3032,11 +3039,16 @@ function get_enrolled_sql($context, $withcapability = '', $groupid = 0, $onlyact
             }
 
             if ($groupid) {
-                $joins[] = "JOIN {groups_members} {$prefix}gm ON ({$prefix}gm.userid = {$prefix}u.id AND {$prefix}gm.id = :{$prefix}gmid)";
+                $joins[] = "JOIN {groups_members} {$prefix}gm ON ({$prefix}gm.userid = {$prefix}u.id AND {$prefix}gm.groupid = :{$prefix}gmid)";
                 $params["{$prefix}gmid"] = $groupid;
             }
         }
 
+    } else {
+        if ($groupid) {
+            $joins[] = "JOIN {groups_members} {$prefix}gm ON ({$prefix}gm.userid = {$prefix}u.id AND {$prefix}gm.groupid = :{$prefix}gmid)";
+            $params["{$prefix}gmid"] = $groupid;
+        }
     }
 
     $wheres[] = "{$prefix}u.deleted = 0 AND {$prefix}u.id <> :{$prefix}guestid";
@@ -3231,7 +3243,7 @@ function reset_role_capabilities($roleid) {
  * @return boolean true if success, exception in case of any problems
  */
 function update_capabilities($component='moodle') {
-    global $DB, $OUTPUT;
+    global $DB, $OUTPUT, $ACCESSLIB_PRIVATE;
 
     $storedcaps = array();
 
@@ -5024,7 +5036,7 @@ function sort_by_roleassignment_authority($users, $context, $roles=array(), $sor
  *
  * @global object
  * @param int $roleid (can also be an array of ints!)
- * @param object $context
+ * @param stdClass $context
  * @param bool $parent if true, get list of users assigned in higher context too
  * @param string $fields fields from user (u.) , role assignment (ra) or role (r.)
  * @param string $sort sort from user (u.) , role assignment (ra) or role (r.)
@@ -5033,7 +5045,7 @@ function sort_by_roleassignment_authority($users, $context, $roles=array(), $sor
  * @param mixed $limitfrom defaults to ''
  * @param mixed $limitnum defaults to ''
  * @param string $extrawheretest defaults to ''
- * @param string $whereparams defaults to ''
+ * @param string|array $whereparams defaults to ''
  * @return array
  */
 function get_role_users($roleid, $context, $parent=false, $fields='',
@@ -5714,9 +5726,8 @@ function build_context_path($force=false) {
  * DB efficient as possible. This op can have a
  * massive impact in the DB.
  *
- * @global object
- * @param obj $current context obj
- * @param obj $newparent new parent obj
+ * @param stdClass $current context obj
+ * @param stdClass $newparent new parent obj
  *
  */
 function context_moved($context, $newparent) {
@@ -5851,6 +5862,8 @@ function is_contextpath_dirty($pathcontexts, $dirty) {
  * @return array $role->sortorder =-> $role->id with the keys in ascending order.
  */
 function fix_role_sortorder($allroles) {
+    global $DB;
+
     $rolesort = array();
     $i = 0;
     foreach ($allroles as $role) {

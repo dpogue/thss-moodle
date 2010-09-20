@@ -121,7 +121,7 @@ function s($var, $obsolete = false) {
         return '0';
     }
 
-    return preg_replace("/&amp;(#\d+);/i", "&$1;", htmlspecialchars($var));
+    return preg_replace("/&amp;#(\d+|x[0-7a-fA-F]+);/i", "&#$1;", htmlspecialchars($var, ENT_QUOTES, 'UTF-8', false));
 }
 
 /**
@@ -1497,19 +1497,41 @@ function purify_html($text) {
 
     static $purifier = false;
     if ($purifier === false) {
-        check_dir_exists($cachedir);
         require_once $CFG->libdir.'/htmlpurifier/HTMLPurifier.safe-includes.php';
         $config = HTMLPurifier_Config::createDefault();
-        $config->set('Output.Newline', "\n");
+
+        $config->set('HTML.DefinitionID', 'moodlehtml');
+        $config->set('HTML.DefinitionRev', 1);
+        $config->set('Cache.SerializerPath', $cachedir);
+        //$config->set('Cache.SerializerPermission', $CFG->directorypermissions); // it would be nice to get this upstream
+        $config->set('Core.NormalizeNewlines', false);
         $config->set('Core.ConvertDocumentToFragment', true);
         $config->set('Core.Encoding', 'UTF-8');
         $config->set('HTML.Doctype', 'XHTML 1.0 Transitional');
-        $config->set('Cache.SerializerPath', $cachedir);
-        $config->set('URI.AllowedSchemes', array('http'=>1, 'https'=>1, 'ftp'=>1, 'irc'=>1, 'nntp'=>1, 'news'=>1, 'rtsp'=>1, 'teamspeak'=>1, 'gopher'=>1, 'mms'=>1));
+        $config->set('URI.AllowedSchemes', array('http'=>true, 'https'=>true, 'ftp'=>true, 'irc'=>true, 'nntp'=>true, 'news'=>true, 'rtsp'=>true, 'teamspeak'=>true, 'gopher'=>true, 'mms'=>true));
         $config->set('Attr.AllowedFrameTargets', array('_blank'));
+
+        $def = $config->getHTMLDefinition(true);
+        $def->addElement('nolink', 'Block', 'Flow', array());                       // skip our filters inside
+        $def->addElement('tex', 'Inline', 'Inline', array());                       // tex syntax, equivalent to $$xx$$
+        $def->addElement('algebra', 'Inline', 'Inline', array());                   // algebra syntax, equivalent to @@xx@@
+        $def->addElement('lang', 'Block', 'Flow', array(), array('lang'=>'CDATA')); // old anf future style multilang - only our hacked lang attribute
+        $def->addAttribute('span', 'xxxlang', 'CDATA');                             // current problematic multilang
+
         $purifier = new HTMLPurifier($config);
     }
-    return $purifier->purify($text);
+
+    $multilang = (strpos($text, 'class="multilang"') !== false);
+
+    if ($multilang) {
+        $text = preg_replace('/<span(\s+lang="([a-zA-Z0-9_-]+)"|\s+class="multilang"){2}\s*>/', '<span xxxlang="${2}">', $text);
+    }
+    $text = $purifier->purify($text);
+    if ($multilang) {
+        $text = preg_replace('/<span xxxlang="([a-zA-Z0-9_-]+)">/', '<span lang="${1}" class="multilang">', $text);
+    }
+
+    return $text;
 }
 
 /**
@@ -2171,7 +2193,7 @@ function print_collapsible_region_end($return = false) {
  *
  * @global object
  * @uses CONTEXT_COURSE
- * @param array $group A single {@link group} object OR array of groups.
+ * @param array|stdClass $group A single {@link group} object OR array of groups.
  * @param int $courseid The course ID.
  * @param boolean $large Default small picture, or large.
  * @param boolean $return If false print picture, otherwise return the output as string
@@ -2296,7 +2318,7 @@ function print_recent_activity_note($time, $user, $text, $link, $return=false, $
  */
 function navmenulist($course, $sections, $modinfo, $strsection, $strjumpto, $width=50, $cmid=0) {
 
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     $section = -1;
     $url = '';
@@ -2435,24 +2457,6 @@ function mdie($msg='', $errorcode=1) {
 }
 
 /**
- * Returns html code to be used as help icon of modgrade form element
- *
- * Is used as a callback in modgrade setHelpButton()
- *
- * @param int $courseid id of the course the scales should be shown from
- * @return string to be echoed
- */
-function modgradehelpbutton($courseid){
-    global $CFG, $OUTPUT;
-
-    $url = new moodle_url('/course/scales.php', array('id' => $courseid, 'list' => true));
-    $text = '<span class="helplink"><img alt="' . get_string('scales') . '" class="iconhelp" src="' . $OUTPUT->pix_url('help') . '" /></span>';
-    $action = new popup_action('click', $link->url, 'ratingscales', array('height' => 400, 'width' => 500));
-
-    return $OUTPUT->action_link($url, $text, $action, array('title'=>get_string('newwindow')));
-}
-
-/**
  * Print a message and exit.
  *
  * @param string $message The message to print in the notice
@@ -2494,10 +2498,10 @@ function notice ($message, $link='', $course=NULL) {
  * <strong>Good practice:</strong> You should call this method before starting page
  * output by using any of the OUTPUT methods.
  *
- * @param moodle_url $url A moodle_url to redirect to. Strings are not to be trusted!
+ * @param moodle_url|string $url A moodle_url to redirect to. Strings are not to be trusted!
  * @param string $message The message to display to the user
  * @param int $delay The delay before redirecting
- * @return void
+ * @return void - does not return!
  */
 function redirect($url, $message='', $delay=-1) {
     global $OUTPUT, $PAGE, $SESSION, $CFG;
@@ -2518,11 +2522,11 @@ function redirect($url, $message='', $delay=-1) {
 
     if (function_exists('error_get_last')) {
         $lasterror = error_get_last();
+        //NOTE: problem here is that this contains error even if error hidden with @do();
     }
     $debugdisableredirect = defined('DEBUGGING_PRINTED') ||
             (!empty($CFG->debugdisplay) && !empty($lasterror) && ($lasterror['type'] & DEBUG_DEVELOPER));
 
-    $usingmsg = false;
     if (!empty($message)) {
         if ($delay === -1 || !is_numeric($delay)) {
             $delay = 3;
@@ -3158,7 +3162,7 @@ EOT;
         if ($percent != 100 && ($this->lastcall->time + $this->minimum_time) > microtime(true)){
             return;
         }
-        $this->_update($percent/100, $msg);
+        $this->_update($percent, 100, $msg);
     }
     /**
       * Update progress bar according the number of tasks

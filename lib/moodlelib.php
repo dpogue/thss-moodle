@@ -2201,7 +2201,7 @@ function days_in_month($month, $year) {
 function dayofweek($day, $month, $year) {
     // I wonder if this is any different from
     // strftime('%w', mktime(12, 0, 0, $month, $daysinmonth, $year, 0));
-    return intval(date('w', mktime(12, 0, 0, $month, $day, $year, 0)));
+    return intval(date('w', mktime(12, 0, 0, $month, $day, $year)));
 }
 
 /// USER AUTHENTICATION AND LOGIN ////////////////////////////////////////
@@ -3051,7 +3051,7 @@ function &get_fast_modinfo(&$course, $userid=0) {
         $cm->icon             = isset($mod->icon) ? $mod->icon : '';
         $cm->iconcomponent    = isset($mod->iconcomponent) ? $mod->iconcomponent : '';
         $cm->uservisible      = true;
-        if(!empty($CFG->enableavailability)) {
+        if (!empty($CFG->enableavailability)) {
             // We must have completion information from modinfo. If it's not
             // there, cache needs rebuilding
             if(!isset($mod->availablefrom)) {
@@ -3059,7 +3059,7 @@ function &get_fast_modinfo(&$course, $userid=0) {
                     'cache for course '.$course->id);
                 rebuild_course_cache($course->id,true);
                 // Re-enter this routine to do it all properly
-                return get_fast_modinfo($course,$userid);
+                return get_fast_modinfo($course, $userid);
             }
             $cm->availablefrom    = $mod->availablefrom;
             $cm->availableuntil   = $mod->availableuntil;
@@ -3078,13 +3078,13 @@ function &get_fast_modinfo(&$course, $userid=0) {
         $cm->modplural = $modlurals[$cm->modname];
         $modcontext = get_context_instance(CONTEXT_MODULE,$cm->id);
 
-        if(!empty($CFG->enableavailability)) {
+        if (!empty($CFG->enableavailability)) {
             // Unfortunately the next call really wants to call
             // get_fast_modinfo, but that would be recursive, so we fake up a
             // modinfo for it already
-            if(empty($minimalmodinfo)) {
-                $minimalmodinfo=new stdClass();
-                $minimalmodinfo->cms=array();
+            if (empty($minimalmodinfo)) { //TODO: this is suspicious (skodak)
+                $minimalmodinfo = new stdClass();
+                $minimalmodinfo->cms = array();
                 foreach($info as $mod) {
                     if (empty($mod->name)) {
                         // something is wrong here
@@ -3099,9 +3099,9 @@ function &get_fast_modinfo(&$course, $userid=0) {
 
             // Get availability information
             $ci = new condition_info($cm);
-            $cm->available=$ci->is_available($cm->availableinfo, true, $userid, $minimalmodinfo);
+            $cm->available = $ci->is_available($cm->availableinfo, true, $userid, $minimalmodinfo);
         } else {
-            $cm->available=true;
+            $cm->available = true;
         }
         if ((!$cm->visible or !$cm->available) and !has_capability('moodle/course:viewhiddenactivities', $modcontext, $userid)) {
             $cm->uservisible = false;
@@ -4017,7 +4017,7 @@ function set_login_session_preferences() {
 
 /**
  * Delete a course, including all related data from the database,
- * and any associated files from the moodledata folder.
+ * and any associated files.
  *
  * @global object
  * @global object
@@ -4028,7 +4028,7 @@ function set_login_session_preferences() {
  *             failed, but you have no way of knowing which.
  */
 function delete_course($courseorid, $showfeedback = true) {
-    global $CFG, $DB, $OUTPUT;
+    global $DB;
 
     if (is_object($courseorid)) {
         $courseid = $courseorid->id;
@@ -4039,20 +4039,22 @@ function delete_course($courseorid, $showfeedback = true) {
             return false;
         }
     }
+    $context = get_context_instance(CONTEXT_COURSE, $courseid);
 
     // frontpage course can not be deleted!!
     if ($courseid == SITEID) {
         return false;
     }
 
+    // make the course completely empty
     remove_course_contents($courseid, $showfeedback);
 
+    // delete the course and related context instance
+    delete_context(CONTEXT_COURSE, $courseid);
     $DB->delete_records("course", array("id"=>$courseid));
 
-    // Delete all roles and overiddes in the course context
-    delete_context(CONTEXT_COURSE, $courseid);
-
     //trigger events
+    $course->context = $context; // you can not fetch context in the event because it was already deleted
     events_trigger('course_deleted', $course);
 
     return true;
@@ -4060,27 +4062,40 @@ function delete_course($courseorid, $showfeedback = true) {
 
 /**
  * Clear a course out completely, deleting all content
- * but don't delete the course itself
+ * but don't delete the course itself.
+ * This function does not verify any permissions.
  *
- * @global object
- * @global object
+ * Please note this function also deletes all user enrolments,
+ * enrolment instances and role assignments.
+ *
  * @param int $courseid The id of the course that is being deleted
  * @param bool $showfeedback Whether to display notifications of each action the function performs.
  * @return bool true if all the removals succeeded. false if there were any failures. If this
  *             method returns false, some of the removals will probably have succeeded, and others
  *             failed, but you have no way of knowing which.
  */
-function remove_course_contents($courseid, $showfeedback=true) {
+function remove_course_contents($courseid, $showfeedback = true) {
     global $CFG, $DB, $OUTPUT;
     require_once($CFG->libdir.'/questionlib.php');
     require_once($CFG->libdir.'/gradelib.php');
+    require_once($CFG->dirroot.'/group/lib.php');
+    require_once($CFG->dirroot.'/tag/coursetagslib.php');
 
     $course = $DB->get_record('course', array('id'=>$courseid), '*', MUST_EXIST);
     $context = get_context_instance(CONTEXT_COURSE, $courseid, MUST_EXIST);
 
     $strdeleted = get_string('deleted');
 
-/// Clean up course formats (iterate through all formats in the even the course format was ever changed)
+    // Delete course completion information,
+    // this has to be done before grades and enrols
+    $cc = new completion_info($course);
+    $cc->clear_criteria();
+
+    // remove roles and enrolments
+    role_unassign_all(array('contextid'=>$context->id), true);
+    enrol_course_delete($course);
+
+    // Clean up course formats (iterate through all formats in the even the course format was ever changed)
     $formats = get_plugin_list('format');
     foreach ($formats as $format=>$formatdir) {
         $formatdelete = 'format_'.$format.'_delete_course';
@@ -4096,15 +4111,15 @@ function remove_course_contents($courseid, $showfeedback=true) {
         }
     }
 
-/// Remove all data from gradebook - this needs to be done before course modules
-/// because while deleting this information, the system may need to reference
-/// the course modules that own the grades.
+    // Remove all data from gradebook - this needs to be done before course modules
+    // because while deleting this information, the system may need to reference
+    // the course modules that own the grades.
     remove_course_grades($courseid, $showfeedback);
     remove_grade_letters($context, $showfeedback);
 
-/// Remove all data from availability and completion tables that is associated
-/// with course-modules belonging to this course. Note this is done even if the
-/// features are not enabled now, in case they were enabled previously
+    // Remove all data from availability and completion tables that is associated
+    // with course-modules belonging to this course. Note this is done even if the
+    // features are not enabled now, in case they were enabled previously
     $DB->delete_records_select('course_modules_completion',
            'coursemoduleid IN (SELECT id from {course_modules} WHERE course=?)',
            array($courseid));
@@ -4112,8 +4127,10 @@ function remove_course_contents($courseid, $showfeedback=true) {
            'coursemoduleid IN (SELECT id from {course_modules} WHERE course=?)',
            array($courseid));
 
-/// Delete every instance of every module
+    // Delete course blocks - they may depend on modules so delete them first
+    blocks_delete_all_for_context($context->id);
 
+    // Delete every instance of every module
     if ($allmods = $DB->get_records('modules') ) {
         foreach ($allmods as $mod) {
             $modname = $mod->name;
@@ -4138,12 +4155,13 @@ function remove_course_contents($courseid, $showfeedback=true) {
                             }
                             if ($cm) {
                                 // delete cm and its context in correct order
+                                delete_context(CONTEXT_MODULE, $cm->id); // some callbacks may try to fetch context, better delete first
                                 $DB->delete_records('course_modules', array('id'=>$cm->id));
-                                delete_context(CONTEXT_MODULE, $cm->id);
                             }
                         }
                     }
                 } else {
+                    //note: we should probably delete these anyway
                     echo $OUTPUT->notification('Function '.$moddelete.'() doesn\'t exist!');
                 }
 
@@ -4157,23 +4175,38 @@ function remove_course_contents($courseid, $showfeedback=true) {
         }
     }
 
-/// Delete course blocks
-    blocks_delete_all_for_context($context->id);
+    // Delete any groups, removing members and grouping/course links first.
+    groups_delete_groupings($course->id, $showfeedback);
+    groups_delete_groups($course->id, $showfeedback);
 
-/// Delete any groups, removing members and grouping/course links first.
-    require_once($CFG->dirroot.'/group/lib.php');
-    groups_delete_groupings($courseid, $showfeedback);
-    groups_delete_groups($courseid, $showfeedback);
+    // Delete questions and question categories
+    question_delete_course($course, $showfeedback);
 
-/// Delete all related records in other tables that may have a courseid
-/// This array stores the tables that need to be cleared, as
-/// table_name => column_name that contains the course id.
+    // Delete course tags
+    coursetag_delete_course_tags($course->id, $showfeedback);
 
+    // Delete legacy files (just in case some files are still left there after conversion to new file api)
+    fulldelete($CFG->dataroot.'/'.$course->id);
+
+    // cleanup course record - remove links to delted stuff
+    $oldcourse = new object();
+    $oldcourse->id                = $course->id;
+    $oldcourse->summary           = '';
+    $oldcourse->modinfo           = NULL;
+    $oldcourse->legacyfiles       = 0;
+    $oldcourse->defaultgroupingid = 0;
+    $oldcourse->enablecompletion  = 0;
+    $DB->update_record('course', $oldcourse);
+
+    // Delete all related records in other tables that may have a courseid
+    // This array stores the tables that need to be cleared, as
+    // table_name => column_name that contains the course id.
     $tablestoclear = array(
         'event' => 'courseid', // Delete events
         'log' => 'course', // Delete logs
         'course_sections' => 'course', // Delete any course stuff
         'course_modules' => 'course',
+        'course_display' => 'course',
         'backup_courses' => 'courseid', // Delete scheduled backup stuff
         'user_lastaccess' => 'courseid',
         'backup_log' => 'courseid'
@@ -4182,17 +4215,13 @@ function remove_course_contents($courseid, $showfeedback=true) {
         $DB->delete_records($table, array($col=>$course->id));
     }
 
-/// Delete questions and question categories
-    question_delete_course($course, $showfeedback);
-
-/// Delete course tags
-    require_once($CFG->dirroot.'/tag/coursetagslib.php');
-    coursetag_delete_course_tags($course->id, $showfeedback);
-
-    // Delete legacy files
-    fulldelete($CFG->dataroot.'/'.$courseid);
+    // Delete all remaining stuff linked to context,
+    // such as remaining roles, files, comments, etc.
+    // Keep the context record for now.
+    delete_context(CONTEXT_COURSE, $course->id, false);
 
     //trigger events
+    $course->context = $context; // you can not access context in cron event later after course is deleted
     events_trigger('course_content_removed', $course);
 
     return true;
@@ -4291,6 +4320,14 @@ function reset_course_userdata($data) {
         require_once($CFG->dirroot.'/blog/lib.php');
         blog_remove_associations_for_course($data->courseid);
         $status[] = array('component'=>$componentstr, 'item'=>get_string('deleteblogassociations', 'blog'), 'error'=>false);
+    }
+
+    if (!empty($data->reset_course_completion)) {
+        // Delete course completion information
+        $course = $DB->get_record('course', array('id'=>$data->courseid));
+        $cc = new completion_info($course);
+        $cc->delete_course_completion_data();
+        $status[] = array('component'=>$componentstr, 'item'=>get_string('deletecoursecompletiondata', 'completion'), 'error'=>false);
     }
 
     $componentstr = get_string('roles');
@@ -4428,6 +4465,11 @@ function reset_course_userdata($data) {
     } else if (!empty($data->reset_gradebook_grades)) {
         grade_course_reset($data->courseid);
         $status[] = array('component'=>$componentstr, 'item'=>get_string('removeallcoursegrades', 'grades'), 'error'=>false);
+    }
+    // reset comments
+    if (!empty($data->reset_comments)) {
+        require_once($CFG->dirroot.'/comment/lib.php');
+        comment::reset_course_page_comments($context);
     }
 
     return $status;
@@ -4613,8 +4655,8 @@ function &get_mailer($action='get') {
  * @global string
  * @global string IdentityProvider(IDP) URL user hits to jump to mnet peer.
  * @uses SITEID
- * @param user $user  A {@link $USER} object
- * @param user $from A {@link $USER} object
+ * @param stdClass $user  A {@link $USER} object
+ * @param stdClass $from A {@link $USER} object
  * @param string $subject plain text subject line of the email
  * @param string $messagetext plain text version of the message
  * @param string $messagehtml complete html version of the message (optional)
@@ -5175,6 +5217,7 @@ function get_file_packer($mimetype='application/zip') {
 
     switch ($mimetype) {
         case 'application/zip':
+        case 'application/vnd.moodle.backup':
             $classname = 'zip_packer';
             break;
         case 'application/x-tar':
@@ -5273,7 +5316,7 @@ function get_max_upload_file_size($sitebytes=0, $coursebytes=0, $modulebytes=0) 
  * @param int $sizebytes Set maximum size
  * @param int $coursebytes Current course $course->maxbytes (in bytes)
  * @param int $modulebytes Current module ->maxbytes (in bytes)
- * @return int
+ * @return array
  */
 function get_max_upload_sizes($sitebytes=0, $coursebytes=0, $modulebytes=0) {
     global $CFG;
@@ -8204,11 +8247,10 @@ function make_menu_from_list($list, $separator=',') {
  * are scales, zero is no grade, and positive numbers are maximum
  * grades.
  *
- * @todo Finish documenting this function
+ * @todo Finish documenting this function or better deprecated this completely!
  *
- * @global object
  * @param int $gradingtype
- * @return int
+ * @return array
  */
 function make_grades_menu($gradingtype) {
     global $DB;
@@ -9554,6 +9596,8 @@ function set_mnet_remote_client($client) {
  * @param stdclass $user the user to get the idp url for
  */
 function mnet_get_idp_jump_url($user) {
+    global $CFG;
+
     static $mnetjumps = array();
     if (!array_key_exists($user->mnethostid, $mnetjumps)) {
         $idp = mnet_get_peer_host($user->mnethostid);

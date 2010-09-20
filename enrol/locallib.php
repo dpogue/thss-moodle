@@ -529,7 +529,7 @@ class course_enrolment_manager {
         try {
             role_unassign($roleid, $user->id, $this->context->id, '', NULL);
         } catch (Exception $e) {
-            if (is_defined('AJAX_SCRIPT')) {
+            if (defined('AJAX_SCRIPT')) {
                 throw $e;
             }
             return false;
@@ -547,8 +547,8 @@ class course_enrolment_manager {
     public function assign_role_to_user($roleid, $userid) {
         require_capability('moodle/role:assign', $this->context);
         if (!array_key_exists($roleid, $this->get_assignable_roles())) {
-            if (is_defined('AJAX_SCRIPT')) {
-                throw new moodle_;
+            if (defined('AJAX_SCRIPT')) {
+                throw new moodle_exception('invalidrole');
             }
             return false;
         }
@@ -611,7 +611,7 @@ class course_enrolment_manager {
      * @return bool
      */
     public function edit_enrolment($userenrolment, $data) {
-        list($instance, $plugin) = $this->get_user_enrolment_components($ue);
+        list($instance, $plugin) = $this->get_user_enrolment_components($userenrolment);
         if ($instance && $plugin && $plugin->allow_manage($instance) && has_capability("enrol/$instance->enrol:manage", $this->context)) {
             if (!isset($data->status)) {
                 $data->status = $userenrolment->status;

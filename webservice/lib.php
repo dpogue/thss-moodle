@@ -40,7 +40,7 @@ class webservice {
      */
     public function add_ws_authorised_user($user) {
         global $DB;
-        $serviceuser->timecreated = mktime();
+        $user->timecreated = mktime();
         $DB->insert_record('external_services_users', $user);
     }
 
@@ -223,6 +223,18 @@ class webservice {
     }
 
     /**
+     * Delete a service - it also delete the functions and users references to this service
+     * @param int $serviceid
+     */
+    public function delete_service($serviceid) {
+        global $DB;
+        $DB->delete_records('external_services_users', array('externalserviceid' => $serviceid));
+        $DB->delete_records('external_services_functions', array('externalserviceid' => $serviceid));
+        $DB->delete_records('external_tokens', array('externalserviceid' => $serviceid));
+        $DB->delete_records('external_services', array('id' => $serviceid));
+    }
+
+    /**
      * Get a user token by token
      * @param string $token
      * @throws moodle_exception if there is multiple result
@@ -364,6 +376,19 @@ class webservice {
     }
 
     /**
+     * Get a external service for a given id
+     * @param service id $serviceid
+     * @param integer $strictness IGNORE_MISSING, MUST_EXIST...
+     * @return object external service
+     */
+    public function get_external_service_by_id($serviceid, $strictness=IGNORE_MISSING) {
+        global $DB;
+        $service = $DB->get_record('external_services',
+                        array('id' => $serviceid), '*', $strictness);
+        return $service;
+    }
+
+    /**
      * Get a external function for a given id
      * @param function id $functionid
      * @param integer $strictness IGNORE_MISSING, MUST_EXIST...
@@ -387,6 +412,28 @@ class webservice {
         $addedfunction->externalserviceid = $serviceid;
         $addedfunction->functionname = $functionname;
         $DB->insert_record('external_services_functions', $addedfunction);
+    }
+
+    /**
+     * Add a service
+     * @param object $service
+     * @return serviceid integer
+     */
+    public function add_external_service($service) {
+        global $DB;
+        $service->timecreated = mktime();
+        $serviceid = $DB->insert_record('external_services', $service);
+        return $serviceid;
+    }
+
+     /**
+     * Update a service
+     * @param object $service
+     */
+    public function update_external_service($service) {
+        global $DB;
+        $service->timemodified = mktime();
+        $DB->update_record('external_services', $service);
     }
 
     /**
@@ -899,8 +946,8 @@ class '.$classname.' {
      * You can override this function in your child class to add extra code into the dynamically
      * created service class. For example it is used in the amf server to cast types of parameters and to
      * cast the return value to the types as specified in the return value description.
-     * @param unknown_type $function
-     * @param unknown_type $params
+     * @param stdClass $function
+     * @param array $params
      * @return string body of the method for $function ie. everything within the {} of the method declaration.
      */
     protected function service_class_method_body($function, $params){

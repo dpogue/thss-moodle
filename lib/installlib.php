@@ -255,7 +255,7 @@ function install_print_help_page($help) {
             print_string($help, 'install', phpversion());
             break;
         case 'memorylimithelp':
-            print_string($help, 'install', get_memory_limit());
+            print_string($help, 'install', @ini_get('memory_limit'));
             break;
         default:
             print_string($help, 'install');
@@ -514,6 +514,8 @@ function install_cli_database(array $options, $interactive) {
 
     $CFG->version = '';
     $CFG->release = '';
+    $version = null;
+    $release = null;
 
     // read $version and $release
     require($CFG->dirroot.'/version.php');
@@ -534,8 +536,6 @@ function install_cli_database(array $options, $interactive) {
             list($info, $report) = $error;
             echo "!! $info !!\n$report\n\n";
         }
-        //remove config.php, we do not want half finished upgrades!
-        unlink($configfile);
         exit(1);
     }
 

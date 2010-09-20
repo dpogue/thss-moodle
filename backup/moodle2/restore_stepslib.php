@@ -47,6 +47,11 @@ class restore_create_and_clean_temp_stuff extends restore_execution_step {
         $itemid = $this->task->get_old_system_contextid();
         $newitemid = get_context_instance(CONTEXT_SYSTEM)->id;
         restore_dbops::set_backup_ids_record($this->get_restoreid(), 'context', $itemid, $newitemid);
+        // Create the old-course-id to new-course-id mapping, we need that available since the beginning
+        $itemid = $this->task->get_old_courseid();
+        $newitemid = $this->get_courseid();
+        restore_dbops::set_backup_ids_record($this->get_restoreid(), 'course', $itemid, $newitemid);
+
     }
 }
 
@@ -69,7 +74,7 @@ class restore_drop_and_clean_temp_stuff extends restore_execution_step {
 /**
  * Restore calculated grade items, grade categories etc
  */
-class restore_gradebook_step extends restore_structure_step {
+class restore_gradebook_structure_step extends restore_structure_step {
 
     /**
      * To conditionally decide if this step must be executed
@@ -78,12 +83,33 @@ class restore_gradebook_step extends restore_structure_step {
      * not being restore settings (files, site settings...)
      */
      protected function execute_condition() {
-        global $CFG;
+        global $CFG, $DB;
 
         // No gradebook info found, don't execute
         $fullpath = $this->task->get_taskbasepath();
         $fullpath = rtrim($fullpath, '/') . '/' . $this->filename;
         if (!file_exists($fullpath)) {
+            return false;
+        }
+
+        // Some module present in backup file isn't available to restore
+        // in this site, don't execute
+        if ($this->task->is_missing_modules()) {
+            return false;
+        }
+
+        // Some activity has been excluded to be restored, don't execute
+        if ($this->task->is_excluding_activities()) {
+            return false;
+        }
+
+        // There should only be one grade category (the 1 associated with the course itself)
+        // If other categories already exist we're restoring into an existing course.
+        // Restoring categories into a course with an existing category structure is unlikely to go well
+        $category = new stdclass();
+        $category->courseid  = $this->get_courseid();
+        $catcount = $DB->count_records('grade_categories', (array)$category);
+        if ($catcount>1) {
             return false;
         }
 
@@ -102,6 +128,7 @@ class restore_gradebook_step extends restore_structure_step {
             $paths[] = new restore_path_element('grade_grade', '/gradebook/grade_items/grade_item/grade_grades/grade_grade');
         }
         $paths[] = new restore_path_element('grade_letter', '/gradebook/grade_letters/grade_letter');
+        $paths[] = new restore_path_element('grade_setting', '/gradebook/grade_settings/grade_setting');
 
         return $paths;
     }
@@ -148,7 +175,8 @@ class restore_gradebook_step extends restore_structure_step {
                 $category = new stdclass();
                 $category->courseid  = $this->get_courseid();
                 $category->parent  = null;
-                $category->fullname  = '?';
+                //course category fullname starts out as ? but may be edited
+                //$category->fullname  = '?';
 
                 $coursecategory = $DB->get_record('grade_categories', (array)$category);
                 $gi->iteminstance = $coursecategory->id;
@@ -166,7 +194,7 @@ class restore_gradebook_step extends restore_structure_step {
             if ($data->itemtype=='course' && !empty($coursecategory)) {
                 $data->iteminstance = $coursecategory->id;
             }
-            
+
             $newitemid = $DB->insert_record('grade_items', $data);
         }
         $this->set_mapping('grade_item', $oldid, $newitemid);
@@ -183,11 +211,13 @@ class restore_gradebook_step extends restore_structure_step {
         $data->userid = $this->get_mappingid('user', $data->userid);
         $data->usermodified = $this->get_mappingid('user', $data->usermodified);
         $data->locktime     = $this->apply_date_offset($data->locktime);
+        // TODO: Ask, all the rest of locktime/exported... work with time... to be rolled?
+        $data->overridden = $this->apply_date_offset($data->overridden);
         $data->timecreated  = $this->apply_date_offset($data->timecreated);
         $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $newitemid = $DB->insert_record('grade_grades', $data);
-        $this->set_mapping('grade_grade', $oldid, $newitemid);
+        //$this->set_mapping('grade_grade', $oldid, $newitemid);
     }
     protected function process_grade_category($data) {
         global $DB;
@@ -220,19 +250,9 @@ class restore_gradebook_step extends restore_structure_step {
 
         //need to insert a course category
         if (empty($newitemid)) {
-            if (!empty($data->parent)) {
-                $data->parent = $this->get_mappingid('grade_category', $data->parent);
-            }
             $newitemid = $DB->insert_record('grade_categories', $data);
         }
         $this->set_mapping('grade_category', $oldid, $newitemid);
-
-        //need to correct the path as its a string that contains grade category IDs
-        $grade_category = new stdclass();
-        $grade_category->parent = $data->parent;
-        $grade_category->id = $newitemid;
-        $grade_category->path = grade_category::build_path($grade_category);
-        $DB->update_record('grade_categories', $grade_category);
     }
     protected function process_grade_letter($data) {
         global $DB;
@@ -240,10 +260,21 @@ class restore_gradebook_step extends restore_structure_step {
         $data = (object)$data;
         $oldid = $data->id;
 
-        $data->contextid = $this->get_mappingid('context', $data->contextid);
+        $data->contextid = get_context_instance(CONTEXT_COURSE, $this->get_courseid())->id;
 
         $newitemid = $DB->insert_record('grade_letters', $data);
         $this->set_mapping('grade_letter', $oldid, $newitemid);
+    }
+    protected function process_grade_setting($data) {
+        global $DB;
+
+        $data = (object)$data;
+        $oldid = $data->id;
+
+        $data->courseid = $this->get_courseid();
+
+        $newitemid = $DB->insert_record('grade_settings', $data);
+        //$this->set_mapping('grade_setting', $oldid, $newitemid);
     }
 
     //put all activity grade items in the correct grade category and mark all for recalculation
@@ -270,8 +301,39 @@ class restore_gradebook_step extends restore_structure_step {
                     $updateobj->needsupdate=1;
                 }
                 $DB->update_record('grade_items', $updateobj);
+            }
+        }
+        $rs->close();
 
-                //todo need to get hold of the grade_items previous sortorder to restore it
+        //need to correct the grade category path and parent
+        $conditions = array(
+            'courseid' => $this->get_courseid()
+        );
+        $grade_category = new stdclass();
+
+        $rs = $DB->get_recordset('grade_categories', $conditions);
+        if (!empty($rs)) {
+            //get all the parents correct first as grade_category::build_path() loads category parents from the DB
+            foreach($rs as $gc) {
+                if (!empty($gc->parent)) {
+                    $grade_category->id = $gc->id;
+                    $grade_category->parent = $this->get_mappingid('grade_category', $gc->parent);
+                    $DB->update_record('grade_categories', $grade_category);
+                }
+            }
+        }
+        if (isset($grade_category->parent)) {
+            unset($grade_category->parent);
+        }
+        $rs->close();
+
+        $rs = $DB->get_recordset('grade_categories', $conditions);
+        if (!empty($rs)) {
+            //now we can rebuild all the paths
+            foreach($rs as $gc) {
+                $grade_category->id = $gc->id;
+                $grade_category->path = grade_category::build_path($gc);
+                $DB->update_record('grade_categories', $grade_category);
             }
         }
         $rs->close();
@@ -853,7 +915,12 @@ class restore_course_structure_step extends restore_structure_step {
         return array($course, $category, $tag, $allowed);
     }
 
-    // Processing functions go here
+    /**
+     * Processing functions go here
+     *
+     * @global moodledatabase $DB
+     * @param stdClass $data
+     */
     public function process_course($data) {
         global $CFG, $DB;
 
@@ -874,8 +941,10 @@ class restore_course_structure_step extends restore_structure_step {
         $data->fullname = $fullname;
         $data->shortname= $shortname;
         $data->idnumber = '';
-        // TODO: Set category from the UI, its not a setting just a param
-        $data->category = get_course_category()->id;
+
+        // Category is set by UI when choosing the destination
+        unset($data->category);
+
         $data->startdate= $this->apply_date_offset($data->startdate);
         if ($data->defaultgroupingid) {
             $data->defaultgroupingid = $this->get_mappingid('grouping', $data->defaultgroupingid);
@@ -896,9 +965,6 @@ class restore_course_structure_step extends restore_structure_step {
 
         // Course record ready, update it
         $DB->update_record('course', $data);
-
-        // Set course mapping
-        $this->set_mapping('course', $oldid, $data->id);
 
         // Course tags
         if (!empty($CFG->usetags) && isset($coursetags)) { // if enabled in server and present in backup
@@ -1158,6 +1224,257 @@ class restore_comments_structure_step extends restore_structure_step {
             }
         }
     }
+}
+
+class restore_course_completion_structure_step extends restore_structure_step {
+
+    /**
+     * Conditionally decide if this step should be executed.
+     *
+     * This function checks parameters that are not immediate settings to ensure
+     * that the enviroment is suitable for the restore of course completion info.
+     *
+     * This function checks the following four parameters:
+     *
+     *   1. Course completion is enabled on the site
+     *   2. The backup includes course completion information
+     *   3. All modules are restorable
+     *   4. All modules are marked for restore.
+     *
+     * @return bool True is safe to execute, false otherwise
+     */
+    protected function execute_condition() {
+        global $CFG;
+
+        // First check course completion is enabled on this site
+        if (empty($CFG->enablecompletion)) {
+            // Disabled, don't restore course completion
+            return false;
+        }
+
+        // Check it is included in the backup
+        $fullpath = $this->task->get_taskbasepath();
+        $fullpath = rtrim($fullpath, '/') . '/' . $this->filename;
+        if (!file_exists($fullpath)) {
+            // Not found, can't restore course completion
+            return false;
+        }
+
+        // Check we are able to restore all backed up modules
+        if ($this->task->is_missing_modules()) {
+            return false;
+        }
+
+        // Finally check all modules within the backup are being restored.
+        if ($this->task->is_excluding_activities()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Define the course completion structure
+     *
+     * @return array Array of restore_path_element
+     */
+    protected function define_structure() {
+
+        // To know if we are including user completion info
+        $userinfo = $this->get_setting_value('userscompletion');
+
+        $paths = array();
+        $paths[] = new restore_path_element('course_completion_criteria', '/course_completion/course_completion_criteria');
+        $paths[] = new restore_path_element('course_completion_notify', '/course_completion/course_completion_notify');
+        $paths[] = new restore_path_element('course_completion_aggr_methd', '/course_completion/course_completion_aggr_methd');
+
+        if ($userinfo) {
+            $paths[] = new restore_path_element('course_completion_crit_compl', '/course_completion/course_completion_criteria/course_completion_crit_completions/course_completion_crit_compl');
+            $paths[] = new restore_path_element('course_completions', '/course_completion/course_completions');
+        }
+
+        return $paths;
+
+    }
+
+    /**
+     * Process course completion criteria
+     *
+     * @global moodle_database $DB
+     * @param stdClass $data
+     */
+    public function process_course_completion_criteria($data) {
+        global $DB;
+
+        $data = (object)$data;
+        $data->course = $this->get_courseid();
+
+        // Apply the date offset to the time end field
+        $data->timeend = $this->apply_date_offset($data->timeend);
+
+        // Map the role from the criteria
+        if (!empty($data->role)) {
+            $data->role = $this->get_mappingid('role', $data->role);
+        }
+
+        $skipcriteria = false;
+
+        // If the completion criteria is for a module we need to map the module instance
+        // to the new module id.
+        if (!empty($data->moduleinstance) && !empty($data->module)) {
+            $data->moduleinstance = $this->get_mappingid('course_module', $data->moduleinstance);
+            if (empty($data->moduleinstance)) {
+                $skipcriteria = true;
+            }
+        } else {
+            $data->module = null;
+            $data->moduleinstance = null;
+        }
+
+        // We backup the course shortname rather than the ID so that we can match back to the course
+        if (!empty($data->courseinstanceshortname)) {
+            $courseinstanceid = $DB->get_field('course', 'id', array('shortname'=>$data->courseinstanceshortname));
+            if (!$courseinstanceid) {
+                $skipcriteria = true;
+            }
+        } else {
+            $courseinstanceid = null;
+        }
+        $data->courseinstance = $courseinstanceid;
+
+        if (!$skipcriteria) {
+            $params = array(
+                'course'         => $data->course,
+                'criteriatype'   => $data->criteriatype,
+                'enrolperiod'    => $data->enrolperiod,
+                'courseinstance' => $data->courseinstance,
+                'module'         => $data->module,
+                'moduleinstance' => $data->moduleinstance,
+                'timeend'        => $data->timeend,
+                'gradepass'      => $data->gradepass,
+                'role'           => $data->role
+            );
+            $newid = $DB->insert_record('course_completion_criteria', $params);
+            $this->set_mapping('course_completion_criteria', $data->id, $newid);
+        }
+    }
+
+    /**
+     * Processes course compltion criteria complete records
+     *
+     * @global moodle_database $DB
+     * @param stdClass $data
+     */
+    public function process_course_completion_crit_compl($data) {
+        global $DB;
+
+        $data = (object)$data;
+
+        // This may be empty if criteria could not be restored
+        $data->criteriaid = $this->get_mappingid('course_completion_criteria', $data->criteriaid);
+
+        $data->course = $this->get_courseid();
+        $data->userid = $this->get_mappingid('user', $data->userid);
+
+        if (!empty($data->criteriaid) && !empty($data->userid)) {
+            $params = array(
+                'userid' => $data->userid,
+                'course' => $data->course,
+                'criteriaid' => $data->criteriaid,
+                'timecompleted' => $this->apply_date_offset($data->timecompleted)
+            );
+            if (isset($data->gradefinal)) {
+                $params['gradefinal'] = $data->gradefinal;
+            }
+            if (isset($data->unenroled)) {
+                $params['unenroled'] = $data->unenroled;
+            }
+            if (isset($data->deleted)) {
+                $params['deleted'] = $data->deleted;
+            }
+            $DB->insert_record('course_completion_crit_compl', $params);
+        }
+    }
+
+    /**
+     * Process course completions
+     *
+     * @global moodle_database $DB
+     * @param stdClass $data
+     */
+    public function process_course_completions($data) {
+        global $DB;
+
+        $data = (object)$data;
+
+        $data->course = $this->get_courseid();
+        $data->userid = $this->get_mappingid('user', $data->userid);
+
+        if (!empty($data->userid)) {
+            $params = array(
+                'userid' => $data->userid,
+                'course' => $data->course,
+                'deleted' => $data->deleted,
+                'timenotified' => $this->apply_date_offset($data->timenotified),
+                'timeenrolled' => $this->apply_date_offset($data->timeenrolled),
+                'timestarted' => $this->apply_date_offset($data->timestarted),
+                'timecompleted' => $this->apply_date_offset($data->timecompleted),
+                'reaggregate' => $data->reaggregate
+            );
+            $DB->insert_record('course_completions', $params);
+        }
+    }
+
+    /**
+     * Process course completion notification records.
+     *
+     * Note: As of Moodle 2.0 this table is not being used however it has been
+     * left in in the hopes that one day the functionality there will be completed
+     *
+     * @global moodle_database $DB
+     * @param stdClass $data
+     */
+    public function process_course_completion_notify($data) {
+        global $DB;
+
+        $data = (object)$data;
+
+        $data->course = $this->get_courseid();
+        if (!empty($data->role)) {
+            $data->role = $this->get_mappingid('role', $data->role);
+        }
+
+        $params = array(
+            'course' => $data->course,
+            'role' => $data->role,
+            'message' => $data->message,
+            'timesent' => $this->apply_date_offset($data->timesent),
+        );
+        $DB->insert_record('course_completion_notify', $params);
+    }
+
+    /**
+     * Process course completion aggregate methods
+     *
+     * @global moodle_database $DB
+     * @param stdClass $data
+     */
+    public function process_course_completion_aggr_methd($data) {
+        global $DB;
+
+        $data = (object)$data;
+
+        $data->course = $this->get_courseid();
+
+        $params = array(
+            'course' => $data->course,
+            'criteriatype' => $data->criteriatype,
+            'method' => $data->method,
+            'value' => $data->value,
+        );
+        $DB->insert_record('course_completion_aggr_methd', $params);
+    }
+
 }
 
 /**
@@ -1598,7 +1915,7 @@ abstract class restore_activity_structure_step extends restore_structure_step {
     }
 
     /**
-     * This must be invoked inmediately after creating the "module" activity record (forum, choice...)
+     * This must be invoked immediately after creating the "module" activity record (forum, choice...)
      * and will adjust the new activity id (the instance) in various places
      */
     protected function apply_activity_instance($newitemid) {

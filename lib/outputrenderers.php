@@ -388,7 +388,7 @@ class core_renderer extends renderer_base {
      * @return string HTML fragment.
      */
     public function login_info() {
-        global $USER, $CFG, $DB;
+        global $USER, $CFG, $DB, $SESSION;
 
         if (during_initial_install()) {
             return '';
@@ -1333,7 +1333,7 @@ class core_renderer extends renderer_base {
      * Render icon
      * @param string $pix short pix name
      * @param string $alt mandatory alt attribute
-     * @param strin $component standard compoennt name like 'moodle', 'mod_form', etc.
+     * @param string $component standard compoennt name like 'moodle', 'mod_forum', etc.
      * @param array $attributes htm lattributes
      * @return string HTML fragment
      */
@@ -1402,19 +1402,19 @@ class core_renderer extends renderer_base {
             $aggregatelabel = '';
             switch ($rating->settings->aggregationmethod) {
                 case RATING_AGGREGATE_AVERAGE :
-                    $aggregatelabel .= get_string("aggregateavg", "forum");
+                    $aggregatelabel .= get_string("aggregateavg", "rating");
                     break;
                 case RATING_AGGREGATE_COUNT :
-                    $aggregatelabel .= get_string("aggregatecount", "forum");
+                    $aggregatelabel .= get_string("aggregatecount", "rating");
                     break;
                 case RATING_AGGREGATE_MAXIMUM :
-                    $aggregatelabel .= get_string("aggregatemax", "forum");
+                    $aggregatelabel .= get_string("aggregatemax", "rating");
                     break;
                 case RATING_AGGREGATE_MINIMUM :
-                    $aggregatelabel .= get_string("aggregatemin", "forum");
+                    $aggregatelabel .= get_string("aggregatemin", "rating");
                     break;
                 case RATING_AGGREGATE_SUM :
-                    $aggregatelabel .= get_string("aggregatesum", "forum");
+                    $aggregatelabel .= get_string("aggregatesum", "rating");
                     break;
             }
 
@@ -1720,7 +1720,7 @@ class core_renderer extends renderer_base {
         if (empty($attributes['width'])) {
             $attributes['width'] = 1;
         }
-        if (empty($options['height'])) {
+        if (empty($attributes['height'])) {
             $attributes['height'] = 1;
         }
         $attributes['class'] = 'spacer';
@@ -2573,7 +2573,6 @@ class core_renderer_cli extends core_renderer {
      * @return string HTML fragment
      */
     public function header() {
-        output_starting_hook();
         return $this->page->heading . "\n";
     }
 
@@ -2656,7 +2655,7 @@ class core_renderer_ajax extends core_renderer {
      * @return string A template fragment for a fatal error
      */
     public function fatal_error($message, $moreinfourl, $link, $backtrace, $debuginfo = null) {
-        global $FULLME, $USER;
+        global $CFG;
 
         $this->page->set_context(null); // ugly hack - make sure page context is set to something, we do not want bogus warnings here
 

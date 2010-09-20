@@ -399,7 +399,7 @@ class report_customlang_menu implements renderable {
     /**
      * Returns the menu items
      *
-     * @return array (string)key => (object)[->(string)title ->(moodl_url)url ->(string)method]
+     * @return array (string)key => (object)[->(string)title ->(moodle_url)url ->(string)method]
      */
     public function get_items() {
         return $this->items;
@@ -415,10 +415,10 @@ class report_customlang_menu implements renderable {
      */
     public function add_item($key, $title, moodle_url $url, $method) {
         if (isset($this->items[$key])) {
-            throw new coding_error('Menu item already exists');
+            throw new coding_exception('Menu item already exists');
         }
         if (empty($title) or empty($key)) {
-            throw new coding_error('Empty title or item key not allowed');
+            throw new coding_exception('Empty title or item key not allowed');
         }
         $item = new stdclass();
         $item->title = $title;
@@ -503,10 +503,10 @@ class report_customlang_translator implements renderable {
 
         if (!empty($filter->helps)) {
             $sql .= "   AND ".$DB->sql_like('s.stringid', ':help', false); //ILIKE
-            $params['help'] = '%\\\\_help';
+            $params['help'] = '%\_help';
         } else {
             $sql .= "   AND ".$DB->sql_like('s.stringid', ':link', false, true, true); //NOT ILIKE
-            $params['link'] = '%\\\\_link';
+            $params['link'] = '%\_link';
         }
 
         $osql = " ORDER BY c.name, s.stringid";

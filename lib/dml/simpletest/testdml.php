@@ -31,15 +31,17 @@ class dml_test extends UnitTestCase {
     public  static $includecoverage = array('lib/dml');
     public  static $excludecoverage = array('lib/dml/simpletest');
 
+    protected $olddebug;
+    protected $olddisplay;
+
     function setUp() {
-        global $CFG, $DB, $UNITTEST;
+        global $DB, $UNITTEST;
 
         if (isset($UNITTEST->func_test_db)) {
             $this->tdb = $UNITTEST->func_test_db;
         } else {
             $this->tdb = $DB;
         }
-
     }
 
     function tearDown() {
@@ -64,7 +66,6 @@ class dml_test extends UnitTestCase {
      * @return xmldb_table the table object.
      */
     private function get_test_table($suffix = '') {
-        $DB = $this->tdb;
         $dbman = $this->tdb->get_manager();
 
         $tablename = "unit_table";
@@ -79,6 +80,28 @@ class dml_test extends UnitTestCase {
         $table->setComment("This is a test'n drop table. You can drop it safely");
         $this->tables[$tablename] = $tablename;
         return new xmldb_table($tablename);
+    }
+
+    protected function enable_debugging() {
+        global $CFG;
+
+        $this->olddebug   = $CFG->debug;       // Save current debug settings
+        $this->olddisplay = $CFG->debugdisplay;
+        $CFG->debug = DEBUG_DEVELOPER;
+        $CFG->debugdisplay = true;
+        ob_start(); // hide debug warning
+
+    }
+
+    protected function get_debugging() {
+        global $CFG;
+
+        $debuginfo = ob_get_contents();
+        ob_end_clean();
+        $CFG->debug = $this->olddebug;         // Restore original debug settings
+        $CFG->debugdisplay = $this->olddisplay;
+
+        return $debuginfo;
     }
 
     // NOTE: please keep order of test methods here matching the order of moodle_database class methods
@@ -367,7 +390,7 @@ class dml_test extends UnitTestCase {
         $sql = "SELECT * FROM {{$tablename}} WHERE name IN (?,?,?,?,?,?)";
         $inparams = array('abc', 'ABC', NULL, '1', 1, 1.4);
         list($sql, $params) = $DB->fix_sql_params($sql, $inparams);
-        $this->assertIdentical($params, $inparams);
+        $this->assertIdentical(array_values($params), array_values($inparams));
     }
 
     public function test_get_tables() {
@@ -951,7 +974,6 @@ class dml_test extends UnitTestCase {
     }
 
     public function test_get_records_sql() {
-        global $CFG;
         $DB = $this->tdb;
         $dbman = $DB->get_manager();
 
@@ -977,19 +999,10 @@ class dml_test extends UnitTestCase {
         $this->assertEqual($inskey4, next($records)->id);
 
         // Awful test, requires debug enabled and sent to browser. Let's do that and restore after test
-        $olddebug   = $CFG->debug;       // Save current debug settings
-        $olddisplay = $CFG->debugdisplay;
-        $CFG->debug = DEBUG_DEVELOPER;
-        $CFG->debugdisplay = true;
-        ob_start(); // hide debug warning
+        $this->enable_debugging();
         $records = $DB->get_records_sql("SELECT course AS id, course AS course FROM {{$tablename}}", null);
-        ob_end_clean();
-        $debuginfo = ob_get_contents();
-        $CFG->debug = $olddebug;         // Restore original debug settings
-        $CFG->debugdisplay = $olddisplay;
-
+        $this->assertFalse($this->get_debugging() === '');
         $this->assertEqual(6, count($records));
-        $this->assertFalse($debuginfo === '');
 
         // negative limits = no limits
         $records = $DB->get_records_sql("SELECT * FROM {{$tablename}} ORDER BY id", null, -1, -1);
@@ -1159,8 +1172,6 @@ class dml_test extends UnitTestCase {
     }
 
     public function test_get_record_sql() {
-        global $CFG;
-
         $DB = $this->tdb;
         $dbman = $DB->get_manager();
 
@@ -1197,18 +1208,9 @@ class dml_test extends UnitTestCase {
             $this->assertTrue(true);
         }
 
-        // multiple matches - debug warning
-        $olddebug   = $CFG->debug;       // Save current debug settings
-        $olddisplay = $CFG->debugdisplay;
-        $CFG->debug = DEBUG_DEVELOPER;
-        $CFG->debugdisplay = true;
-        ob_start(); // hide debug warning
+        $this->enable_debugging();
         $this->assertTrue($DB->get_record_sql("SELECT * FROM {{$tablename}}", array(), IGNORE_MISSING));
-        $debuginfo = ob_get_contents();
-        ob_end_clean();
-        $CFG->debug = $olddebug;         // Restore original debug settings
-        $CFG->debugdisplay = $olddisplay;
-        $this->assertFalse($debuginfo === '');
+        $this->assertFalse($this->get_debugging() === '');
 
         // multiple matches ignored
         $this->assertTrue($DB->get_record_sql("SELECT * FROM {{$tablename}}", array(), IGNORE_MULTIPLE));
@@ -1223,8 +1225,6 @@ class dml_test extends UnitTestCase {
     }
 
     public function test_get_field() {
-        global $CFG;
-
         $DB = $this->tdb;
         $dbman = $DB->get_manager();
 
@@ -1251,25 +1251,13 @@ class dml_test extends UnitTestCase {
             $this->assertTrue(true);
         }
 
-        $olddebug   = $CFG->debug;       // Save current debug settings
-        $olddisplay = $CFG->debugdisplay;
-        $CFG->debug = DEBUG_DEVELOPER;
-        $CFG->debugdisplay = true;
-
-        ob_start(); // catch debug warning
+        $this->enable_debugging();
         $this->assertEqual(5, $DB->get_field($tablename, 'course', array('course' => 5), IGNORE_MULTIPLE));
-        $debuginfo = ob_get_contents();
-        ob_end_clean();
-        $this->assertTrue($debuginfo === '');
+        $this->assertIdentical($this->get_debugging(), '');
 
-        ob_start(); // catch debug warning
+        $this->enable_debugging();
         $this->assertEqual(5, $DB->get_field($tablename, 'course', array('course' => 5), IGNORE_MISSING));
-        $debuginfo = ob_get_contents();
-        ob_end_clean();
-        $this->assertFalse($debuginfo === '');
-
-        $CFG->debug = $olddebug;         // Restore original debug settings
-        $CFG->debugdisplay = $olddisplay;
+        $this->assertFalse($this->get_debugging() === '');
     }
 
     public function test_get_field_select() {
@@ -1415,8 +1403,6 @@ class dml_test extends UnitTestCase {
     }
 
     public function test_insert_record() {
-        global $CFG;
-
         // All the information in this test is fetched from DB by get_recordset() so we
         // have such method properly tested against nulls, empties and friends...
 
@@ -1573,8 +1559,8 @@ class dml_test extends UnitTestCase {
         }
 
         // Check LOBs in text/binary columns
-        $clob = file_get_contents($CFG->libdir.'/dml/simpletest/fixtures/clob.txt');
-        $blob = file_get_contents($CFG->libdir.'/dml/simpletest/fixtures/randombinary');
+        $clob = file_get_contents(dirname(__FILE__).'/fixtures/clob.txt');
+        $blob = file_get_contents(dirname(__FILE__).'/fixtures/randombinary');
         $record = new object();
         $record->onetext = $clob;
         $record->onebinary = $blob;
@@ -1607,9 +1593,23 @@ class dml_test extends UnitTestCase {
         $before = clone($record);
         $DB->insert_record($tablename, $record);
         $this->assertEqual($record, $before);
+
+        // make sure the id is always increasing and never reuses the same id
+        $id1 = $DB->insert_record($tablename, array('course' => 3));
+        $id2 = $DB->insert_record($tablename, array('course' => 3));
+        $this->assertTrue($id1 < $id2);
+        $DB->delete_records($tablename, array('id'=>$id2));
+        $id3 = $DB->insert_record($tablename, array('course' => 3));
+        $this->assertTrue($id2 < $id3);
+        $DB->delete_records($tablename, array());
+        $id4 = $DB->insert_record($tablename, array('course' => 3));
+        $this->assertTrue($id3 < $id4);
     }
 
     public function test_import_record() {
+        // All the information in this test is fetched from DB by get_recordset() so we
+        // have such method properly tested against nulls, empties and friends...
+
         $DB = $this->tdb;
         $dbman = $DB->get_manager();
 
@@ -1618,14 +1618,22 @@ class dml_test extends UnitTestCase {
 
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('course', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0');
+        $table->add_field('oneint', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, 100);
+        $table->add_field('onenum', XMLDB_TYPE_NUMBER, '10,2', null, null, null, 200);
+        $table->add_field('onechar', XMLDB_TYPE_CHAR, '100', null, null, null, 'onestring');
+        $table->add_field('onetext', XMLDB_TYPE_TEXT, 'big', null, null, null);
+        $table->add_field('onebinary', XMLDB_TYPE_BINARY, 'big', null, null, null);
         $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
         $dbman->create_table($table);
 
-        $record = array('id'=>666, 'course'=>10);
-        $this->assertIdentical(true, $DB->import_record($tablename, $record));
-        $records = $DB->get_records($tablename);
-        $this->assertEqual(1, count($records));
-        $this->assertEqual(10, $records[666]->course);
+        $this->assertIdentical(1, $DB->insert_record($tablename, array('course' => 1), true));
+        $record = $DB->get_record($tablename, array('course' => 1));
+        $this->assertEqual(1, $record->id);
+        $this->assertEqual(100, $record->oneint); // Just check column defaults have been applied
+        $this->assertEqual(200, $record->onenum);
+        $this->assertIdentical('onestring', $record->onechar);
+        $this->assertNull($record->onetext);
+        $this->assertNull($record->onebinary);
 
         // ignore extra columns
         $record = (object)array('id'=>13, 'course'=>2, 'xxxx'=>788778);
@@ -1634,6 +1642,134 @@ class dml_test extends UnitTestCase {
         $this->assertIdentical($record, $before);
         $records = $DB->get_records($tablename);
         $this->assertEqual(2, $records[13]->course);
+
+        // Check nulls are set properly for all types
+        $record = new object();
+        $record->id = 20;
+        $record->oneint = null;
+        $record->onenum = null;
+        $record->onechar = null;
+        $record->onetext = null;
+        $record->onebinary = null;
+        $this->assertTrue($DB->import_record($tablename, $record));
+        $record = $DB->get_record($tablename, array('id' => 20));
+        $this->assertEqual(0, $record->course);
+        $this->assertNull($record->oneint);
+        $this->assertNull($record->onenum);
+        $this->assertNull($record->onechar);
+        $this->assertNull($record->onetext);
+        $this->assertNull($record->onebinary);
+
+        // Check zeros are set properly for all types
+        $record = new object();
+        $record->id = 23;
+        $record->oneint = 0;
+        $record->onenum = 0;
+        $this->assertTrue($DB->import_record($tablename, $record));
+        $record = $DB->get_record($tablename, array('id' => 23));
+        $this->assertEqual(0, $record->oneint);
+        $this->assertEqual(0, $record->onenum);
+
+        // Check string data causes exception in numeric types
+        $record = new object();
+        $record->id = 32;
+        $record->oneint = 'onestring';
+        $record->onenum = 0;
+        try {
+            $DB->import_record($tablename, $record);
+            $this->fail("Expecting an exception, none occurred");
+        } catch (exception $e) {
+            $this->assertTrue($e instanceof dml_exception);
+        }
+        $record = new object();
+        $record->id = 35;
+        $record->oneint = 0;
+        $record->onenum = 'onestring';
+        try {
+           $DB->import_record($tablename, $record);
+           $this->fail("Expecting an exception, none occurred");
+        } catch (exception $e) {
+            $this->assertTrue($e instanceof dml_exception);
+        }
+
+        // Check empty strings are set properly in string types
+        $record = new object();
+        $record->id = 44;
+        $record->oneint = 0;
+        $record->onenum = 0;
+        $record->onechar = '';
+        $record->onetext = '';
+        $this->assertTrue($DB->import_record($tablename, $record));
+        $record = $DB->get_record($tablename, array('id' => 44));
+        $this->assertTrue($record->onechar === '');
+        $this->assertTrue($record->onetext === '');
+
+        // Check operation ((210.10 + 39.92) - 150.02) against numeric types
+        $record = new object();
+        $record->id = 47;
+        $record->oneint = ((210.10 + 39.92) - 150.02);
+        $record->onenum = ((210.10 + 39.92) - 150.02);
+        $this->assertTrue($DB->import_record($tablename, $record));
+        $record = $DB->get_record($tablename, array('id' => 47));
+        $this->assertEqual(100, $record->oneint);
+        $this->assertEqual(100, $record->onenum);
+
+        // Check various quotes/backslashes combinations in string types
+        $i = 50;
+        $teststrings = array(
+            'backslashes and quotes alone (even): "" \'\' \\\\',
+            'backslashes and quotes alone (odd): """ \'\'\' \\\\\\',
+            'backslashes and quotes sequences (even): \\"\\" \\\'\\\'',
+            'backslashes and quotes sequences (odd): \\"\\"\\" \\\'\\\'\\\'');
+        foreach ($teststrings as $teststring) {
+            $record = new object();
+            $record->id = $i;
+            $record->onechar = $teststring;
+            $record->onetext = $teststring;
+            $this->assertTrue($DB->import_record($tablename, $record));
+            $record = $DB->get_record($tablename, array('id' => $i));
+            $this->assertEqual($teststring, $record->onechar);
+            $this->assertEqual($teststring, $record->onetext);
+            $i = $i + 3;
+        }
+
+        // Check LOBs in text/binary columns
+        $clob = file_get_contents(dirname(__FILE__).'/fixtures/clob.txt');
+        $record = new object();
+        $record->id = 70;
+        $record->onetext = $clob;
+        $record->onebinary = '';
+        $this->assertTrue($DB->import_record($tablename, $record));
+        $rs = $DB->get_recordset($tablename, array('id' => 70));
+        $record = $rs->current();
+        $rs->close();
+        $this->assertEqual($clob, $record->onetext, 'Test CLOB insert (full contents output disabled)');
+
+        $blob = file_get_contents(dirname(__FILE__).'/fixtures/randombinary');
+        $record = new object();
+        $record->id = 71;
+        $record->onetext = '';
+        $record->onebinary = $blob;
+        $this->assertTrue($DB->import_record($tablename, $record));
+        $rs = $DB->get_recordset($tablename, array('id' => 71));
+        $record = $rs->current();
+        $rs->close();
+        $this->assertEqual($blob, $record->onebinary, 'Test BLOB insert (full contents output disabled)');
+
+        // And "small" LOBs too, just in case
+        $newclob = substr($clob, 0, 500);
+        $newblob = substr($blob, 0, 250);
+        $record = new object();
+        $record->id = 73;
+        $record->onetext = $newclob;
+        $record->onebinary = $newblob;
+        $this->assertTrue($DB->import_record($tablename, $record));
+        $rs = $DB->get_recordset($tablename, array('id' => 73));
+        $record = $rs->current();
+        $rs->close();
+        $this->assertEqual($newclob, $record->onetext, 'Test "small" CLOB insert (full contents output disabled)');
+        $this->assertEqual($newblob, $record->onebinary, 'Test "small" BLOB insert (full contents output disabled)');
+        $this->assertEqual(false, $rs->key()); // Ensure recordset key() method to be working ok after closing
     }
 
     public function test_update_record_raw() {
@@ -1681,8 +1817,6 @@ class dml_test extends UnitTestCase {
 
         // All the information in this test is fetched from DB by get_record() so we
         // have such method properly tested against nulls, empties and friends...
-
-        global $CFG;
 
         $DB = $this->tdb;
         $dbman = $DB->get_manager();
@@ -1823,8 +1957,8 @@ class dml_test extends UnitTestCase {
         }
 
         // Check LOBs in text/binary columns
-        $clob = file_get_contents($CFG->libdir.'/dml/simpletest/fixtures/clob.txt');
-        $blob = file_get_contents($CFG->libdir.'/dml/simpletest/fixtures/randombinary');
+        $clob = file_get_contents(dirname(__FILE__).'/fixtures/clob.txt');
+        $blob = file_get_contents(dirname(__FILE__).'/fixtures/randombinary');
         $record->onetext = $clob;
         $record->onebinary = $blob;
         $DB->update_record($tablename, $record);
@@ -1902,8 +2036,6 @@ class dml_test extends UnitTestCase {
 
         // All the information in this test is fetched from DB by get_field() so we
         // have such method properly tested against nulls, empties and friends...
-
-        global $CFG;
 
         $DB = $this->tdb;
         $dbman = $DB->get_manager();
@@ -2012,8 +2144,8 @@ class dml_test extends UnitTestCase {
         }
 
         // Check LOBs in text/binary columns
-        $clob = file_get_contents($CFG->libdir.'/dml/simpletest/fixtures/clob.txt');
-        $blob = file_get_contents($CFG->libdir.'/dml/simpletest/fixtures/randombinary');
+        $clob = file_get_contents(dirname(__FILE__).'/fixtures/clob.txt');
+        $blob = file_get_contents(dirname(__FILE__).'/fixtures/randombinary');
         $DB->set_field_select($tablename, 'onetext', $clob, 'id = ?', array(1));
         $DB->set_field_select($tablename, 'onebinary', $blob, 'id = ?', array(1));
         $this->assertEqual($clob, $DB->get_field($tablename, 'onetext', array('id' => 1)), 'Test CLOB set_field (full contents output disabled)');
@@ -2181,6 +2313,10 @@ class dml_test extends UnitTestCase {
 
         $this->assertTrue($DB->delete_records($tablename, array('course' => 2)));
         $this->assertEqual(1, $DB->count_records($tablename));
+
+        // delete all
+        $this->assertTrue($DB->delete_records($tablename, array()));
+        $this->assertEqual(0, $DB->count_records($tablename));
     }
 
     public function test_delete_records_select() {
@@ -2234,8 +2370,31 @@ class dml_test extends UnitTestCase {
 
     function test_sql_bitand() {
         $DB = $this->tdb;
+        $dbman = $DB->get_manager();
+
+        $table = $this->get_test_table();
+        $tablename = $table->getName();
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('col1', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0');
+        $table->add_field('col2', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $dbman->create_table($table);
+
+        $DB->insert_record($tablename, array('col1' => 3, 'col2' => 10));
+
         $sql = "SELECT ".$DB->sql_bitand(10, 3)." AS res ".$DB->sql_null_from_clause();
         $this->assertEqual($DB->get_field_sql($sql), 2);
+
+        $sql = "SELECT id, ".$DB->sql_bitand('col1', 'col2')." AS res FROM {{$tablename}}";
+        $result = $DB->get_records_sql($sql);
+        $this->assertEqual(count($result), 1);
+        $this->assertEqual(reset($result)->res, 2);
+
+        $sql = "SELECT id, ".$DB->sql_bitand('col1', '?')." AS res FROM {{$tablename}}";
+        $result = $DB->get_records_sql($sql, array(10));
+        $this->assertEqual(count($result), 1);
+        $this->assertEqual(reset($result)->res, 2);
     }
 
     function test_sql_bitnot() {
@@ -2250,14 +2409,60 @@ class dml_test extends UnitTestCase {
 
     function test_sql_bitor() {
         $DB = $this->tdb;
+        $dbman = $DB->get_manager();
+
+        $table = $this->get_test_table();
+        $tablename = $table->getName();
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('col1', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0');
+        $table->add_field('col2', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $dbman->create_table($table);
+
+        $DB->insert_record($tablename, array('col1' => 3, 'col2' => 10));
+
         $sql = "SELECT ".$DB->sql_bitor(10, 3)." AS res ".$DB->sql_null_from_clause();
         $this->assertEqual($DB->get_field_sql($sql), 11);
+
+        $sql = "SELECT id, ".$DB->sql_bitor('col1', 'col2')." AS res FROM {{$tablename}}";
+        $result = $DB->get_records_sql($sql);
+        $this->assertEqual(count($result), 1);
+        $this->assertEqual(reset($result)->res, 11);
+
+        $sql = "SELECT id, ".$DB->sql_bitor('col1', '?')." AS res FROM {{$tablename}}";
+        $result = $DB->get_records_sql($sql, array(10));
+        $this->assertEqual(count($result), 1);
+        $this->assertEqual(reset($result)->res, 11);
     }
 
     function test_sql_bitxor() {
         $DB = $this->tdb;
+        $dbman = $DB->get_manager();
+
+        $table = $this->get_test_table();
+        $tablename = $table->getName();
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('col1', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0');
+        $table->add_field('col2', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $dbman->create_table($table);
+
+        $DB->insert_record($tablename, array('col1' => 3, 'col2' => 10));
+
         $sql = "SELECT ".$DB->sql_bitxor(10, 3)." AS res ".$DB->sql_null_from_clause();
         $this->assertEqual($DB->get_field_sql($sql), 9);
+
+        $sql = "SELECT id, ".$DB->sql_bitxor('col1', 'col2')." AS res FROM {{$tablename}}";
+        $result = $DB->get_records_sql($sql);
+        $this->assertEqual(count($result), 1);
+        $this->assertEqual(reset($result)->res, 9);
+
+        $sql = "SELECT id, ".$DB->sql_bitxor('col1', '?')." AS res FROM {{$tablename}}";
+        $result = $DB->get_records_sql($sql, array(10));
+        $this->assertEqual(count($result), 1);
+        $this->assertEqual(reset($result)->res, 9);
     }
 
     function test_sql_modulo() {
@@ -2480,8 +2685,6 @@ class dml_test extends UnitTestCase {
     }
 
     function test_sql_ilike() {
-        global $CFG;
-
         // note: this is deprecated, just make sure it does not throw error
         $DB = $this->tdb;
         $dbman = $DB->get_manager();
@@ -2499,18 +2702,10 @@ class dml_test extends UnitTestCase {
         $DB->insert_record($tablename, array('name'=>'ouch'));
 
         // make sure it prints debug message
-        $olddebug   = $CFG->debug;       // Save current debug settings
-        $olddisplay = $CFG->debugdisplay;
-        $CFG->debug = DEBUG_DEVELOPER;
-        $CFG->debugdisplay = true;
-        ob_start(); // hide debug warning
+        $this->enable_debugging();
         $sql = "SELECT * FROM {{$tablename}} WHERE name ".$DB->sql_ilike()." ?";
         $params = array("%dup_r%");
-        ob_end_clean();
-        $debuginfo = ob_get_contents();
-        $CFG->debug = $olddebug;         // Restore original debug settings
-        $CFG->debugdisplay = $olddisplay;
-        $this->assertFalse($debuginfo === '');
+        $this->assertFalse($this->get_debugging() === '');
 
         // following must not throw exception, we ignore result
         $DB->get_records_sql($sql, $params);
@@ -2587,11 +2782,11 @@ class dml_test extends UnitTestCase {
 
         $sql = "SELECT * FROM {{$tablename}} ORDER BY ".$DB->sql_order_by_text('description');
         $records = $DB->get_records_sql($sql);
-        $first = array_unshift($records);
+        $first = array_shift($records);
         $this->assertEqual(1, $first->id);
-        $second = array_unshift($records);
+        $second = array_shift($records);
         $this->assertEqual(3, $second->id);
-        $last = array_unshift($records);
+        $last = array_shift($records);
         $this->assertEqual(2, $last->id);
     }
 
@@ -2802,7 +2997,6 @@ class dml_test extends UnitTestCase {
      * useful to determine if new database libraries can be supported.
      */
     public function test_get_records_sql_complicated() {
-        global $CFG;
         $DB = $this->tdb;
         $dbman = $DB->get_manager();
 
@@ -2831,8 +3025,8 @@ class dml_test extends UnitTestCase {
         $this->assertEqual(1, reset($records)->id);
         $this->assertEqual(2, next($records)->id);
 
-        // try embeding sql_xxxx() helper functions, to check they don't break params/binding
-        $count = $DB->count_records($tablename, array('course' => 3, $DB->sql_compare_text('content') => 'hello'));
+        // do NOT try embedding sql_xxxx() helper functions in conditions array of count_records(), they don't break params/binding!
+        $count = $DB->count_records_select($tablename, "course = :course AND ".$DB->sql_compare_text('content')." = :content", array('course' => 3, 'content' => 'hello'));
         $this->assertEqual(1, $count);
     }
 

@@ -920,6 +920,8 @@ function external_delete_descriptions($component) {
  * upgrade logging functions
  */
 function upgrade_handle_exception($ex, $plugin = null) {
+    global $CFG;
+
     // rollback everything, we need to log all upgrade problems
     abort_all_db_transactions();
 
@@ -1386,6 +1388,8 @@ function upgrade_plugin_mnet_functions($component) {
     list($type, $plugin) = explode('_', $component);
     $path = get_plugin_directory($type, $plugin);
 
+    $publishes = array();
+    $subscribes = array();
     if (file_exists($path . '/db/mnet.php')) {
         require_once($path . '/db/mnet.php'); // $publishes comes from this file
     }

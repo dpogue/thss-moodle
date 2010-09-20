@@ -70,7 +70,7 @@ define("LESSON_MAX_EVENT_LENGTH", "432000");
  * This function is only executed when a teacher is
  * checking the navigation for a lesson.
  *
- * @param int $lesson Id of the lesson that is to be checked.
+ * @param stdClass $lesson Id of the lesson that is to be checked.
  * @return boolean True or false.
  **/
 function lesson_display_teacher_warning($lesson) {
@@ -79,7 +79,7 @@ function lesson_display_teacher_warning($lesson) {
     // get all of the lesson answers
     $params = array ("lessonid" => $lesson->id);
     if (!$lessonanswers = $DB->get_records_select("lesson_answers", "lessonid = :lessonid", $params)) {
-        // no answers, then not useing cluster or unseen
+        // no answers, then not using cluster or unseen
         return false;
     }
     // just check for the first one that fulfills the requirements
@@ -941,6 +941,8 @@ class lesson extends lesson_base {
      * @return lesson
      */
     public static function load($lessonid) {
+        global $DB;
+
         if (!$lesson = $DB->get_record('lesson', array('id' => $lessonid))) {
             print_error('invalidcoursemodule');
         }
@@ -1114,10 +1116,11 @@ class lesson extends lesson_base {
      * @return bool
      */
     public function get_next_page($nextpageid) {
-        global $USER;
+        global $USER, $DB;
         $allpages = $this->load_all_pages();
         if ($this->properties->nextpagedefault) {
             // in Flash Card mode...first get number of retakes
+            $nretakes = $DB->count_records("lesson_grades", array("lessonid"=>$this->properties->id, "userid"=>$USER->id));
             shuffle($allpages);
             $found = false;
             if ($this->properties->nextpagedefault == LESSON_UNSEENPAGE) {
@@ -1138,7 +1141,6 @@ class lesson extends lesson_base {
             if ($found) {
                 if ($this->properties->maxpages) {
                     // check number of pages viewed (in the lesson)
-                    $nretakes = $DB->count_records("lesson_grades", array("lessonid"=>$this->properties->id, "userid"=>$USER->id));
                     if ($DB->count_records("lesson_attempts", array("lessonid"=>$this->properties->id, "userid"=>$USER->id, "retry"=>$nretakes)) >= $this->properties->maxpages) {
                         return false;
                     }
@@ -2018,7 +2020,7 @@ abstract class lesson_page extends lesson_base {
                     $options = new stdClass;
                     $options->noclean = true;
                     $options->para = true;
-                    $result->feedback = $OUTPUT->box(format_text($this->properties->contents, $this->properties->contentsformat, $options), 'generalbox boxaligncenter');
+                    $result->feedback = $OUTPUT->box(format_text($this->get_contents(), $this->properties->contentsformat, $options), 'generalbox boxaligncenter');
                     $result->feedback .= '<div class="correctanswer generalbox"><em>'.get_string("youranswer", "lesson").'</em> : '.$result->studentanswer; // already in clean html
                     $result->feedback .= $OUTPUT->box($result->response, $class); // already conerted to HTML
                     echo "</div>";

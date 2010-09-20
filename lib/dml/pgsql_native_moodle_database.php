@@ -177,14 +177,14 @@ class pgsql_native_moodle_database extends moodle_database {
         $result = pg_query($this->pgsql, $sql);
         $this->query_end($result);
 
-        $this->bytea_oid = pg_fetch_result($result, 0);
+        $this->bytea_oid = pg_fetch_result($result, 0, 0);
         pg_free_result($result);
         if ($this->bytea_oid === false) {
             $this->pgsql = null;
             throw new dml_connection_exception('Can not read bytea type.');
         }
 
-        // Connection stabilished and configured, going to instantiate the temptables controller
+        // Connection stabilised and configured, going to instantiate the temptables controller
         $this->temptables = new pgsql_native_moodle_temptables($this);
 
         return true;
@@ -522,13 +522,13 @@ class pgsql_native_moodle_database extends moodle_database {
         if (is_bool($value)) { // Always, convert boolean to int
             $value = (int)$value;
 
-        } else if ($column->meta_type == 'B') { // BLOB detected, we return 'blob' array instead of raw value to allow
+        } else if ($column->meta_type === 'B') { // BLOB detected, we return 'blob' array instead of raw value to allow
             if (!is_null($value)) {             // binding/executing code later to know about its nature
                 $value = array('blob' => $value);
             }
 
         } else if ($value === '') {
-            if ($column->meta_type == 'I' or $column->meta_type == 'F' or $column->meta_type == 'N') {
+            if ($column->meta_type === 'I' or $column->meta_type === 'F' or $column->meta_type === 'N') {
                 $value = 0; // prevent '' problems in numeric fields
             }
         }
@@ -854,15 +854,38 @@ class pgsql_native_moodle_database extends moodle_database {
 
         $columns = $this->get_columns($table);
         $cleaned = array();
+        $blobs   = array();
 
         foreach ($dataobject as $field=>$value) {
             if (!isset($columns[$field])) {
                 continue;
             }
+            if ($columns[$field]->meta_type === 'B') {
+                if (!is_null($value)) {
+                    $cleaned[$field] = '@#BLOB#@';
+                    $blobs[$field] = $value;
+                    continue;
+                }
+            }
+
             $cleaned[$field] = $value;
         }
 
-        return $this->insert_record_raw($table, $cleaned, false, true, true);
+        $this->insert_record_raw($table, $cleaned, false, true, true);
+        $id = $dataobject['id'];
+
+        foreach ($blobs as $key=>$value) {
+            $value = pg_escape_bytea($this->pgsql, $value);
+            $sql = "UPDATE {$this->prefix}$table SET $key = '$value'::bytea WHERE id = $id";
+            $this->query_start($sql, NULL, SQL_QUERY_UPDATE);
+            $result = pg_query($this->pgsql, $sql);
+            $this->query_end($result);
+            if ($result !== false) {
+                pg_free_result($result);
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1074,7 +1097,7 @@ class pgsql_native_moodle_database extends moodle_database {
     }
 
     public function sql_bitxor($int1, $int2) {
-        return '(' . $this->sql_bitor($int1, $int2) . ' - ' . $this->sql_bitand($int1, $int2) . ')';
+        return '((' . $int1 . ') # (' . $int2 . '))';
     }
 
     public function sql_cast_char2int($fieldname, $text=false) {

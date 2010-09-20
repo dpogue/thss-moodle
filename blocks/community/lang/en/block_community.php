@@ -26,7 +26,7 @@
 
 $string['activities'] = 'Activities';
 $string['add'] = 'Add';
-$string['addtocommunityblock'] = 'Bookmark';
+$string['addtocommunityblock'] = 'Add to block';
 $string['addcommunitycourse'] = 'Add community course';
 $string['additionalcoursedesc'] = '{$a->lang} Creator: {$a->creatorname} - Publisher: {$a->publishername} - Subject: {$a->subject}
     - Audience: {$a->audience} - Educational level: {$a->educationallevel} - License: {$a->license}';
@@ -75,7 +75,9 @@ $string['nocomments'] = 'No comments';
 $string['nocourse'] = 'No courses found';
 $string['noratings'] = 'No ratings';
 $string['operation'] = 'Operation';
+$string['outcomes'] = 'Outcomes: {$a}';
 $string['pluginname'] = 'Community';
+$string['rateandcomment'] = 'Rate and comment';
 $string['rating'] = 'Rating';
 $string['removecommunitycourse'] = 'Remove community course';
 $string['restorecourse'] = 'Restore course';

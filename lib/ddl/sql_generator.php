@@ -233,8 +233,13 @@ abstract class sql_generator {
             return $results;
         }
 
+        $sequencefield = null;
+
     /// Add the fields, separated by commas
         foreach ($xmldb_fields as $xmldb_field) {
+            if ($xmldb_field->getSequence()) {
+                $sequencefield = $xmldb_field->getName();
+            }
             $table .= "\n    " . $this->getFieldSQL($xmldb_field);
             $table .= ',';
         }
@@ -252,8 +257,20 @@ abstract class sql_generator {
                         $table .= "\nCONSTRAINT " . $keytext . ',';
                     }
                 }
+            /// make sure sequence field is unique
+                if ($sequencefield and $xmldb_key->getType() == XMLDB_KEY_PRIMARY) {
+                    $field = reset($xmldb_key->getFields());
+                    if ($sequencefield === $field) {
+                        $sequencefield = null;
+                    }
+                }
             }
         }
+    /// throw error if sequence field does not have unique key defined
+        if ($sequencefield) {
+            throw new ddl_exception('ddsequenceerror', $xmldb_table->getName());
+        }
+
     /// Table footer, trim the latest comma
         $table = trim($table,',');
         $table .= "\n)";
@@ -901,9 +918,7 @@ abstract class sql_generator {
     /// We need this because sql statements are created before executing
     /// them, hence names doesn't exist "physically" yet in DB, so we need
     /// to known which ones have been used
-        if (!isset($used_names)) {
-            static $used_names = array();
-        }
+        static $used_names = array();
 
     /// Use standard naming. See http://docs.moodle.org/en/XMLDB_key_and_index_naming
         $tablearr = explode ('_', $tablename);
@@ -1170,8 +1185,11 @@ abstract class sql_generator {
     /**
      * Returns an array of reserved words (lowercase) for this DB
      * You MUST provide the real list for each DB inside every XMLDB class
+     * @return array of reserved words
      */
-    public static abstract function getReservedWords();
+    public static function getReservedWords() {
+        throw new coding_exception('getReservedWords() method needs to be overridden in each subclass of sql_generator');
+    }
 
     /**
      * Returns all reserved works in supported databases.

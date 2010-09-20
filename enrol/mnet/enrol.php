@@ -90,7 +90,7 @@ class enrol_mnet_mnetservice_enrol {
                 unset($course->customint1); // the client does not need to know this
                 $context = get_context_instance(CONTEXT_COURSE, $course->remoteid);
                 // Rewrite file URLs so that they are correct
-                $course->summary = file_rewrite_pluginfile_urls($course->summary, 'pluginfile.php', $context->id, 'course', 'summary');
+                $course->summary = file_rewrite_pluginfile_urls($course->summary, 'pluginfile.php', $context->id, 'course', 'summary', false);
                 $courses[$course->remoteid] = $course;
             }
         }
@@ -218,7 +218,7 @@ class enrol_mnet_mnetservice_enrol {
         $user = $DB->get_record('user', array('username'=>$username, 'mnethostid'=>$client->id));
 
         if ($user === false) {
-            throw new mnet_exception(5014, 'usernotfound', 'enrol_mnet');
+            throw new mnet_server_exception(5014, 'usernotfound', 'enrol_mnet');
         }
 
         if (! $course = $DB->get_record('course', array('id'=>$courseid))) {

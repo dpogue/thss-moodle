@@ -290,6 +290,7 @@ function enrol_course_updated($inserted, $course, $data) {
  * @return void
  */
 function enrol_add_course_navigation(navigation_node $coursenode, $course) {
+    global $CFG;
 
     $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
 
@@ -415,7 +416,7 @@ function enrol_add_course_navigation(navigation_node $coursenode, $course) {
  *   so name the fields you really need, which will
  *   be added and uniq'd
  *
- * @param strin|array $fields
+ * @param string|array $fields
  * @param string $sort
  * @param int $limit max number of courses
  * @return array
@@ -560,11 +561,11 @@ function enrol_get_course_description_texts($course) {
     $instances = enrol_get_instances($course->id, true);
     $plugins = enrol_get_plugins(true);
     foreach ($instances as $instance) {
-        if (!isset($plugins[$instance->name])) {
+        if (!isset($plugins[$instance->enrol])) {
             //weird
             continue;
         }
-        $plugin = $plugins[$enrol->name];
+        $plugin = $plugins[$instance->enrol];
         $text = $plugin->get_description_text($instance);
         if ($text !== NULL) {
             $lines[] = $text;
@@ -582,7 +583,7 @@ function enrol_get_course_description_texts($course) {
  *
  * @param int $userid
  * @param bool $onlyactive return only active enrolments in courses user may see
- * @param strin|array $fields
+ * @param string|array $fields
  * @param string $sort
  * @return array
  */
@@ -700,6 +701,28 @@ function enrol_user_delete($user) {
 
     // force cleanup of all broken enrolments
     $DB->delete_records('user_enrolments', array('userid'=>$user->id));
+}
+
+/**
+ * Called when course is about to be deleted.
+ * @param stdClass $object
+ * @return void
+ */
+function enrol_course_delete($course) {
+    global $DB;
+
+    $instances = enrol_get_instances($course->id, false);
+    $plugins = enrol_get_plugins(true);
+    foreach ($instances as $instance) {
+        if (isset($plugins[$instance->enrol])) {
+            $plugins[$instance->enrol]->delete_instance($instance);
+        }
+        // low level delete in case plugin did not do it
+        $DB->delete_records('user_enrolments', array('enrolid'=>$instance->id));
+        $DB->delete_records('role_assignments', array('itemid'=>$instance->id, 'component'=>'enrol_'.$instance->enrol));
+        $DB->delete_records('user_enrolments', array('enrolid'=>$instance->id));
+        $DB->delete_records('enrol', array('id'=>$instance->id));
+    }
 }
 
 /**

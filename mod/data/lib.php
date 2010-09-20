@@ -1576,43 +1576,6 @@ function data_print_preference_form($data, $perpage, $search, $sort='', $order='
  * @return void Output echo'd
  */
 function data_print_ratings($data, $record) {
-    /*global $USER, $DB, $OUTPUT;
-
-    $cm = get_coursemodule_from_instance('data', $data->id);
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
-
-    if ($data->assessed and isloggedin() and (has_capability('mod/data:rate', $context) or has_capability('mod/data:viewrating', $context) or data_isowner($record->id))) {
-        if ($ratingsscale = make_grades_menu($data->scale)) {
-            $ratingsmenuused = false;
-
-            echo '<div class="ratings" style="text-align:center">';
-            echo '<form id="form" method="post" action="rate.php">';
-            echo '<input type="hidden" name="dataid" value="'.$data->id.'" />';
-
-            if (has_capability('mod/data:rate', $context) and !data_isowner($record->id)) {
-                data_print_ratings_mean($record->id, $ratingsscale, has_capability('mod/data:viewrating', $context));
-                echo '&nbsp;';
-                data_print_rating_menu($record->id, $USER->id, $ratingsscale);
-                $ratingsmenuused = true;
-
-            } else {
-                data_print_ratings_mean($record->id, $ratingsscale, true);
-            }
-
-            if ($data->scale < 0) {
-                if ($scale = $DB->get_record('scale', array('id'=>abs($data->scale)))) {
-                    echo $OUTPUT->help_icon_scale($data->course, $scale);
-                }
-            }
-
-            if ($ratingsmenuused) {
-                echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
-                echo '<input type="submit" value="'.get_string('sendinratings', 'data').'" />';
-            }
-            echo '</form>';
-            echo '</div>';
-        }
-    }*/
     global $OUTPUT;
     if( !empty($record->rating) ){
         echo $OUTPUT->render($record->rating);
@@ -1646,13 +1609,18 @@ function data_get_post_actions() {
 function data_fieldname_exists($name, $dataid, $fieldid=0) {
     global $CFG, $DB;
 
+    if(!is_numeric($name)) {
+        $like = $DB->sql_like('df.name', $name, false);
+    } else {
+        $like = "df.name = $name";
+    }
     if ($fieldid) {
         return $DB->record_exists_sql("SELECT * FROM {data_fields} df
-                                        WHERE ".$DB->sql_like('df.name', '?', false)." AND df.dataid = ?
-                                              AND ((df.id < ?) OR (df.id > ?))", array($name, $dataid, $fieldid, $fieldid));
+                                        WHERE ".$like." AND df.dataid = ?
+                                              AND ((df.id < ?) OR (df.id > ?))", array($dataid, $fieldid, $fieldid));
     } else {
         return $DB->record_exists_sql("SELECT * FROM {data_fields} df
-                                        WHERE ".$DB->sql_like('df.name', '?', false)." AND df.dataid = ?", array($name, $dataid));
+                                        WHERE ".$like." AND df.dataid = ?", array($dataid));
     }
 }
 
@@ -1879,6 +1847,8 @@ function data_get_available_presets($context) {
  * @return array An array of presets
  */
 function data_get_available_site_presets($context, array $presets=array()) {
+    global $USER;
+
     $fs = get_file_storage();
     $files = $fs->get_area_files(DATA_PRESET_CONTEXT, DATA_PRESET_COMPONENT, DATA_PRESET_FILEAREA);
     $canviewall = has_capability('mod/data:viewalluserpresets', $context);
@@ -2372,7 +2342,7 @@ function data_reset_gradebook($courseid, $type='') {
 }
 
 /**
- * Actual implementation of the rest coures functionality, delete all the
+ * Actual implementation of the reset course functionality, delete all the
  * data responses for course $data->courseid.
  *
  * @global object
@@ -2554,12 +2524,12 @@ function data_export_csv($export, $delimiter_name, $dataname, $count, $return=fa
     global $CFG;
     require_once($CFG->libdir . '/csvlib.class.php');
     $delimiter = csv_import_reader::get_delimiter($delimiter_name);
-    $filename = clean_filename("${dataname}-${count}_record");
+    $filename = clean_filename("{$dataname}-{$count}_record");
     if ($count > 1) {
         $filename .= 's';
     }
     $filename .= clean_filename('-' . gmdate("Ymd_Hi"));
-    $filename .= clean_filename("-${delimiter_name}_separated");
+    $filename .= clean_filename("-{$delimiter_name}_separated");
     $filename .= '.csv';
     if (empty($return)) {
         header("Content-Type: application/download\n");
@@ -2593,7 +2563,7 @@ function data_export_csv($export, $delimiter_name, $dataname, $count, $return=fa
 function data_export_xls($export, $dataname, $count) {
     global $CFG;
     require_once("$CFG->libdir/excellib.class.php");
-    $filename = clean_filename("${dataname}-${count}_record");
+    $filename = clean_filename("{$dataname}-{$count}_record");
     if ($count > 1) {
         $filename .= 's';
     }
@@ -2628,7 +2598,7 @@ function data_export_xls($export, $dataname, $count) {
 function data_export_ods($export, $dataname, $count) {
     global $CFG;
     require_once("$CFG->libdir/odslib.class.php");
-    $filename = clean_filename("${dataname}-${count}_record");
+    $filename = clean_filename("{$dataname}-{$count}_record");
     if ($count > 1) {
         $filename .= 's';
     }
@@ -2830,7 +2800,7 @@ function data_extend_settings_navigation(settings_navigation $settings, navigati
     $groupmode = groups_get_activity_groupmode($PAGE->cm);
 
     if (data_user_can_add_entry($data, $currentgroup, $groupmode)) { // took out participation list here!
-        if (empty($editentry)) {
+        if (empty($editentry)) { //TODO: undefined
             $addstring = get_string('add', 'data');
         } else {
             $addstring = get_string('editentry', 'data');
@@ -3075,11 +3045,9 @@ function data_presets_export($course, $cm, $data, $tostorage=false) {
     $exportfile = $exportdir.'.zip';
     file_exists($exportfile) && unlink($exportfile);
 
-    $fp = get_file_packer();
-    $fp->archive_to_pathname($files, $archivefile);
+    $fp = get_file_packer('application/zip');
+    $fp->archive_to_pathname($filelist, $exportfile);
 
-    $status = zip_files($filelist, $exportfile);
-    // ToDo: status check
     foreach ($filelist as $file) {
         unlink($file);
     }

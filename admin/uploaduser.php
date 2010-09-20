@@ -167,7 +167,7 @@ if ($formdata = $mform->is_cancelled()) {
     // caches
     $ccache       = array(); // course cache - do not fetch all courses here, we  will not probably use them all anyway!
     $rolecache    = uu_allowed_roles_cache(); // roles lookup cache
-    $manualcacche = array(); // cache of used manual enrol plugins in each course
+    $manualcache  = array(); // cache of used manual enrol plugins in each course
 
     $allowedauths   = uu_allowed_auths();
     $allowedauths   = array_keys($allowedauths);
@@ -457,7 +457,7 @@ if ($formdata = $mform->is_cancelled()) {
                             }
                         }
                     }
-                    if ((array_key_exists($column, $existinguser) and array_key_exists($column, $user)) or in_array($column, $PRF_FIELDS)) {
+                    if ((property_exists($existinguser, $column) and property_exists($user, $column)) or in_array($column, $PRF_FIELDS)) {
                         if ($updatetype == 3 and $existinguser->$column !== '') {
                             //missing == non-empty only
                             continue;
@@ -484,7 +484,7 @@ if ($formdata = $mform->is_cancelled()) {
                     }
                 }
 
-                // do not update record if new auth plguin does not exist!
+                // do not update record if new auth plugin does not exist!
                 if (!in_array($existinguser->auth, $availableauths)) {
                     $upt->track('auth', get_string('userautherror', 'error', $existinguser->auth), 'error');
                     $upt->track('status', $strusernotupdated, 'error');
@@ -652,7 +652,7 @@ if ($formdata = $mform->is_cancelled()) {
             if (!empty($user->{'group'.$i})) {
                 // make sure user is enrolled into course before adding into groups
                 if (!is_enrolled($coursecontext, $user->id)) {
-                    $upt->track('enrolments', get_string('addedtogroupnotenrolled', '', $gname), 'error');
+                    $upt->track('enrolments', get_string('addedtogroupnotenrolled', '', $user->{'group'.$i}), 'error');
                     continue;
                 }
                 //build group cache

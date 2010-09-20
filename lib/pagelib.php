@@ -346,6 +346,7 @@ class moodle_page {
      * @return string e.g. 'my-index' or 'mod-quiz-attempt'.
      */
     protected function magic_get_pagetype() {
+        global $CFG;
         if (is_null($this->_pagetype) || isset($CFG->pagepath)) {
             $this->initialise_default_pagetype();
         }
@@ -770,7 +771,10 @@ class moodle_page {
     /**
      * The course module that this page belongs to (if it does belong to one).
      *
-     * @param objcet $cm a full cm object obtained from get_coursemodule_from_id or get_coursemodule_from_instance.
+     * @param stdClass $cm a full cm object obtained from get_coursemodule_from_id or get_coursemodule_from_instance.
+     * @param stdClass $course
+     * @param stdClass $module
+     * @return void
      */
     public function set_cm($cm, $course = null, $module = null) {
         global $DB;

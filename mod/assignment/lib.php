@@ -33,9 +33,9 @@ require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->dirroot.'/calendar/lib.php');
 
 /** ASSIGNMENT_COUNT_WORDS = 1 */
-DEFINE ('ASSIGNMENT_COUNT_WORDS', 1);
+define('ASSIGNMENT_COUNT_WORDS', 1);
 /** ASSIGNMENT_COUNT_LETTERS = 2 */
-DEFINE ('ASSIGNMENT_COUNT_LETTERS', 2);
+define('ASSIGNMENT_COUNT_LETTERS', 2);
 
 /**
  * Standard base class for all assignment submodules (assignment types).
@@ -262,13 +262,22 @@ class assignment_base {
         global $USER, $CFG, $DB, $OUTPUT;
         require_once($CFG->libdir.'/gradelib.php');
 
-        if (!is_enrolled($this->context, $USER, 'mod/assignment:submit')) {
+        if (!is_enrolled($this->context, $USER, 'mod/assignment:view')) {
             // can not submit assignments -> no feedback
             return;
         }
 
         if (!$submission) { /// Get submission for this assignment
             $submission = $this->get_submission($USER->id);
+        }
+        // Check the user can submit
+        $cansubmit = has_capability('mod/assignment:submit', $this->context, $USER->id, false);
+        // If not then check if the user still has the view cap and has a previous submission
+        $cansubmit = $cansubmit || (!empty($submission) && has_capability('mod/assignment:view', $this->context, $USER->id, false));
+
+        if (!$cansubmit) {
+            // can not submit assignments -> no feedback
+            return;
         }
 
         $grading_info = grade_get_grades($this->course->id, 'mod', 'assignment', $this->assignment->id, $USER->id);
@@ -707,7 +716,7 @@ class assignment_base {
                             $DB->update_record('assignment_submissions', $submission);
                         }
 
-                        // triger grade event
+                        // trigger grade event
                         $this->update_grade($submission);
 
                         //add to log only if updating
@@ -938,14 +947,15 @@ class assignment_base {
         /// Get all ppl that can submit assignments
 
         $currentgroup = groups_get_activity_group($cm);
-        if ($users = get_enrolled_users($context, 'mod/assignment:submit', $currentgroup, 'u.id')) {
+        $gradebookroles = explode(",", $CFG->gradebookroles);
+        $users = get_enrolled_users($context, 'mod/assignment:view', $currentgroup, 'u.id');
+        if ($users) {
             $users = array_keys($users);
-        }
-
-        // if groupmembersonly used, remove users who are not in any group
-        if ($users and !empty($CFG->enablegroupmembersonly) and $cm->groupmembersonly) {
-            if ($groupingusers = groups_get_grouping_members($cm->groupingid, 'u.id', 'u.id')) {
-                $users = array_intersect($users, array_keys($groupingusers));
+            // if groupmembersonly used, remove users who are not in any group
+            if (!empty($CFG->enablegroupmembersonly) and $cm->groupmembersonly) {
+                if ($groupingusers = groups_get_grouping_members($cm->groupingid, 'u.id', 'u.id')) {
+                    $users = array_intersect($users, array_keys($groupingusers));
+                }
             }
         }
 
@@ -1162,7 +1172,7 @@ class assignment_base {
         groups_print_activity_menu($cm, $CFG->wwwroot . '/mod/assignment/submissions.php?id=' . $this->cm->id);
 
         /// Get all ppl that are allowed to submit assignments
-        list($esql, $params) = get_enrolled_sql($context, 'mod/assignment:submit', $currentgroup);
+        list($esql, $params) = get_enrolled_sql($context, 'mod/assignment:view', $currentgroup);
 
         if ($filter == self::FILTER_ALL) {
             $sql = "SELECT u.id FROM {user} u ".
@@ -2014,7 +2024,7 @@ class assignment_base {
      * when printing this activity in a course listing.  See get_array_of_activities() in course/lib.php.
      *
      * @param $coursemodule object The coursemodule object (record).
-     * @return object An object on information that the coures will know about (most noticeably, an icon).
+     * @return object An object on information that the courses will know about (most noticeably, an icon).
      *
      */
     function get_coursemodule_info($coursemodule) {
@@ -2522,7 +2532,7 @@ function assignment_cron () {
             echo "Processing assignment submission $submission->id\n";
 
             if (! $user = $DB->get_record("user", array("id"=>$submission->userid))) {
-                echo "Could not find user $post->userid\n";
+                echo "Could not find user $user->id\n";
                 continue;
             }
 
@@ -3070,7 +3080,7 @@ function assignment_get_recent_mod_activity(&$activities, &$index, $timestart, $
             $usersgroups = groups_get_all_groups($course->id, $cm->userid, $cm->groupingid);
             if (is_array($usersgroups)) {
                 $usersgroups = array_keys($usersgroups);
-                $interset = array_intersect($usersgroups, $modinfo->groups[$cm->id]);
+                $intersect = array_intersect($usersgroups, $modinfo->groups[$cm->id]);
                 if (empty($intersect)) {
                     continue;
                 }
@@ -3197,7 +3207,7 @@ function assignment_get_unmailed_submissions($starttime, $endtime) {
 /**
  * Counts all real assignment submissions by ENROLLED students (not empty ones)
  *
- * There are also assignment type methods count_real_submissions() wich in the default
+ * There are also assignment type methods count_real_submissions() which in the default
  * implementation simply call this function.
  * @param $groupid int optional If nonzero then count is restricted to this group
  * @return int The number of submissions
@@ -3208,7 +3218,7 @@ function assignment_count_real_submissions($cm, $groupid=0) {
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
 
     // this is all the users with this capability set, in this context or higher
-    if ($users = get_enrolled_users($context, 'mod/assignment:submit', $groupid, 'u.id')) {
+    if ($users = get_enrolled_users($context, 'mod/assignment:view', $groupid, 'u.id')) {
         $users = array_keys($users);
     }
 
@@ -3254,7 +3264,7 @@ function assignment_get_all_submissions($assignment, $sort="", $dir="DESC") {
         $sort = "a.$sort $dir";
     }
 
-    /* not sure this is needed at all since assignmenet already has a course define, so this join?
+    /* not sure this is needed at all since assignment already has a course define, so this join?
     $select = "s.course = '$assignment->course' AND";
     if ($assignment->course == SITEID) {
         $select = '';
@@ -3276,7 +3286,7 @@ function assignment_get_all_submissions($assignment, $sort="", $dir="DESC") {
  * when printing this activity in a course listing.  See get_array_of_activities() in course/lib.php.
  *
  * @param $coursemodule object The coursemodule object (record).
- * @return object An object on information that the coures will know about (most noticeably, an icon).
+ * @return object An object on information that the courses will know about (most noticeably, an icon).
  *
  */
 function assignment_get_coursemodule_info($coursemodule) {
@@ -3361,7 +3371,7 @@ function assignment_print_overview($courses, &$htmlarray) {
     }
 
     if (empty($assignmentids)){
-        // no assigments to look at - we're done
+        // no assignments to look at - we're done
         return true;
     }
 
@@ -3379,8 +3389,8 @@ function assignment_print_overview($courses, &$htmlarray) {
     //
     list($sqlassignmentids, $assignmentidparams) = $DB->get_in_or_equal($assignmentids);
 
-    // build up and array of unmarked submissions indexed by assigment id/ userid
-    // for use where the user has grading rights on assigment
+    // build up and array of unmarked submissions indexed by assignment id/ userid
+    // for use where the user has grading rights on assignment
     $rs = $DB->get_recordset_sql("SELECT id, assignment, userid
                             FROM {assignment_submissions}
                             WHERE teacher = 0 AND timemarked = 0
@@ -3393,7 +3403,7 @@ function assignment_print_overview($courses, &$htmlarray) {
     $rs->close();
 
 
-    // get all user submissions, indexed by assigment id
+    // get all user submissions, indexed by assignment id
     $mysubmissions = $DB->get_records_sql("SELECT assignment, timemarked, teacher, grade
                                       FROM {assignment_submissions}
                                       WHERE userid = ? AND
@@ -3415,7 +3425,7 @@ function assignment_print_overview($courses, &$htmlarray) {
 
             // count how many people can submit
             $submissions = 0; // init
-            if ($students = get_enrolled_users($context, 'mod/assignment:submit', 0, 'u.id')) {
+            if ($students = get_enrolled_users($context, 'mod/assignment:view', 0, 'u.id')) {
                 foreach ($students as $student) {
                     if (isset($unmarkedsubmissions[$assignment->id][$student->id])) {
                         $submissions++;
@@ -3555,8 +3565,7 @@ function assignment_reset_userdata($data) {
     global $CFG;
 
     $status = array();
-
-    foreach (get_plugin_list('mod/assignment/type') as $type=>$dir) {
+    foreach (get_plugin_list('assignment') as $type=>$dir) {
         require_once("$dir/assignment.class.php");
         $assignmentclass = "assignment_$type";
         $ass = new $assignmentclass();

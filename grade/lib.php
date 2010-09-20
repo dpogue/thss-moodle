@@ -296,6 +296,8 @@ function print_graded_users_selector($course, $actionpage, $userid=0, $groupid=0
 }
 
 function grade_get_graded_users_select($report, $course, $userid, $groupid, $includeall) {
+    global $USER;
+
     if (is_null($userid)) {
         $userid = $USER->id;
     }
@@ -390,7 +392,7 @@ function print_grade_plugin_selector($plugin_info, $active_type, $active_plugin,
 function grade_print_tabs($active_type, $active_plugin, $plugin_info, $return=false) {
     global $CFG, $COURSE;
 
-    if (!isset($currenttab)) {
+    if (!isset($currenttab)) { //TODO: this is weird
         $currenttab = '';
     }
 
@@ -689,7 +691,7 @@ class grade_plugin_return {
 
         } else {
             foreach ($params as $key=>$value) {
-                if (array_key_exists($key, $this)) {
+                if (property_exists($this, $key)) {
                     $this->$key = $value;
                 }
             }
@@ -838,7 +840,7 @@ class grade_plugin_return {
      *
      * @param moodle_url $url A URL
      *
-     * @return string $url with erturn tracking params
+     * @return string $url with return tracking params
      */
     public function add_url_params(moodle_url $url) {
         if (empty($this->type)) {
@@ -1094,6 +1096,7 @@ class grade_structure {
         if ($withlink and $itemtype=='mod' and $iteminstance and $itemmodule) {
             if ($cm = get_coursemodule_from_instance($itemmodule, $iteminstance, $this->courseid)) {
 
+                $a = new object();
                 $a->name = get_string('modulename', $element['object']->itemmodule);
                 $title = get_string('linktoactivity', 'grades', $a);
                 $dir = $CFG->dirroot.'/mod/'.$itemmodule;
@@ -1153,7 +1156,7 @@ class grade_structure {
             return $strparams;
         }
 
-        $strparams->itemname = $element['object']->get_name();
+        $strparams->itemname = html_to_text($element['object']->get_name());
 
         // If element name is categorytotal, get the name of the parent category
         if ($strparams->itemname == get_string('categorytotal', 'grades')) {
@@ -1988,7 +1991,7 @@ class grade_tree extends grade_structure {
 
 /**
  * Local shortcut function for creating an edit/delete button for a grade_* object.
- * @param strong $type 'edit' or 'delete'
+ * @param string $type 'edit' or 'delete'
  * @param int $courseid The Course ID
  * @param grade_* $object The grade_* object
  * @return string html
@@ -2332,7 +2335,7 @@ abstract class grade_helper {
     /**
      * Get information on letters
      * @param int $courseid
-     * @return grade_plugin_info
+     * @return array
      */
     public static function get_info_letters($courseid) {
         if (self::$letterinfo !== null) {

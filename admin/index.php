@@ -40,7 +40,9 @@ if (version_compare(phpversion(), '5.2.0') < 0) {
 
 // try to flush everything all the time
 @ob_implicit_flush(true);
-while(@ob_end_clean()); // ob_end_flush prevents sending of headers
+while(ob_get_level()) {
+    ob_end_clean(); // ob_end_flush prevents sending of headers
+}
 
 require('../config.php');
 require_once($CFG->libdir.'/adminlib.php');    // various admin-only functions
@@ -293,7 +295,7 @@ if (moodle_needs_upgrading()) {
 if (during_initial_install()) {
     set_config('rolesactive', 1); // after this, during_initial_install will return false.
     set_config('adminsetuppending', 1);
-    // we neeed this redirect to setup proper session
+    // we need this redirect to setup proper session
     upgrade_finished("index.php?sessionstarted=1&amp;lang=$CFG->lang");
 }
 
@@ -316,7 +318,8 @@ if (during_initial_install()) {
         }
     }
 
-    $adminuser = get_complete_user_data('username', 'admin');
+    // at this stage there can be only one admin - users may change username, so do not rely on that
+    $adminuser = get_complete_user_data('id', $CFG->siteadmins);
 
     if ($adminuser->password === 'adminsetuppending') {
         // prevent installation hijacking

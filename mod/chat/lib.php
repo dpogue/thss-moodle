@@ -244,7 +244,7 @@ function chat_user_complete($course, $user, $mod, $chat) {
  * @global object
  * @global object
  * @param object $course
- * @param array $viewfullnames
+ * @param bool $viewfullnames
  * @param int|string $timestart Timestamp
  * @return bool
  */
@@ -1159,7 +1159,7 @@ function chat_reset_course_form_defaults($course) {
 }
 
 /**
- * Actual implementation of the rest coures functionality, delete all the
+ * Actual implementation of the reset course functionality, delete all the
  * chat messages for course $data->courseid.
  *
  * @global object

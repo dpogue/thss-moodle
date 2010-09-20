@@ -90,17 +90,6 @@ class file_storage {
     }
 
     /**
-     * Returns location of filedir (file pool).
-     *
-     * Do not use, this method is intended for stored_file instances only!!!
-     *
-     * @return string pathname
-     */
-    public function get_filedir() {
-        return $this->filedir;
-    }
-
-    /**
      * Calculates sha1 hash of unique full path name information.
      *
      * This hash is a unique file identifier - it is used to improve
@@ -154,6 +143,16 @@ class file_storage {
     }
 
     /**
+     * Create instance of file class from database record.
+     *
+     * @param stdClass $file_record record from the files table
+     * @return stored_file instance of file abstraction class
+     */
+    public function get_file_instance(stdClass $file_record) {
+        return new stored_file($this, $file_record, $this->filedir);
+    }
+
+    /**
      * Fetch file using local file id.
      *
      * Please do not rely on file ids, it is usually easier to use
@@ -166,7 +165,7 @@ class file_storage {
         global $DB;
 
         if ($file_record = $DB->get_record('files', array('id'=>$fileid))) {
-            return new stored_file($this, $file_record);
+            return $this->get_file_instance($file_record);
         } else {
             return false;
         }
@@ -182,7 +181,7 @@ class file_storage {
         global $DB;
 
         if ($file_record = $DB->get_record('files', array('pathnamehash'=>$pathnamehash))) {
-            return new stored_file($this, $file_record);
+            return $this->get_file_instance($file_record);
         } else {
             return false;
         }
@@ -200,8 +199,6 @@ class file_storage {
      * @return stored_file instance if exists, false if not
      */
     public function get_file($contextid, $component, $filearea, $itemid, $filepath, $filename) {
-        global $DB;
-
         $filepath = clean_param($filepath, PARAM_PATH);
         $filename = clean_param($filename, PARAM_FILE);
 
@@ -211,6 +208,39 @@ class file_storage {
 
         $pathnamehash = $this->get_pathname_hash($contextid, $component, $filearea, $itemid, $filepath, $filename);
         return $this->get_file_by_hash($pathnamehash);
+    }
+
+    /**
+     * Are there any files (or directories)
+     * @param int $contextid
+     * @param string $component
+     * @param string $filearea
+     * @param bool|int $itemid tem id or false if all items
+     * @param bool $ignoredirs
+     * @return bool empty
+     */
+    public function is_area_empty($contextid, $component, $filearea, $itemid = false, $ignoredirs = true) {
+        global $DB;
+
+        $params = array('contextid'=>$contextid, 'component'=>$component, 'filearea'=>$filearea);
+        $where = "contextid = :contextid AND component = :component AND filearea = :filearea";
+
+        if ($itemid !== false) {
+            $params['itemid'] = $itemid;
+            $where .= " AND itemid = :itemid";
+        }
+
+        if ($ignoredirs) {
+            $sql = "SELECT 'x'
+                      FROM {files}
+                     WHERE $where AND filename <> '.'";
+        } else {
+            $sql = "SELECT 'x'
+                      FROM {files}
+                     WHERE $where AND (filename <> '.' OR filepath <> '/')";
+        }
+
+        return !$DB->record_exists_sql($sql, $params);
     }
 
     /**
@@ -224,7 +254,7 @@ class file_storage {
      * @param bool $includedirs
      * @return array of stored_files indexed by pathanmehash
      */
-    public function get_area_files($contextid, $component, $filearea, $itemid=false, $sort="sortorder, itemid, filepath, filename", $includedirs = true) {
+    public function get_area_files($contextid, $component, $filearea, $itemid = false, $sort="sortorder, itemid, filepath, filename", $includedirs = true) {
         global $DB;
 
         $conditions = array('contextid'=>$contextid, 'component'=>$component, 'filearea'=>$filearea);
@@ -238,7 +268,7 @@ class file_storage {
             if (!$includedirs and $file_record->filename === '.') {
                 continue;
             }
-            $result[$file_record->pathnamehash] = new stored_file($this, $file_record);
+            $result[$file_record->pathnamehash] = $this->get_file_instance($file_record);
         }
         return $result;
     }
@@ -254,7 +284,7 @@ class file_storage {
      */
     public function get_area_tree($contextid, $component, $filearea, $itemid) {
         $result = array('dirname'=>'', 'dirfile'=>null, 'subdirs'=>array(), 'files'=>array());
-        $files = $this->get_area_files($contextid, $component, $filearea, $itemid, $sort="sortorder, itemid, filepath, filename", true);
+        $files = $this->get_area_files($contextid, $component, $filearea, $itemid, "sortorder, itemid, filepath, filename", true);
         // first create directory structure
         foreach ($files as $hash=>$dir) {
             if (!$dir->is_directory()) {
@@ -333,9 +363,9 @@ class file_storage {
             $file_records = $DB->get_records_sql($sql, $params);
             foreach ($file_records as $file_record) {
                 if ($file_record->filename == '.') {
-                    $dirs[$file_record->pathnamehash] = new stored_file($this, $file_record);
+                    $dirs[$file_record->pathnamehash] = $this->get_file_instance($file_record);
                 } else {
-                    $files[$file_record->pathnamehash] = new stored_file($this, $file_record);
+                    $files[$file_record->pathnamehash] = $this->get_file_instance($file_record);
                 }
             }
             $result = array_merge($dirs, $files);
@@ -360,7 +390,7 @@ class file_storage {
                     if (substr_count($file_record->filepath, '/') !== $reqlevel) {
                         continue;
                     }
-                    $result[$file_record->pathnamehash] = new stored_file($this, $file_record);
+                    $result[$file_record->pathnamehash] = $this->get_file_instance($file_record);
                 }
             }
 
@@ -372,7 +402,7 @@ class file_storage {
 
             $file_records = $DB->get_records_sql($sql, $params);
             foreach ($file_records as $file_record) {
-                $result[$file_record->pathnamehash] = new stored_file($this, $file_record);
+                $result[$file_record->pathnamehash] = $this->get_file_instance($file_record);
             }
         }
 
@@ -404,7 +434,7 @@ class file_storage {
 
         $file_records = $DB->get_records('files', $conditions);
         foreach ($file_records as $file_record) {
-            $stored_file = new stored_file($this, $file_record);
+            $stored_file = $this->get_file_instance($file_record);
             $stored_file->delete();
         }
 
@@ -518,8 +548,6 @@ class file_storage {
         unset($file_record['contenthash']);
         unset($file_record['pathnamehash']);
 
-        $now = time();
-
         if (!$newrecord = $DB->get_record('files', array('id'=>$fid))) {
             throw new file_exception('storedfileproblem', 'File does not exist');
         }
@@ -576,12 +604,12 @@ class file_storage {
             // update the existing directory with the new data
             $newrecord->id = $directory->get_id();
             $DB->update_record('files', $newrecord);
-            return new stored_file($this, $newrecord);
+            return $this->get_file_instance($newrecord);
         }
 
         try {
             $newrecord->id = $DB->insert_record('files', $newrecord);
-        } catch (database_exception $e) {
+        } catch (dml_exception $e) {
             $newrecord->id = false;
         }
 
@@ -592,7 +620,7 @@ class file_storage {
 
         $this->create_directory($newrecord->contextid, $newrecord->component, $newrecord->filearea, $newrecord->itemid, $newrecord->filepath, $newrecord->userid);
 
-        return new stored_file($this, $newrecord);
+        return $this->get_file_instance($newrecord);
     }
 
     /**
@@ -725,7 +753,7 @@ class file_storage {
 
         try {
             $newrecord->id = $DB->insert_record('files', $newrecord);
-        } catch (database_exception $e) {
+        } catch (dml_exception $e) {
             $newrecord->id = false;
         }
 
@@ -739,7 +767,7 @@ class file_storage {
 
         $this->create_directory($newrecord->contextid, $newrecord->component, $newrecord->filearea, $newrecord->itemid, $newrecord->filepath, $newrecord->userid);
 
-        return new stored_file($this, $newrecord);
+        return $this->get_file_instance($newrecord);
     }
 
     /**
@@ -818,7 +846,7 @@ class file_storage {
 
         try {
             $newrecord->id = $DB->insert_record('files', $newrecord);
-        } catch (database_exception $e) {
+        } catch (dml_exception $e) {
             $newrecord->id = false;
         }
 
@@ -832,7 +860,7 @@ class file_storage {
 
         $this->create_directory($newrecord->contextid, $newrecord->component, $newrecord->filearea, $newrecord->itemid, $newrecord->filepath, $newrecord->userid);
 
-        return new stored_file($this, $newrecord);
+        return $this->get_file_instance($newrecord);
     }
 
     /**
@@ -847,8 +875,6 @@ class file_storage {
      * @return stored_file instance
      */
     public function convert_image($file_record, $fid, $newwidth = NULL, $newheight = NULL, $keepaspectratio = true, $quality = NULL) {
-        global $DB;
-
         if ($fid instanceof stored_file) {
             $fid = $fid->get_id();
         }

@@ -2680,7 +2680,7 @@ function button_to_popup_window ($url, $name=null, $linkname=null,
     }
 
     // Create a single_button object
-    $form = new single_button($url, $text, 'post');
+    $form = new single_button($url, $linkname, 'post');
     $form->button->title = $title;
     $form->button->id = $id;
 
@@ -2710,7 +2710,7 @@ function button_to_popup_window ($url, $name=null, $linkname=null,
     }
 
     $form->button->add_action(new popup_action('click', $url, $name, $popupparams));
-    $output = $OUTPUT->single_button($form);
+    $output = $OUTPUT->render($form);
 
     if ($return) {
         return $output;
@@ -2745,13 +2745,13 @@ function print_single_button($link, $options, $label='OK', $method='get', $notus
     // Cast $options to array
     $options = (array) $options;
 
-    $button = new single_button(new moodle_url($link, $options), $label, $method, array('disabled'=>$disabled, 'title'=>$tooltip, 'id'=>$id));
+    $button = new single_button(new moodle_url($link, $options), $label, $method, array('disabled'=>$disabled, 'title'=>$tooltip, 'id'=>$formid));
 
     if ($jsconfirmmessage) {
         $button->button->add_confirm_action($jsconfirmmessage);
     }
 
-    $output = $OUTPUT->single_button($button);
+    $output = $OUTPUT->render($button);
 
     if ($return) {
         return $output;
@@ -3547,7 +3547,7 @@ function print_checkbox($name, $value, $checked = true, $label = '', $alt = '', 
 function print_textfield($name, $value, $alt = '', $size=50, $maxlength=0, $return=false) {
     debugging('print_textfield() has been deprecated. Please use mforms or html_writer.');
 
-    if ($al === '') {
+    if ($alt === '') {
         $alt = null;
     }
 
@@ -3589,7 +3589,7 @@ function print_heading_with_help($text, $helppage, $module='moodle', $icon=false
     // Extract the src from $icon if it exists
     if (preg_match('/src="([^"]*)"/', $icon, $matches)) {
         $icon = $matches[1];
-        $icon = moodle_url($icon);
+        $icon = new moodle_url($icon);
     } else {
         $icon = '';
     }
@@ -3619,6 +3619,7 @@ function update_mymoodle_icon() {
  * @return string
  */
 function update_tag_button($tagid) {
+    global $OUTPUT;
     debugging('update_tag_button() has been deprecated. Please change your code to use $OUTPUT->edit_button(moodle_url).');
     return $OUTPUT->edit_button(new moodle_url('/tag/index.php', array('id' => $tagid)));
 }

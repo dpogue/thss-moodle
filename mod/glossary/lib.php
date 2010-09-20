@@ -2340,7 +2340,7 @@ function glossary_reset_gradebook($courseid, $type='') {
     }
 }
 /**
- * Actual implementation of the rest coures functionality, delete all the
+ * Actual implementation of the reset course functionality, delete all the
  * glossary responses for course $data->courseid.
  *
  * @global object
@@ -2376,6 +2376,7 @@ function glossary_reset_userdata($data) {
 
         $params[] = 'glossary_entry';
         $DB->delete_records_select('comments', "itemid IN ($allentriessql) AND commentarea=?", $params);
+        $DB->delete_records_select('glossary_alias',    "entryid IN ($allentriessql)", $params);
         $DB->delete_records_select('glossary_entries', "glossaryid IN ($allglossariessql)", $params);
 
         // now get rid of all attachments

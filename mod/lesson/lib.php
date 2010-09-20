@@ -155,12 +155,12 @@ function lesson_delete_course($course, $feedback=true) {
  * @return object
  */
 function lesson_user_outline($course, $user, $mod, $lesson) {
-    global $DB;
-
     global $CFG;
+
     require_once("$CFG->libdir/gradelib.php");
     $grades = grade_get_grades($course->id, 'mod', 'lesson', $lesson->id, $user->id);
 
+    $return = new object();
     if (empty($grades->items[0]->grades)) {
         $return->info = get_string("no")." ".get_string("attempts", "lesson");
     } else {
@@ -695,7 +695,7 @@ function lesson_reset_gradebook($courseid, $type='') {
 }
 
 /**
- * Actual implementation of the rest coures functionality, delete all the
+ * Actual implementation of the reset course functionality, delete all the
  * lesson attempts for course $data->courseid.
  *
  * @global stdClass

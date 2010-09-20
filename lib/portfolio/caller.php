@@ -326,7 +326,7 @@ abstract class portfolio_caller_base {
         if (empty($this->supportedformats)) {
             $specific = array();
         } else if (!is_array($this->supportedformats)) {
-            debugging(get_class($caller) . ' has set a non array value of member variable supported formats - working around but should be fixed in code');
+            debugging(get_class($this) . ' has set a non array value of member variable supported formats - working around but should be fixed in code');
             $specific = array($this->supportedformats);
         } else {
             $specific = $this->supportedformats;
@@ -334,7 +334,9 @@ abstract class portfolio_caller_base {
         return portfolio_most_specific_formats($specific, $basic);
     }
 
-    public abstract static function base_supported_formats();
+    public static function base_supported_formats() {
+        throw new coding_exception('base_supported_formats() method needs to be overridden in each subclass of portfolio_caller_base');
+    }
 
     /**
     * this is the "return to where you were" url
@@ -352,7 +354,9 @@ abstract class portfolio_caller_base {
     /**
     * nice name to display to the user about this caller location
     */
-    public abstract static function display_name();
+    public static function display_name() {
+        throw new coding_exception('display_name() method needs to be overridden in each subclass of portfolio_caller_base');
+    }
 
     /**
     * return a string to put at the header summarising this export
@@ -475,8 +479,17 @@ abstract class portfolio_caller_base {
      *
      * @return array
      */
-    public static abstract function expected_callbackargs();
+    public static function expected_callbackargs() {
+        throw new coding_exception('expected_callbackargs() method needs to be overridden in each subclass of portfolio_caller_base');
+    }
 
+
+    /**
+     * return the context for this export. used for $PAGE->set_context
+     *
+     * @return stdclass
+     */
+    public abstract function set_context($PAGE);
 }
 
 /**
@@ -550,5 +563,12 @@ abstract class portfolio_module_caller_base extends portfolio_caller_base {
     */
     public function heading_summary() {
         return get_string('exportingcontentfrom', 'portfolio', $this->display_name() . ': ' . $this->cm->name);
+    }
+
+    /**
+     * overridden to return the course module context
+     */
+    public function set_context($PAGE) {
+        $PAGE->set_cm($this->cm);
     }
 }

@@ -101,7 +101,7 @@ abstract class grade_object {
     public function load_optional_fields() {
         global $DB;
         foreach ($this->optional_fields as $field=>$default) {
-            if (array_key_exists($field, $this)) {
+            if (property_exists($this, $field)) {
                 continue;
             }
             if (empty($this->id)) {
@@ -119,7 +119,9 @@ abstract class grade_object {
      * @param array $params associative arrays varname=>value
      * @return object grade_object instance or false if none found.
      */
-    public static abstract function fetch($params);
+    public static function fetch($params) {
+        throw new coding_exception('fetch() method needs to be overridden in each subclass of grade_object');
+    }
 
     /**
      * Finds and returns all grade_object instances based on params.
@@ -128,7 +130,9 @@ abstract class grade_object {
      * @param array $params associative arrays varname=>value
      * @return array array of grade_object instances or false if none found.
      */
-    public static abstract function fetch_all($params);
+    public static function fetch_all($params) {
+        throw new coding_exception('fetch_all() method needs to be overridden in each subclass of grade_object');
+    }
 
     /**
      * Factory method - uses the parameters to retrieve matching instance from the DB.
@@ -219,7 +223,7 @@ abstract class grade_object {
             $data->oldid        = $this->id;
             $data->source       = $source;
             $data->timemodified = time();
-            $data->userlogged   = $USER->id;
+            $data->loggeduser   = $USER->id;
             $DB->insert_record($this->table.'_history', $data);
         }
 
@@ -250,7 +254,7 @@ abstract class grade_object {
                 $data->oldid        = $this->id;
                 $data->source       = $source;
                 $data->timemodified = time();
-                $data->userlogged   = $USER->id;
+                $data->loggeduser   = $USER->id;
                 $DB->insert_record($this->table.'_history', $data);
             }
             $this->notify_changed(true);
@@ -309,7 +313,7 @@ abstract class grade_object {
             $data->oldid        = $this->id;
             $data->source       = $source;
             $data->timemodified = time();
-            $data->userlogged   = $USER->id;
+            $data->loggeduser   = $USER->id;
             $DB->insert_record($this->table.'_history', $data);
         }
 

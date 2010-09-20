@@ -1167,6 +1167,7 @@ function get_mimetypes_array() {
         'js'   => array ('type'=>'application/x-javascript', 'icon'=>'text'),
         'latex'=> array ('type'=>'application/x-latex', 'icon'=>'text'),
         'm'    => array ('type'=>'text/plain', 'icon'=>'text'),
+        'mbz'  => array ('type'=>'application/vnd.moodle.backup', 'icon'=>'moodle'),
         'mov'  => array ('type'=>'video/quicktime', 'icon'=>'video'),
         'movie'=> array ('type'=>'video/x-sgi-movie', 'icon'=>'video'),
         'm3u'  => array ('type'=>'audio/x-mpegurl', 'icon'=>'audio'),
@@ -2071,7 +2072,7 @@ function put_records_csv($file, $records, $table = NULL) {
  * then delete it. If $location does not exist to start, that is not
  * considered an error.
  *
- * @param $location the path to remove.
+ * @param string $location the path to remove.
  * @return bool
  */
 function fulldelete($location) {
@@ -2555,7 +2556,7 @@ class curl {
             curl_multi_exec($main, $running);
         } while($running > 0);
         for ($i = 0; $i < $count; $i++) {
-            if (!empty($optins['CURLOPT_RETURNTRANSFER'])) {
+            if (!empty($options['CURLOPT_RETURNTRANSFER'])) {
                 $results[] = true;
             } else {
                 $results[] = curl_multi_getcontent($handles[$i]);

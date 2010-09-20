@@ -68,7 +68,7 @@ class xmldb_file extends xmldb_object {
 
     /**
      * This function will check/validate the XML file for correctness
-     * Dinamically if will use the best available checker/validator
+     * Dynamically if will use the best available checker/validator
      * (expat syntax checker or DOM schema validator
      */
     function validateXMLStructure() {
@@ -170,8 +170,6 @@ class xmldb_file extends xmldb_object {
      * This function saves the whole xmldb_structure to its file
      */
     function saveXMLFile() {
-
-        $result = true;
 
         $structure =& $this->getStructure();
 

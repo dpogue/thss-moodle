@@ -263,7 +263,7 @@ class sqlsrv_native_moodle_database extends moodle_database {
             $server_info = sqlsrv_server_info($this->sqlsrv);
 
             if ($server_info) {
-                $info['server'] = $server_info['SQLServerName'];
+                $info['description'] = $server_info['SQLServerName'];
                 $info['version'] = $server_info['SQLServerVersion'];
                 $info['database'] = $server_info['CurrentDatabase'];
             }
@@ -543,7 +543,11 @@ class sqlsrv_native_moodle_database extends moodle_database {
 
             // Process defaults
             $info->has_default = !empty($rawcolumn->default_value);
-            $info->default_value = preg_replace("/^[\(N]+[']?(.*?)[']?[\)]+$/", '\\1', $rawcolumn->default_value);
+            if ($rawcolumn->default_value === NULL) {
+                $info->default_value = NULL;
+            } else {
+                $info->default_value = preg_replace("/^[\(N]+[']?(.*?)[']?[\)]+$/", '\\1', $rawcolumn->default_value);
+            }
 
             // Process binary
             $info->binary = $info->meta_type == 'B' ? true : false;
@@ -838,7 +842,7 @@ class sqlsrv_native_moodle_database extends moodle_database {
         foreach ($rs as $row) {
             $id = reset($row);
 
-            if (isset($return[$id])) {
+            if (isset($results[$id])) {
                 $colname = key($row);
                 debugging("Did you remember to make the first column something unique in your call to get_records? Duplicate value '$id' found in column '$colname'.", DEBUG_DEVELOPER);
             }
@@ -890,6 +894,10 @@ class sqlsrv_native_moodle_database extends moodle_database {
                 throw new coding_exception('moodle_database::insert_record_raw() id field must be specified if custom sequences used.');
             }
             $returnid = false;
+            // Disable IDENTITY column before inserting record with id
+            $sql = 'SET IDENTITY_INSERT {'.$table.'} ON'; // Yes, it' ON!!
+            $this->do_query($sql, null, SQL_QUERY_AUX);
+
         } else {
             unset($params['id']);
         }
@@ -902,6 +910,13 @@ class sqlsrv_native_moodle_database extends moodle_database {
         $qms = implode(',', $qms);
         $sql = "INSERT INTO {" . $table . "} ($fields) VALUES($qms)";
         $query_id = $this->do_query($sql, $params, SQL_QUERY_INSERT);
+
+        if ($customsequence) {
+            // Enable IDENTITY column after inserting record with id
+            $sql = 'SET IDENTITY_INSERT {'.$table.'} OFF'; // Yes, it' OFF!!
+            $this->do_query($sql, null, SQL_QUERY_AUX);
+        }
+
         if ($returnid) {
             $id = $this->sqlsrv_fetch_id();
             return $id;
@@ -1000,18 +1015,9 @@ class sqlsrv_native_moodle_database extends moodle_database {
             $cleaned[$field] = $this->normalise_value($column, $value);
         }
 
-        // Disable IDENTITY column before inserting record with id
-        $sql = 'SET IDENTITY_INSERT {'.$table.'} ON'; // Yes, it' ON!!
-        $this->do_query($sql, null, SQL_QUERY_AUX);
+        $this->insert_record_raw($table, $cleaned, false, false, true);
 
-        $insertresult = $this->insert_record_raw($table, $cleaned, false, false, true);
-
-        // Enable IDENTITY column after inserting record with id
-        $sql = 'SET IDENTITY_INSERT {'.$table.'} OFF'; // Yes, it' OFF!!
-
-        $this->do_query($sql, null, SQL_QUERY_AUX);
-
-        return $insertresult;
+        return true;
     }
 
     /**
@@ -1144,10 +1150,6 @@ class sqlsrv_native_moodle_database extends moodle_database {
 
 
     /// SQL helper functions
-
-    public function sql_bitxor($int1, $int2) {
-        return '('.$this->sql_bitor($int1, $int2).' - '.$this->sql_bitand($int1, $int2).')';
-    }
 
     public function sql_cast_char2int($fieldname, $text = false) {
         return ' CAST('.$fieldname.' AS INT) ';

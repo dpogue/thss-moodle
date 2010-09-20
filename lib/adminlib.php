@@ -125,9 +125,9 @@ function uninstall_plugin($type, $name) {
 
     // recursively uninstall all module subplugins first
     if ($type === 'mod') {
-        if (file_exists("$CFG->dirroot/$name/db/subplugins.php")) {
+        if (file_exists("$CFG->dirroot/mod/$name/db/subplugins.php")) {
             $subplugins = array();
-            include("$moddir/db/subplugins.php");
+            include("$CFG->dirroot/mod/$name/db/subplugins.php");
             foreach ($subplugins as $subplugintype=>$dir) {
                 $instances = get_plugin_list($subplugintype);
                 foreach ($instances as $subpluginname => $notusedpluginpath) {
@@ -298,6 +298,7 @@ function get_component_version($component, $source='installed') {
             if (!is_readable($CFG->dirroot.'/version.php')) {
                 return false;
             } else {
+                $version = null; //initialize variable for IDEs
                 include($CFG->dirroot.'/version.php');
                 return $version;
             }
@@ -310,11 +311,11 @@ function get_component_version($component, $source='installed') {
             return $DB->get_field('modules', 'version', array('name'=>$name));
         } else {
             $mods = get_plugin_list('mod');
-            if (empty($mod[$name]) or !is_readable($mod[$name].'/version.php')) {
+            if (empty($mods[$name]) or !is_readable($mods[$name].'/version.php')) {
                 return false;
             } else {
                 $module = new stdclass();
-                include($mod[$name].'/version.php');
+                include($mods[$name].'/version.php');
                 return $module->version;
             }
         }
@@ -1000,7 +1001,7 @@ class admin_externalpage implements part_of_admin_tree {
      * @param string $url The external URL that we should link to when someone requests this external page.
      * @param mixed $req_capability The role capability/permission a user must have to access this external page. Defaults to 'moodle/site:config'.
      * @param boolean $hidden Is this external page hidden in admin tree block? Default false.
-     * @param context $context The context the page relates to. Not sure what happens
+     * @param stdClass $context The context the page relates to. Not sure what happens
      *      if you specify something other than system or front page. Defaults to system.
      */
     public function __construct($name, $visiblename, $url, $req_capability='moodle/site:config', $hidden=false, $context=NULL) {
@@ -1141,7 +1142,7 @@ class admin_settingpage implements part_of_admin_tree {
      * @param string $visiblename The displayed name for this external page. Usually obtained through get_string().
      * @param mixed $req_capability The role capability/permission a user must have to access this external page. Defaults to 'moodle/site:config'.
      * @param boolean $hidden Is this external page hidden in admin tree block? Default false.
-     * @param context $context The context the page relates to. Not sure what happens
+     * @param stdClass $context The context the page relates to. Not sure what happens
      *      if you specify something other than system or front page. Defaults to system.
      */
     public function __construct($name, $visiblename, $req_capability='moodle/site:config', $hidden=false, $context=NULL) {
@@ -2282,7 +2283,7 @@ class admin_setting_configselect extends admin_setting {
      * @param string $name unique ascii name, either 'mysetting' for settings that in config, or 'myplugin/mysetting' for ones in config_plugins.
      * @param string $visiblename localised
      * @param string $description long localised info
-     * @param string $defaultsetting
+     * @param string|int $defaultsetting
      * @param array $choices array of $value=>$label for each selection
      */
     public function __construct($name, $visiblename, $description, $defaultsetting, $choices) {
