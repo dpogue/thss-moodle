@@ -27,8 +27,8 @@
 */
 
 require('../../config.php');
-require_once($CFG->dirroot.'/admin/registration/lib.php');
-require_once($CFG->dirroot.'/course/publish/lib.php');
+require_once($CFG->dirroot . '/' . $CFG->admin . '/registration/lib.php');
+require_once($CFG->dirroot . '/course/publish/lib.php');
 
 $id = optional_param('id', 0, PARAM_INT);
 $hubname = optional_param('hubname', 0, PARAM_TEXT);
@@ -74,7 +74,8 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
             $serverurl = $hub->huburl."/local/hub/webservice/webservices.php";
             require_once($CFG->dirroot."/webservice/xmlrpc/lib.php");
             $xmlrpcclient = new webservice_xmlrpc_client($serverurl, $hub->token);
-            $sitecourses = $xmlrpcclient->call($function, $params);
+            $result = $xmlrpcclient->call($function, $params);
+            $sitecourses = $result['courses'];
 
             //update status for all these course
             foreach ($sitecourses as $sitecourse) {

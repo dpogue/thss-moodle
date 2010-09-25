@@ -1204,53 +1204,6 @@ class question_numerical_qtype extends question_shortanswer_qtype {
         return false;
     }
 
-    /// BACKUP FUNCTIONS ////////////////////////////
-
-    /**
-     * Backup the data in the question
-     *
-     * This is used in question/backuplib.php
-     */
-    function backup($bf,$preferences,$question,$level=6) {
-        global $DB;
-
-        $status = true;
-
-        $numericals = $DB->get_records('question_numerical', array('question' =>  $question), 'id ASC');
-        //If there are numericals
-        if ($numericals) {
-            //Iterate over each numerical
-            foreach ($numericals as $numerical) {
-                $status = fwrite ($bf,start_tag("NUMERICAL",$level,true));
-                //Print numerical contents
-                fwrite ($bf,full_tag("ANSWER",$level+1,false,$numerical->answer));
-                fwrite ($bf,full_tag("TOLERANCE",$level+1,false,$numerical->tolerance));
-                //Now backup numerical_units
-                $status = question_backup_numerical_units($bf,$preferences,$question,7);
-                $status = fwrite ($bf,end_tag("NUMERICAL",$level,true));
-            }
-            $status = question_backup_numerical_options($bf,$preferences,$question,$level);
-            /*            $numerical_options = $DB->get_records("question_numerical_options",array("questionid" => $question),"id");
-            if ($numerical_options) {
-                //Iterate over each numerical_option
-                foreach ($numerical_options as $numerical_option) {
-                    $status = fwrite ($bf,start_tag("NUMERICAL_OPTIONS",$level,true));
-                    //Print numerical_option contents
-                    fwrite ($bf,full_tag("INSTRUCTIONS",$level+1,false,$numerical_option->instructions));
-                    fwrite ($bf,full_tag("SHOWUNITS",$level+1,false,$numerical_option->showunits));
-                    fwrite ($bf,full_tag("UNITSLEFT",$level+1,false,$numerical_option->unitsleft));
-                    fwrite ($bf,full_tag("UNITGRADINGTYPE",$level+1,false,$numerical_option->unitgradingtype));
-                    fwrite ($bf,full_tag("UNITPENALTY",$level+1,false,$numerical_option->unitpenalty));
-                    $status = fwrite ($bf,end_tag("NUMERICAL_OPTIONS",$level,true));
-                }
-            }*/
-
-            //Now print question_answers
-            $status = question_backup_answers($bf,$preferences,$question);
-        }
-        return $status;
-    }
-
     /// RESTORE FUNCTIONS /////////////////
 
     /**
@@ -1362,7 +1315,7 @@ class question_numerical_qtype extends question_shortanswer_qtype {
             $files = $fs->get_area_files($question->contextid, $component, $filearea, $answer->id);
             foreach ($files as $storedfile) {
                 if (!$storedfile->is_directory()) {
-                    $newfile = new object();
+                    $newfile = new stdClass();
                     $newfile->contextid = (int)$newcategory->contextid;
                     $fs->create_file_from_storedfile($newfile, $storedfile);
                     $storedfile->delete();
@@ -1374,7 +1327,7 @@ class question_numerical_qtype extends question_shortanswer_qtype {
         $files = $fs->get_area_files($question->contextid, $component, $filearea, $question->id);
         foreach ($files as $storedfile) {
             if (!$storedfile->is_directory()) {
-                $newfile = new object();
+                $newfile = new stdClass();
                 $newfile->contextid = (int)$newcategory->contextid;
                 $fs->create_file_from_storedfile($newfile, $storedfile);
                 $storedfile->delete();

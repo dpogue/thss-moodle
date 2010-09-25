@@ -75,7 +75,7 @@ class downgrade_exception extends moodle_exception {
 class upgrade_requires_exception extends moodle_exception {
     function __construct($plugin, $pluginversion, $currentmoodle, $requiremoodle) {
         global $CFG;
-        $a = new object();
+        $a = new stdClass();
         $a->pluginname     = $plugin;
         $a->pluginversion  = $pluginversion;
         $a->currentmoodle  = $currentmoodle;
@@ -276,7 +276,7 @@ function upgrade_plugins($type, $startcallback, $endcallback, $verbose) {
             continue;
         }
 
-        $plugin = new object();
+        $plugin = new stdClass();
         require($fullplug.'/version.php');  // defines $plugin with version etc
 
         if (empty($plugin->version)) {
@@ -406,7 +406,7 @@ function upgrade_plugins_modules($startcallback, $endcallback, $verbose) {
             throw new plugin_defective_exception($component, 'Missing version.php');
         }
 
-        $module = new object();
+        $module = new stdClass();
         require($fullmod .'/version.php');  // defines $module with version etc
 
         if (empty($module->version)) {
@@ -551,7 +551,7 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
         if (!is_readable($fullblock.'/version.php')) {
             throw new plugin_defective_exception('block/'.$blockname, 'Missing version.php file.');
         }
-        $plugin = new object();
+        $plugin = new stdClass();
         $plugin->version = NULL;
         $plugin->cron    = 0;
         include($fullblock.'/version.php');
@@ -585,7 +585,6 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
         }
 
         $block->name     = $blockname;   // The name MUST match the directory
-        $block->multiple = $blockobj->instance_allow_multiple() ? 1 : 0;
 
         if (empty($block->version)) {
             throw new plugin_defective_exception($component, 'Missing block version.');
@@ -614,8 +613,6 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
         }
 
         if (empty($currblock->version)) { // block not installed yet, so install it
-            // If it allows multiples, start with it enabled
-
             $conflictblock = array_search($blocktitle, $blocktitles);
             if ($conflictblock !== false) {
                 // Duplicate block titles are not allowed, they confuse people
@@ -822,7 +819,7 @@ function external_update_descriptions($component) {
         }
     }
     foreach ($functions as $fname => $function) {
-        $dbfunction = new object();
+        $dbfunction = new stdClass();
         $dbfunction->name       = $fname;
         $dbfunction->classname  = $function['classname'];
         $dbfunction->methodname = $function['methodname'];
@@ -875,7 +872,7 @@ function external_update_descriptions($component) {
             }
         }
         foreach ($service['functions'] as $fname) {
-            $newf = new object();
+            $newf = new stdClass();
             $newf->externalserviceid = $dbservice->id;
             $newf->functionname      = $fname;
             $DB->insert_record('external_services_functions', $newf);
@@ -883,7 +880,7 @@ function external_update_descriptions($component) {
         unset($functions);
     }
     foreach ($services as $name => $service) {
-        $dbservice = new object();
+        $dbservice = new stdClass();
         $dbservice->name               = $name;
         $dbservice->enabled            = empty($service['enabled']) ? 0 : $service['enabled'];
         $dbservice->requiredcapability = empty($service['requiredcapability']) ? null : $service['requiredcapability'];
@@ -892,7 +889,7 @@ function external_update_descriptions($component) {
         $dbservice->timecreated        = time();
         $dbservice->id = $DB->insert_record('external_services', $dbservice);
         foreach ($service['functions'] as $fname) {
-            $newf = new object();
+            $newf = new stdClass();
             $newf->externalserviceid = $dbservice->id;
             $newf->functionname      = $fname;
             $DB->insert_record('external_services_functions', $newf);
@@ -991,7 +988,7 @@ function upgrade_log($type, $plugin, $info, $details=null, $backtrace=null) {
         }
     }
 
-    $log = new object();
+    $log = new stdClass();
     $log->type         = $type;
     $log->plugin       = $plugin;
     $log->version      = $version;
@@ -1431,7 +1428,7 @@ function upgrade_plugin_mnet_functions($component) {
         $f = $data['filename'];
         $c = $data['classname'];
         foreach ($data['methods'] as $method) {
-            $dataobject = new stdclass;
+            $dataobject = new stdClass();
             $dataobject->plugintype  = $type;
             $dataobject->pluginname  = $plugin;
             $dataobject->enabled     = 1;

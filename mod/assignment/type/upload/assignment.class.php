@@ -204,7 +204,6 @@ class assignment_upload extends assignment_base {
             }
             echo $OUTPUT->single_button(new moodle_url('/mod/assignment/type/upload/upload.php', array('contextid'=>$this->context->id, 'userid'=>$USER->id)), $str, 'get');
         }
-
     }
 
     function view_notes() {
@@ -447,7 +446,7 @@ class assignment_upload extends assignment_base {
 
         $mform = new mod_assignment_upload_notes_form();
 
-        $defaults = new object();
+        $defaults = new stdClass();
         $defaults->id = $this->cm->id;
 
         if ($submission = $this->get_submission($USER->id)) {
@@ -473,7 +472,7 @@ class assignment_upload extends assignment_base {
 
         if ($data = $mform->get_data() and $action == 'savenotes') {
             $submission = $this->get_submission($USER->id, true); // get or create submission
-            $updated = new object();
+            $updated = new stdClass();
             $updated->id           = $submission->id;
             $updated->timemodified = time();
             $updated->data1        = $data->text;
@@ -541,7 +540,7 @@ class assignment_upload extends assignment_base {
             $submission = $this->get_submission($USER->id, true); //create new submission if needed
             $fs->delete_area_files($this->context->id, 'mod_assignment', 'submission', $submission->id);
             $formdata = file_postupdate_standard_filemanager($formdata, 'files', $options, $this->context, 'mod_assignment', 'submission', $submission->id);
-            $updates = new object();
+            $updates = new stdClass();
             $updates->id = $submission->id;
             $updates->timemodified = time();
             $DB->update_record('assignment_submissions', $updates);
@@ -555,7 +554,7 @@ class assignment_upload extends assignment_base {
             // send files to event system
             $files = $fs->get_area_files($this->context->id, 'mod_assignment', 'submission', $submission->id);
             // Let Moodle know that assessable files were  uploaded (eg for plagiarism detection)
-            $eventdata = new object();
+            $eventdata = new stdClass();
             $eventdata->modulename   = 'assignment';
             $eventdata->cmid         = $this->cm->id;
             $eventdata->itemid       = $submission->id;
@@ -658,7 +657,7 @@ class assignment_upload extends assignment_base {
                 die;
             }
         }
-        $updated = new object();
+        $updated = new stdClass();
         $updated->id           = $submission->id;
         $updated->data2        = ASSIGNMENT_STATUS_SUBMITTED;
         $updated->timemodified = time();
@@ -671,7 +670,7 @@ class assignment_upload extends assignment_base {
         $this->email_teachers($submission);
 
         // Trigger assessable_files_done event to show files are complete
-        $eventdata = new object();
+        $eventdata = new stdClass();
         $eventdata->modulename   = 'assignment';
         $eventdata->cmid         = $this->cm->id;
         $eventdata->itemid       = $submission->id;
@@ -699,7 +698,7 @@ class assignment_upload extends assignment_base {
             redirect($returnurl); // probably closed already
         }
 
-        $updated = new object();
+        $updated = new stdClass();
         $updated->id    = $submission->id;
         $updated->data2 = ASSIGNMENT_STATUS_CLOSED;
 
@@ -727,7 +726,7 @@ class assignment_upload extends assignment_base {
           and $this->can_unfinalize($submission)
           and confirm_sesskey()) {
 
-            $updated = new object();
+            $updated = new stdClass();
             $updated->id = $submission->id;
             $updated->data2 = '';
             $DB->update_record('assignment_submissions', $updated);
@@ -861,8 +860,7 @@ class assignment_upload extends assignment_base {
 
         if (is_enrolled($this->context, $USER, 'mod/assignment:submit')
           and $this->isopen()                                                 // assignment not closed yet
-          and (empty($submission) or ($submission->userid == $USER->id        // his/her own submission
-            and $this->count_user_files($submission->id) <= $this->assignment->var1))    // file limit not exceeded
+          and (empty($submission) or ($submission->userid == $USER->id))        // his/her own submission
           and !$this->is_finalized($submission)) {                            // no uploading after final submission
             return true;
         } else {
@@ -1025,6 +1023,8 @@ class assignment_upload extends assignment_base {
         $mform->addHelpButton('var4', 'trackdrafts', 'assignment');
         $mform->setDefault('var4', 1);
 
+        $course_context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+        plagiarism_get_form_elements_module($mform, $course_context);
     }
 
     function portfolio_exportable() {
@@ -1092,15 +1092,20 @@ class assignment_upload extends assignment_base {
         require_once($CFG->libdir.'/filelib.php');
         $submissions = $this->get_submissions('','');
         if (empty($submissions)) {
-            error("there are no submissions to download");
+            print_error('errornosubmissions', 'assignment');
         }
         $filesforzipping = array();
         $fs = get_file_storage();
 
-        $groupmode = groupmode($this->course,$this->cm);
+        if (isset($this->cm->groupmode) && empty($this->course->groupmodeforce)) {
+            $groupmode = $this->cm->groupmode;
+        } else {
+            $groupmode = $this->course->groupmode;
+        }
+        
         $groupid = 0;   // All users
         $groupname = '';
-        if($groupmode) {
+        if ($groupmode) {
             $group = get_current_group($this->course->id, true);
             $groupid = $group->id;
             $groupname = $group->name.'-';

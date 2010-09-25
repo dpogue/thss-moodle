@@ -28,7 +28,7 @@ class data_field_url extends data_field_base {
     function display_add_field($recordid=0) {
         global $CFG, $DB, $OUTPUT, $PAGE;
 
-        $args = new stdclass;
+        $args = new stdClass();
         $args->accepted_types = '*';
         $args->return_types = FILE_EXTERNAL;
         $args->context = $this->context;
@@ -119,7 +119,7 @@ class data_field_url extends data_field_base {
     function update_content($recordid, $value, $name='') {
         global $DB;
 
-        $content = new object;
+        $content = new stdClass();
         $content->fieldid = $this->field->id;
         $content->recordid = $recordid;
         $names = explode('_', $name);

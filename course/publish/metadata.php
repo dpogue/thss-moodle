@@ -32,9 +32,9 @@
 
 require_once('../../config.php');
 require_once($CFG->dirroot . '/course/publish/forms.php');
-require_once($CFG->dirroot . '/admin/registration/lib.php');
+require_once($CFG->dirroot . '/' . $CFG->admin . '/registration/lib.php');
 require_once($CFG->dirroot . '/course/publish/lib.php');
-require_once($CFG->dirroot . '/lib/filelib.php');
+require_once($CFG->libdir . '/filelib.php');
 
 
 //check user access capability to this page
@@ -213,7 +213,6 @@ if (has_capability('moodle/course:publish', get_context_instance(CONTEXT_COURSE,
 
         // send screenshots
         if (!empty($fromform->screenshots)) {
-            require_once($CFG->dirroot . "/lib/filelib.php");
 
             if (!empty($fromform->deletescreenshots)) {
                 $screenshotnumber = 0;

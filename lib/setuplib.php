@@ -44,12 +44,13 @@ define ('DEBUG_DEVELOPER', 38911);
 /**
  * Simple class. It is usually used instead of stdClass because it looks
  * more familiar to Java developers ;-) Do not use for type checking of
- * function parameters.
+ * function parameters. Please use stdClass instead.
  *
  * @package    core
  * @subpackage lib
  * @copyright  2009 Petr Skoda  {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @deprecated since 2.0
  */
 class object extends stdClass {};
 
@@ -451,7 +452,7 @@ function get_exception_info($ex) {
         }
     }
 
-    $info = new object();
+    $info = new stdClass();
     $info->message     = $message;
     $info->errorcode   = $errorcode;
     $info->backtrace   = $backtrace;
@@ -719,7 +720,7 @@ function init_performance_info() {
 
     global $PERF, $CFG, $USER;
 
-    $PERF = new object();
+    $PERF = new stdClass();
     $PERF->logwrites = 0;
     if (function_exists('microtime')) {
         $PERF->starttime = microtime();

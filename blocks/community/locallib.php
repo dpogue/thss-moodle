@@ -80,7 +80,7 @@ class block_community_manager {
      */
     public function block_community_download_course_backup($course) {
         global $CFG, $USER;
-        require_once($CFG->dirroot. "/lib/filelib.php");
+        require_once($CFG->libdir . "/filelib.php");
         require_once($CFG->dirroot. "/course/publish/lib.php");
 
         $params['courseid'] = $course->id;
@@ -101,7 +101,7 @@ class block_community_manager {
         fclose($fp);
 
         $fs = get_file_storage();
-        $record = new object();
+        $record = new stdClass();
         $record->contextid = get_context_instance(CONTEXT_USER, $USER->id)->id;
         $record->component = 'user';
         $record->filearea = 'private';

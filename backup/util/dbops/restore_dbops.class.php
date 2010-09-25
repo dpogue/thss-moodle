@@ -434,7 +434,7 @@ abstract class restore_dbops {
                     if ($udata->field_data) {
                         if ($field = $DB->get_record('user_info_field', array('shortname'=>$udata->field_name, 'datatype'=>$udata->field_type))) {
                         /// Insert the user_custom_profile_field
-                            $rec = new object();
+                            $rec = new stdClass();
                             $rec->userid  = $newuserid;
                             $rec->fieldid = $field->id;
                             $rec->data    = $udata->field_data;
@@ -920,7 +920,12 @@ abstract class restore_dbops {
         $course->timemodified = $course->timecreated;
         $course->visible = $category->visible;
 
-        return $DB->insert_record('course', $course);
+        $courseid = $DB->insert_record('course', $course);
+
+        $category->coursecount++;
+        $DB->update_record('course_categories', $category);
+
+        return $courseid;
     }
 
     /**

@@ -72,7 +72,7 @@ class data_field_picture extends data_field_base {
             $str .= '<img width="'.s($this->previewwidth).'" height="'.s($this->previewheight).'" src="'.$src.'" alt="" />';
         }
 
-        $options = new stdclass;
+        $options = new stdClass();
         $options->maxbytes  = $this->field->param3;
         $options->itemid    = $itemid;
         $options->accepted_types = array('image');
@@ -202,7 +202,7 @@ class data_field_picture extends data_field_base {
 
         if (!$content = $DB->get_record('data_content', array('fieldid'=>$this->field->id, 'recordid'=>$recordid))) {
         // Quickly make one now!
-            $content = new object();
+            $content = new stdClass();
             $content->fieldid  = $this->field->id;
             $content->recordid = $recordid;
             $id = $DB->insert_record('data_content', $content);

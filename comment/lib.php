@@ -185,7 +185,7 @@ class comment {
         }
 
         // setup options for callback functions
-        $this->args = new stdclass;
+        $this->args = new stdClass();
         $this->args->context     = $this->context;
         $this->args->courseid    = $this->courseid;
         $this->args->cm          = $this->cm;
@@ -282,7 +282,7 @@ EOD;
         $murl->remove_params('comment_page');
         $this->link = $murl->out();
 
-        $options = new stdclass;
+        $options = new stdClass();
         $options->client_id = $this->cid;
         $options->commentarea = $this->commentarea;
         $options->itemid = $this->itemid;
@@ -412,7 +412,7 @@ EOD;
         $candelete = has_capability('moodle/comment:delete', $this->context);
         $rs = $DB->get_recordset_sql($sql, $params, $start, $CFG->commentsperpage);
         foreach ($rs as $u) {
-            $c = new object();
+            $c = new stdClass();
             $c->id          = $u->cid;
             $c->content     = $u->ccontent;
             $c->format      = $u->cformat;
@@ -486,7 +486,7 @@ EOD;
             throw new comment_exception('nopermissiontocomment');
         }
         $now = time();
-        $newcmt = new stdclass;
+        $newcmt = new stdClass();
         $newcmt->contextid    = $this->contextid;
         $newcmt->commentarea  = $this->commentarea;
         $newcmt->itemid       = $this->itemid;

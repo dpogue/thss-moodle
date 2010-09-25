@@ -43,6 +43,8 @@ class assignment_uploadsingle extends assignment_base {
                     $mimetype = $file->get_mimetype();
                     $path = file_encode_url($CFG->wwwroot.'/pluginfile.php', '/'.$this->context->id.'/mod_assignment/submission/'.$submission->id.'/'.$filename);
                     $output .= '<a href="'.$path.'" ><img class="icon" src="'.$OUTPUT->pix_url(file_mimetype_icon($mimetype)).'" alt="'.$mimetype.'" />'.s($filename).'</a><br />';
+                    $output .= plagiarism_get_links(array('userid'=>$userid, 'file'=>$file, 'cmid'=>$this->cm->id, 'course'=>$this->course, 'assignment'=>$this->assignment));
+                    $output .='<br/>';
                 }
             }
         }
@@ -126,7 +128,7 @@ class assignment_uploadsingle extends assignment_base {
         }
         echo $output;
     }
-    
+
     function can_manage_responsefiles() {
         if (has_capability('mod/assignment:grade', $this->context)) {
             return true;
@@ -194,7 +196,7 @@ class assignment_uploadsingle extends assignment_base {
                     $file = $mform->save_stored_file('assignment_file', $this->context->id, 'mod_assignment', 'submission',
                         $submission->id, '/', $newfilename);
 
-                    $updates = new object(); //just enough data for updating the submission
+                    $updates = new stdClass(); //just enough data for updating the submission
                     $updates->timemodified = time();
                     $updates->numfiles     = 1;
                     $updates->id     = $submission->id;
@@ -204,7 +206,7 @@ class assignment_uploadsingle extends assignment_base {
                     $this->email_teachers($submission);
 
                     // Let Moodle know that an assessable file was uploaded (eg for plagiarism detection)
-                    $eventdata = new object();
+                    $eventdata = new stdClass();
                     $eventdata->modulename   = 'assignment';
                     $eventdata->cmid         = $this->cm->id;
                     $eventdata->itemid       = $submission->id;
@@ -264,6 +266,9 @@ class assignment_uploadsingle extends assignment_base {
         $choices[0] = get_string('courseuploadlimit') . ' ('.display_size($COURSE->maxbytes).')';
         $mform->addElement('select', 'maxbytes', get_string('maximumsize', 'assignment'), $choices);
         $mform->setDefault('maxbytes', $CFG->assignment_maxbytes);
+
+        $course_context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+        plagiarism_get_form_elements_module($mform, $course_context);
     }
 
     function portfolio_exportable() {
@@ -289,7 +294,7 @@ class assignment_uploadsingle extends assignment_base {
         if ($USER->id != $submission->userid and !has_capability('mod/assignment:grade', $this->context)) {
             return false;
         }
-        
+
         $relativepath = implode('/', $args);
         $fullpath = '/'.$this->context->id.'/mod_assignment/'.$filearea.'/'.$submissionid.'/'.$relativepath;
 
@@ -354,15 +359,20 @@ class assignment_uploadsingle extends assignment_base {
 
         $submissions = $this->get_submissions('','');
         if (empty($submissions)) {
-            error("there are no submissions to download");
+            print_error('errornosubmissions', 'assignment');
         }
         $filesforzipping = array();
         $fs = get_file_storage();
 
-        $groupmode = groupmode($this->course,$this->cm);
+        if (isset($this->cm->groupmode) && empty($this->course->groupmodeforce)) {
+            $groupmode = $this->cm->groupmode;
+        } else {
+            $groupmode = $this->course->groupmode;
+        }
+        
         $groupid = 0;   // All users
         $groupname = '';
-        if($groupmode) {
+        if ($groupmode) {
             $group = get_current_group($this->course->id, true);
             $groupid = $group->id;
             $groupname = $group->name.'-';

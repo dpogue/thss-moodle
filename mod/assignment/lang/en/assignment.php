@@ -50,7 +50,7 @@ $string['assignment:submit'] = 'Submit assignment';
 $string['assignmentsubmission'] = 'Assignment Submissions';
 $string['assignmenttype'] = 'Assignment type';
 $string['assignment:view'] = 'View assignment';
-$string['availabledate'] = 'Accept submissions from';
+$string['availabledate'] = 'Available from';
 $string['cannotdeletefiles'] = 'An error occurred and files could not be deleted';
 $string['cannotviewassignment'] = 'You can not view this assignment';
 $string['comment'] = 'Comment';
@@ -92,6 +92,7 @@ Only teachers who are able to grade the particular assignment are notified. So, 
 $string['emptysubmission'] = 'You have not submitted anything yet';
 $string['enableemailnotification'] = 'Send notification emails';
 $string['enableemailnotification_help'] = 'If enabled, students will receive email notification when their assignment submissions are graded.';
+$string['errornosubmissions'] = 'There are no submissions to download';
 $string['existingfiledeleted'] = 'Existing file has been deleted: {$a}';
 $string['failedupdatefeedback'] = 'Failed to update submission feedback for user {$a}';
 $string['feedback'] = 'Feedback';

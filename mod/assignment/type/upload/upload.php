@@ -30,7 +30,7 @@ require_once("$CFG->dirroot/repository/lib.php");
 $contextid = required_param('contextid', PARAM_INT);
 $id = optional_param('id', null, PARAM_INT);
 
-$formdata = new object();
+$formdata = new stdClass();
 $formdata->userid = required_param('userid', PARAM_INT);
 $formdata->offset = optional_param('offset', null, PARAM_INT);
 $formdata->forcerefresh = optional_param('forcerefresh', null, PARAM_INT);
@@ -74,7 +74,7 @@ echo $OUTPUT->header();
 
 echo $OUTPUT->box_start('generalbox');
 if ($instance->can_upload_file($submission) && ($id==null)) {
-    $data = new stdclass;
+    $data = new stdClass();
     // move submission files to user draft area
     $data = file_prepare_standard_filemanager($data, 'files', $filemanager_options, $context, 'mod_assignment', 'submission', $submission->id);
     // set file manager itemid, so it will find the files in draft area

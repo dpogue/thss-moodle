@@ -292,7 +292,7 @@ function scorm_user_outline($course, $user, $mod, $scorm) {
     $grades = grade_get_grades($course->id, 'mod', 'scorm', $scorm->id, $user->id);
     if (!empty($grades->items[0]->grades)) {
         $grade = reset($grades->items[0]->grades);
-        $result = new object();
+        $result = new stdClass();
         $result->info = get_string('grade') . ': '. $grade->str_long_grade;
         $result->time = $grade->dategraded;
         return $result;
@@ -338,7 +338,10 @@ function scorm_user_complete($course, $user, $mod, $scorm) {
         }
     }
 
-    if ($orgs = $DB->get_records('scorm_scoes', array('scorm'=>$scorm->id, 'organization'=>'', 'launch'=>''),'id','id,identifier,title')) {
+    if ($orgs = $DB->get_records_select('scorm_scoes', 'scorm = ? AND '.
+                                         $DB->sql_isempty('scorm_scoes', 'launch', false, true).' AND '.
+                                         $DB->sql_isempty('scorm_scoes', 'organization', false, false),
+                                         array($scorm->id),'id','id,identifier,title')) {
         if (count($orgs) <= 1) {
             unset($orgs);
             $orgs[]->identifier = '';
@@ -507,7 +510,7 @@ function scorm_get_user_grades($scorm, $userid=0) {
     if (empty($userid)) {
         if ($scousers = $DB->get_records_select('scorm_scoes_track', "scormid=? GROUP BY userid", array($scorm->id), "", "userid,null")) {
             foreach ($scousers as $scouser) {
-                $grades[$scouser->userid] = new object();
+                $grades[$scouser->userid] = new stdClass();
                 $grades[$scouser->userid]->id         = $scouser->userid;
                 $grades[$scouser->userid]->userid     = $scouser->userid;
                 $grades[$scouser->userid]->rawgrade = scorm_grade_user($scorm, $scouser->userid);
@@ -520,7 +523,7 @@ function scorm_get_user_grades($scorm, $userid=0) {
         if (!$DB->get_records_select('scorm_scoes_track', "scormid=? AND userid=? GROUP BY userid", array($scorm->id, $userid), "", "userid,null")) {
             return false; //no attempt yet
         }
-        $grades[$userid] = new object();
+        $grades[$userid] = new stdClass();
         $grades[$userid]->id         = $userid;
         $grades[$userid]->userid     = $userid;
         $grades[$userid]->rawgrade = scorm_grade_user($scorm, $userid);
@@ -546,7 +549,7 @@ function scorm_update_grades($scorm, $userid=0, $nullifnone=true) {
         scorm_grade_item_update($scorm, $grades);
 
     } else if ($userid and $nullifnone) {
-        $grade = new object();
+        $grade = new stdClass();
         $grade->userid   = $userid;
         $grade->rawgrade = NULL;
         scorm_grade_item_update($scorm, $grade);
@@ -598,6 +601,7 @@ function scorm_upgrade_grades() {
  */
 function scorm_grade_item_update($scorm, $grades=NULL) {
     global $CFG, $DB;
+    require_once($CFG->dirroot.'/mod/scorm/locallib.php');
     if (!function_exists('grade_update')) { //workaround for buggy PHP versions
         require_once($CFG->libdir.'/gradelib.php');
     }
@@ -608,7 +612,7 @@ function scorm_grade_item_update($scorm, $grades=NULL) {
     }
 
     if ($scorm->grademethod == GRADESCOES) {
-        if ($maxgrade = $DB->count_records_select('scorm_scoes', 'scorm = ? AND launch <> ?', array($scorm->id, $DB->sql_empty()))) {
+        if ($maxgrade = $DB->count_records_select('scorm_scoes', 'scorm = ? AND '.$DB->sql_isnotempty('scorm_scoes', 'launch', false, true), array($scorm->id))) {
             $params['gradetype'] = GRADE_TYPE_VALUE;
             $params['grademax']  = $maxgrade;
             $params['grademin']  = 0;

@@ -207,6 +207,7 @@ class assignment_base {
         echo $OUTPUT->box_start('generalbox boxaligncenter', 'intro');
         echo format_module_intro('assignment', $this->assignment, $this->cm->id);
         echo $OUTPUT->box_end();
+        plagiarism_print_disclosure($this->cm->id);
     }
 
     /**
@@ -454,7 +455,7 @@ class assignment_base {
         $assignment->id = $returnid;
 
         if ($assignment->timedue) {
-            $event = new object();
+            $event = new stdClass();
             $event->name        = $assignment->name;
             $event->description = format_module_intro('assignment', $assignment, $assignment->coursemodule);
             $event->courseid    = $assignment->course;
@@ -541,7 +542,7 @@ class assignment_base {
         $DB->update_record('assignment', $assignment);
 
         if ($assignment->timedue) {
-            $event = new object();
+            $event = new stdClass();
 
             if ($event->id = $DB->get_field('event', 'id', array('modulename'=>'assignment', 'instance'=>$assignment->id))) {
 
@@ -552,7 +553,7 @@ class assignment_base {
                 $calendarevent = calendar_event::load($event->id);
                 $calendarevent->update($event);
             } else {
-                $event = new object();
+                $event = new stdClass();
                 $event->name        = $assignment->name;
                 $event->description = format_module_intro('assignment', $assignment, $assignment->coursemodule);
                 $event->courseid    = $assignment->course;
@@ -1000,7 +1001,7 @@ class assignment_base {
 
         $this->preprocess_submission($submission);
 
-        $mformdata = new stdclass;
+        $mformdata = new stdClass();
         $mformdata->context = $this->context;
         $mformdata->maxbytes = $this->course->maxbytes;
         $mformdata->courseid = $this->course->id;
@@ -1096,6 +1097,7 @@ class assignment_base {
                         self::FILTER_REQUIRE_GRADING => get_string('requiregrading', 'assignment'));
 
         $updatepref = optional_param('updatepref', 0, PARAM_INT);
+        plagiarism_update_status($this->course, $this->cm);
 
         if (isset($_POST['updatepref'])){
             $perpage = optional_param('perpage', 10, PARAM_INT);
@@ -1651,7 +1653,7 @@ class assignment_base {
      * @return object The submission
      */
     function prepare_new_submission($userid, $teachermodified=false) {
-        $submission = new Object;
+        $submission = new stdClass();
         $submission->assignment   = $this->assignment->id;
         $submission->userid       = $userid;
         $submission->timecreated = time();
@@ -1722,7 +1724,7 @@ class assignment_base {
             $strsubmitted  = get_string('submitted', 'assignment');
 
             foreach ($teachers as $teacher) {
-                $info = new object();
+                $info = new stdClass();
                 $info->username = fullname($user, true);
                 $info->assignment = format_string($this->assignment->name,true);
                 $info->url = $CFG->wwwroot.'/mod/assignment/submissions.php?id='.$this->cm->id;
@@ -1731,7 +1733,7 @@ class assignment_base {
                 $posttext = $this->email_teachers_text($info);
                 $posthtml = ($teacher->mailformat == 1) ? $this->email_teachers_html($info) : '';
 
-                $eventdata = new object();
+                $eventdata = new stdClass();
                 $eventdata->modulename       = 'assignment';
                 $eventdata->userfrom         = $user;
                 $eventdata->userto           = $teacher;
@@ -1873,6 +1875,8 @@ class assignment_base {
                     $button->set_format_by_file($file);
                     $output .= $button->to_html(PORTFOLIO_ADD_ICON_LINK);
                 }
+                $output .= plagiarism_get_links(array('userid'=>$userid, 'file'=>$file, 'cmid'=>$this->cm->id, 'course'=>$this->course, 'assignment'=>$this->assignment));
+                $output .= '<br />';
             }
             if (count($files) > 1  && $this->portfolio_exportable() && has_capability('mod/assignment:exportownsubmission', $this->context)) {
                 $button->set_callback_options('assignment_portfolio_caller', array('id' => $this->cm->id), '/mod/assignment/locallib.php');
@@ -1941,7 +1945,7 @@ class assignment_base {
      */
     function user_outline($grade) {
 
-        $result = new object();
+        $result = new stdClass();
         $result->info = get_string('grade').': '.$grade->str_long_grade;
         $result->time = $grade->dategraded;
         return $result;
@@ -2567,7 +2571,7 @@ function assignment_cron () {
             $strassignments = get_string("modulenameplural", "assignment");
             $strassignment  = get_string("modulename", "assignment");
 
-            $assignmentinfo = new object();
+            $assignmentinfo = new stdClass();
             $assignmentinfo->teacher = fullname($teacher);
             $assignmentinfo->assignment = format_string($submission->name,true);
             $assignmentinfo->url = "$CFG->wwwroot/mod/assignment/view.php?id=$mod->id";
@@ -2590,7 +2594,7 @@ function assignment_cron () {
                 $posthtml = "";
             }
 
-            $eventdata = new object();
+            $eventdata = new stdClass();
             $eventdata->modulename       = 'assignment';
             $eventdata->userfrom         = $teacher;
             $eventdata->userto           = $user;
@@ -2874,7 +2878,7 @@ function assignment_refresh_events($courseid = 0) {
 
     foreach ($assignments as $assignment) {
         $cm = get_coursemodule_from_id('assignment', $assignment->id);
-        $event = new object();
+        $event = new stdClass();
         $event->name        = $assignment->name;
         $event->description = format_module_intro('assignment', $assignment, $cm->id);
         $event->timestart   = $assignment->timedue;
@@ -3105,7 +3109,7 @@ function assignment_get_recent_mod_activity(&$activities, &$index, $timestart, $
 
     $aname = format_string($cm->name,true);
     foreach ($show as $submission) {
-        $tmpactivity = new object();
+        $tmpactivity = new stdClass();
 
         $tmpactivity->type         = 'assignment';
         $tmpactivity->cmid         = $cm->id;
@@ -3305,7 +3309,7 @@ function assignment_get_coursemodule_info($coursemodule) {
         if ($result = $ass->get_coursemodule_info($coursemodule)) {
             return $result;
         } else {
-            $info = new object();
+            $info = new stdClass();
             $info->name = $assignment->name;
             return $info;
         }
@@ -3490,7 +3494,7 @@ function assignment_get_types() {
     global $CFG;
     $types = array();
 
-    $type = new object();
+    $type = new stdClass();
     $type->modclass = MOD_CLASS_ACTIVITY;
     $type->type = "assignment_group_start";
     $type->typestr = '--'.get_string('modulenameplural', 'assignment');
@@ -3498,7 +3502,7 @@ function assignment_get_types() {
 
     $standardassignments = array('upload','online','uploadsingle','offline');
     foreach ($standardassignments as $assignmenttype) {
-        $type = new object();
+        $type = new stdClass();
         $type->modclass = MOD_CLASS_ACTIVITY;
         $type->type = "assignment&amp;type=$assignmenttype";
         $type->typestr = get_string("type$assignmenttype", 'assignment');
@@ -3512,7 +3516,7 @@ function assignment_get_types() {
             continue;
         }
         if (!in_array($assignmenttype, $standardassignments)) {
-            $type = new object();
+            $type = new stdClass();
             $type->modclass = MOD_CLASS_ACTIVITY;
             $type->type = "assignment&amp;type=$assignmenttype";
             $type->typestr = get_string("type$assignmenttype", 'assignment_'.$assignmenttype);
@@ -3520,7 +3524,7 @@ function assignment_get_types() {
         }
     }
 
-    $type = new object();
+    $type = new stdClass();
     $type->modclass = MOD_CLASS_ACTIVITY;
     $type->type = "assignment_group_end";
     $type->typestr = '--';

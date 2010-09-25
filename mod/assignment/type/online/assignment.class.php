@@ -36,7 +36,7 @@ class assignment_online extends assignment_base {
             // prepare form and process submitted data
             $editoroptions = array('noclean'=>false, 'maxfiles'=>EDITOR_UNLIMITED_FILES, 'maxbytes'=>$this->course->maxbytes);
 
-            $data = new object();
+            $data = new stdClass();
             $data->id         = $this->cm->id;
             $data->edit       = 1;
             if ($submission) {
@@ -79,7 +79,7 @@ class assignment_online extends assignment_base {
         if ($editmode) {
             $this->view_header(get_string('editmysubmission', 'assignment'));
         } else {
-            $this->view_header(get_string('viewsubmissions', 'assignment'));
+            $this->view_header();
         }
 
         $this->view_intro();
@@ -174,7 +174,7 @@ class assignment_online extends assignment_base {
 
         $submission = $this->get_submission($USER->id, true);
 
-        $update = new object();
+        $update = new stdClass();
         $update->id           = $submission->id;
         $update->data1        = $data->text;
         $update->data2        = $data->textformat;
@@ -387,7 +387,7 @@ class assignment_online extends assignment_base {
 
         $submissions = $this->get_submissions('','');
         if (empty($submissions)) {
-            error("there are no submissions to download");
+            print_error('errornosubmissions', 'assignment');
         }
         $filesforzipping = array();
 
@@ -396,10 +396,15 @@ class assignment_online extends assignment_base {
         //online assignment can use html
         $filextn=".html";
 
-        $groupmode = groupmode($this->course,$this->cm);
+        if (isset($this->cm->groupmode) && empty($this->course->groupmodeforce)) {
+            $groupmode = $this->cm->groupmode;
+        } else {
+            $groupmode = $this->course->groupmode;
+        }
+        
         $groupid = 0;   // All users
         $groupname = '';
-        if($groupmode) {
+        if ($groupmode) {
             $group = get_current_group($this->course->id, true);
             $groupid = $group->id;
             $groupname = $group->name.'-';

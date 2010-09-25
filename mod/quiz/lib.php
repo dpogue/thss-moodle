@@ -260,7 +260,7 @@ function quiz_update_effective_access($quiz, $userid) {
     $override = $DB->get_record('quiz_overrides', array('quiz' => $quiz->id, 'userid' => $userid));
 
     if (!$override) {
-        $override = new stdclass;
+        $override = new stdClass();
         $override->timeopen = null;
         $override->timeclose = null;
         $override->timelimit = null;
@@ -578,7 +578,7 @@ function quiz_update_grades($quiz, $userid=0, $nullifnone=true) {
         quiz_grade_item_update($quiz, $grades);
 
     } else if ($userid and $nullifnone) {
-        $grade = new object();
+        $grade = new stdClass();
         $grade->userid   = $userid;
         $grade->rawgrade = NULL;
         quiz_grade_item_update($quiz, $grade);
@@ -1613,6 +1613,7 @@ function quiz_supports($feature) {
         case FEATURE_COMPLETION_TRACKS_VIEWS: return true;
         case FEATURE_GRADE_HAS_GRADE:         return true;
         case FEATURE_GRADE_OUTCOMES:          return true;
+        case FEATURE_BACKUP_MOODLE2:          return true;
 
         default: return null;
     }

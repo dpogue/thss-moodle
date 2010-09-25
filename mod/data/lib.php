@@ -128,7 +128,7 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
         if (empty($this->data->id)) {
             echo $OUTPUT->notification('Programmer error: dataid not defined in field class');
         }
-        $this->field = new object;
+        $this->field = new stdClass();
         $this->field->id = 0;
         $this->field->dataid = $this->data->id;
         $this->field->type   = $this->type;
@@ -305,7 +305,7 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
 
         if ($content = $DB->get_record('data_content', array('fieldid'=>$this->field->id, 'recordid'=>$recordid))) {
             if (isset($content->content)) {
-                $options = new object();
+                $options = new stdClass();
                 if ($this->field->param1 == '1') {  // We are autolinking this field, so disable linking within us
                     //$content->content = '<span class="nolink">'.$content->content.'</span>';
                     //$content->content1 = FORMAT_HTML;
@@ -332,7 +332,7 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
     function update_content($recordid, $value, $name=''){
         global $DB;
 
-        $content = new object();
+        $content = new stdClass();
         $content->fieldid = $this->field->id;
         $content->recordid = $recordid;
         $content->content = clean_param($value, PARAM_NOTAGS);
@@ -546,7 +546,7 @@ function data_generate_default_template(&$data, $template, $recordid=0, $form=fa
         }
 
         if ($update) {
-            $newdata = new object();
+            $newdata = new stdClass();
             $newdata->id = $data->id;
             $newdata->{$template} = $str;
             $DB->update_record('data', $newdata);
@@ -583,7 +583,7 @@ function data_replace_field_in_templates($data, $searchfieldname, $newfieldname)
         $idpart = '';
     }
 
-    $newdata = new object();
+    $newdata = new stdClass();
     $newdata->id = $data->id;
     $newdata->singletemplate = str_ireplace('[['.$searchfieldname.']]',
             $prestring.$newfieldname.$poststring, $data->singletemplate);
@@ -614,7 +614,7 @@ function data_replace_field_in_templates($data, $searchfieldname, $newfieldname)
 function data_append_new_field_to_templates($data, $newfieldname) {
     global $DB;
 
-    $newdata = new object();
+    $newdata = new stdClass();
     $newdata->id = $data->id;
     $change = false;
 
@@ -788,7 +788,7 @@ function data_add_record($data, $groupid=0){
     $cm = get_coursemodule_from_instance('data', $data->id);
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
 
-    $record = new object();
+    $record = new stdClass();
     $record->userid = $USER->id;
     $record->dataid = $data->id;
     $record->groupid = $groupid;
@@ -909,14 +909,6 @@ function data_delete_instance($id) {    // takes the dataid
     $fs = get_file_storage();
     $fs->delete_area_files($context->id, 'mod_data');
 
-    // Delete ratings
-    //delete ratings
-    require_once($CFG->dirroot.'/rating/lib.php');
-    $delopt = new stdclass();
-    $delopt->contextid = $context->id;
-    $rm = new rating_manager();
-    $rm->delete_ratings($delopt);
-
     // get all the records in this data
     $sql = "SELECT r.id
               FROM {data_records} r
@@ -960,7 +952,7 @@ function data_user_outline($course, $user, $mod, $data) {
 
 
     if ($countrecords = $DB->count_records('data_records', array('dataid'=>$data->id, 'userid'=>$user->id))) {
-        $result = new object();
+        $result = new stdClass();
         $result->info = get_string('numrecords', 'data', $countrecords);
         $lastrecord   = $DB->get_record_sql('SELECT id,timemodified FROM {data_records}
                                               WHERE dataid = ? AND userid = ?
@@ -971,7 +963,7 @@ function data_user_outline($course, $user, $mod, $data) {
         }
         return $result;
     } else if ($grade) {
-        $result = new object();
+        $result = new stdClass();
         $result->info = get_string('grade') . ': ' . $grade->str_long_grade;
         $result->time = $grade->dategraded;
         return $result;
@@ -1053,7 +1045,7 @@ function data_update_grades($data, $userid=0, $nullifnone=true) {
         data_grade_item_update($data, $grades);
 
     } else if ($userid and $nullifnone) {
-        $grade = new object();
+        $grade = new stdClass();
         $grade->userid   = $userid;
         $grade->rawgrade = NULL;
         data_grade_item_update($data, $grade);
@@ -1301,7 +1293,7 @@ function data_print_template($template, $records, $data, $search='', $page=0, $r
             if (!empty($CFG->usecomments)) {
                 require_once($CFG->dirroot  . '/comment/lib.php');
                 list($context, $course, $cm) = get_context_info_array($context->id);
-                $cmt = new stdclass;
+                $cmt = new stdClass();
                 $cmt->context = $context;
                 $cmt->course  = $course;
                 $cmt->cm      = $cm;
@@ -1340,7 +1332,7 @@ function data_print_template($template, $records, $data, $search='', $page=0, $r
                 if (!empty($CFG->usecomments)) {
                     require_once($CFG->dirroot . '/comment/lib.php');
                     list($context, $course, $cm) = get_context_info_array($context->id);
-                    $cmt = new stdclass;
+                    $cmt = new stdClass();
                     $cmt->context = $context;
                     $cmt->course  = $course;
                     $cmt->cm      = $cm;
@@ -1553,7 +1545,7 @@ function data_print_preference_form($data, $perpage, $search, $sort='', $order='
     // actual replacement of the tags
     $newtext = preg_replace($patterns, $replacement, $data->asearchtemplate);
 
-    $options = new object();
+    $options = new stdClass();
     $options->para=false;
     $options->noclean=true;
     echo '<tr><td>';
@@ -1599,28 +1591,31 @@ function data_get_post_actions() {
 }
 
 /**
- * @global object
- * @global object
  * @param string $name
  * @param int $dataid
  * @param int $fieldid
  * @return bool
  */
-function data_fieldname_exists($name, $dataid, $fieldid=0) {
-    global $CFG, $DB;
+function data_fieldname_exists($name, $dataid, $fieldid = 0) {
+    global $DB;
 
-    if(!is_numeric($name)) {
-        $like = $DB->sql_like('df.name', $name, false);
+    if (!is_numeric($name)) {
+        $like = $DB->sql_like('df.name', ':name', false);
     } else {
-        $like = "df.name = $name";
+        $like = "df.name = :name";
     }
+    $params = array('name'=>$name);
     if ($fieldid) {
+        $params['dataid']   = $dataid;
+        $params['fieldid1'] = $fieldid;
+        $params['fieldid2'] = $fieldid;
         return $DB->record_exists_sql("SELECT * FROM {data_fields} df
-                                        WHERE ".$like." AND df.dataid = ?
-                                              AND ((df.id < ?) OR (df.id > ?))", array($dataid, $fieldid, $fieldid));
+                                        WHERE $like AND df.dataid = :dataid
+                                              AND ((df.id < :fieldid1) OR (df.id > :fieldid2))", $params);
     } else {
+        $params['dataid']   = $dataid;
         return $DB->record_exists_sql("SELECT * FROM {data_fields} df
-                                        WHERE ".$like." AND df.dataid = ?", array($dataid));
+                                        WHERE $like AND df.dataid = :dataid", $params);
     }
 }
 
@@ -1818,7 +1813,7 @@ function data_get_available_presets($context) {
         foreach ($dirs as $dir) {
             $fulldir = $CFG->dirroot.'/mod/data/preset/'.$dir;
             if (is_directory_a_preset($fulldir)) {
-                $preset = new object;
+                $preset = new stdClass();
                 $preset->path = $fulldir;
                 $preset->userid = 0;
                 $preset->shortname = $dir;
@@ -3024,7 +3019,7 @@ function data_presets_export($course, $cm, $data, $tostorage=false) {
         print_error('generateerror', 'data');
     }
 
-    $filelist = array(
+    $filenames = array(
         'preset.xml',
         'singletemplate.html',
         'listtemplateheader.html',
@@ -3038,8 +3033,9 @@ function data_presets_export($course, $cm, $data, $tostorage=false) {
         'asearchtemplate.html'
     );
 
-    foreach ($filelist as $key => $file) {
-        $filelist[$key] = $exportdir . '/' . $filelist[$key];
+    $filelist = array();
+    foreach ($filenames as $filename) {
+        $filelist[$filename] = $exportdir . '/' . $filename;
     }
 
     $exportfile = $exportdir.'.zip';

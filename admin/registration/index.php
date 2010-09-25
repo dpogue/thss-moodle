@@ -29,8 +29,8 @@
 require('../../config.php');
 
 require_once($CFG->libdir . '/adminlib.php');
-require_once($CFG->dirroot . '/admin/registration/lib.php');
-require_once($CFG->dirroot . '/admin/registration/forms.php');
+require_once($CFG->dirroot . '/' . $CFG->admin . '/registration/lib.php');
+require_once($CFG->dirroot . '/' . $CFG->admin . '/registration/forms.php');
 require_once($CFG->dirroot . '/course/publish/lib.php');
 require_once($CFG->dirroot . "/webservice/xmlrpc/lib.php");
 

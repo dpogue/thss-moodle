@@ -1413,7 +1413,7 @@ function block_method_result($blockname, $method, $param = NULL) {
 }
 
 /**
- * Creates a new object of the specified block class.
+ * Creates a new instance of the specified block class.
  *
  * @param string $blockname the name of the block.
  * @param $instance block_instances DB table row (optional).
@@ -1632,6 +1632,7 @@ function blocks_delete_instance($instance, $nolongerused = false, $skipblockstab
     if (!$skipblockstables) {
         $DB->delete_records('block_positions', array('blockinstanceid' => $instance->id));
         $DB->delete_records('block_instances', array('id' => $instance->id));
+        $DB->delete_records_list('user_preferences', 'name', array('block'.$instance->id.'hidden','docked_block_instance_'.$instance->id));
     }
 }
 

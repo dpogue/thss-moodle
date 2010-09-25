@@ -358,7 +358,7 @@
         //Now, insert the record
         if ($status) {
             //Build the record
-            $rec = new object();
+            $rec = new stdClass();
             $rec->backup_code = $backup_unique_code;
             $rec->table_name = $table;
             $rec->old_id = $old_id;
@@ -577,7 +577,7 @@
         $restore->rolesmapping = array();
         if (isset($info->roles) && is_array($info->roles)) {
             foreach ($info->roles as $id => $info) {
-                if ($newroleid = get_field('role', 'id', 'shortname', $info->shortname)) {
+                if ($newroleid = $DB->get_field('role', 'id', array('shortname' => $info->shortname))) {
                     $restore->rolesmapping[$id] = $newroleid;
                 }
             }
@@ -820,7 +820,7 @@
     }
     function add_to_backup_log($starttime,$courseid,$message, $backuptype) {
         global $DB;
-        $log = new object();
+        $log = new stdClass();
         $log->courseid = $courseid;
         $log->time = time();
         $log->laststarttime = $starttime;

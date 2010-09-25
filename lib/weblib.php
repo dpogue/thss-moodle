@@ -121,7 +121,7 @@ function s($var, $obsolete = false) {
         return '0';
     }
 
-    return preg_replace("/&amp;#(\d+|x[0-7a-fA-F]+);/i", "&#$1;", htmlspecialchars($var, ENT_QUOTES, 'UTF-8', false));
+    return preg_replace("/&amp;#(\d+|x[0-7a-fA-F]+);/i", "&#$1;", htmlspecialchars($var, ENT_QUOTES, 'UTF-8', true));
 }
 
 /**
@@ -1100,7 +1100,7 @@ function format_text($text, $format = FORMAT_MOODLE, $options = NULL, $courseid_
             return $text;
         }
 
-        $newcacheitem = new object();
+        $newcacheitem = new stdClass();
         $newcacheitem->md5key = $md5key;
         $newcacheitem->formattedtext = $text;
         $newcacheitem->timemodified = time();
@@ -1510,6 +1510,12 @@ function purify_html($text) {
         $config->set('HTML.Doctype', 'XHTML 1.0 Transitional');
         $config->set('URI.AllowedSchemes', array('http'=>true, 'https'=>true, 'ftp'=>true, 'irc'=>true, 'nntp'=>true, 'news'=>true, 'rtsp'=>true, 'teamspeak'=>true, 'gopher'=>true, 'mms'=>true));
         $config->set('Attr.AllowedFrameTargets', array('_blank'));
+
+        if (!empty($CFG->allowobjectembed)) {
+            $config->set('HTML.SafeObject', true);
+            $config->set('Output.FlashCompat', true);
+            $config->set('HTML.SafeEmbed', true);
+        }
 
         $def = $config->getHTMLDefinition(true);
         $def->addElement('nolink', 'Block', 'Flow', array());                       // skip our filters inside

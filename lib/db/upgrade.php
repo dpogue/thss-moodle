@@ -1788,7 +1788,7 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
             if (!isset($blocks[$stickyblock->blockid]) || empty($blocks[$stickyblock->blockid]->name)) {
                 continue;
             }
-            $newblock = new object();
+            $newblock = new stdClass();
             $newblock->blockname = $blocks[$stickyblock->blockid]->name;
             $newblock->contextid = $syscontext->id;
             $newblock->showinsubcontexts = 1;
@@ -2639,7 +2639,7 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         }
         $active_licenses = array();
 
-        $license = new stdclass;
+        $license = new stdClass();
 
         // add unknown license
         $license->shortname = 'unknown';
@@ -3034,7 +3034,7 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         $existingrolecontextlevels->close();
 
         // Put the data into the database.
-        $rcl = new object();
+        $rcl = new stdClass();
         foreach ($rolecontextlevels as $roleid => $contextlevels) {
             $rcl->roleid = $roleid;
             foreach ($contextlevels as $level) {
@@ -3593,7 +3593,7 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         }
 
     /// Add two lines of data into this new table.  These are the default pages.
-        $mypage = new object();
+        $mypage = new stdClass();
         $mypage->userid = NULL;
         $mypage->name = '__default';
         $mypage->private = 0;
@@ -5250,6 +5250,23 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
                        array('name' => 'moodle', 'sso_jump_url' => '/auth/mnet/land.php'));
         upgrade_main_savepoint(true, 2010091700);
     }
+
+    if ($oldversion < 2010092000) {
+        // drop multiple field again because it was still in install.xml in 2.0dev
+
+        // Define field multiple to be dropped from block
+        $table = new xmldb_table('block');
+        $field = new xmldb_field('multiple');
+
+        // Conditionally launch drop field multiple
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        // Main savepoint reached
+        upgrade_main_savepoint(true, 2010092000);
+    }
+
 
     return true;
 }

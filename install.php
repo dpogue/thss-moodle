@@ -196,13 +196,13 @@ ini_set('include_path', $CFG->libdir.'/zend' . PATH_SEPARATOR . ini_get('include
 require('version.php');
 $CFG->target_release = $release;
 
-$SESSION = new object();
+$SESSION = new stdClass();
 $SESSION->lang = $CFG->lang;
 
-$USER = new object();
+$USER = new stdClass();
 $USER->id = 0;
 
-$COURSE = new object();
+$COURSE = new stdClass();
 $COURSE->id = 0;
 
 $SITE = $COURSE;
@@ -315,6 +315,10 @@ if ($config->stage == INSTALL_DOWNLOADLANG) {
                 $config->stage = INSTALL_PATHS;
             }
         }
+
+    } else if (!install_init_dataroot($CFG->dataroot, $CFG->directorypermissions)) {
+        $hint_dataroot = get_string('pathserrcreatedataroot', 'install', $a);
+        $config->stage = INSTALL_PATHS;
     }
 
     if (empty($hint_dataroot) and !is_writable($CFG->dataroot)) {
@@ -370,11 +374,6 @@ if ($config->stage == INSTALL_DOWNLOADLANG) {
             }
         }
     }
-    // switch the string_manager instance to stop using install/lang/
-    $CFG->early_install_lang = false;
-    $CFG->langotherroot      = $CFG->dataroot.'/lang';
-    $CFG->langlocalroot      = $CFG->dataroot.'/lang';
-    get_string_manager(true);
 
     if ($downloaderror !== '') {
         install_print_header($config, get_string('language'), get_string('langdownloaderror', 'install', $CFG->lang), $downloaderror);
@@ -387,6 +386,12 @@ if ($config->stage == INSTALL_DOWNLOADLANG) {
             $config->stage = INSTALL_DATABASE;
         }
     }
+
+    // switch the string_manager instance to stop using install/lang/
+    $CFG->early_install_lang = false;
+    $CFG->langotherroot      = $CFG->dataroot.'/lang';
+    $CFG->langlocalroot      = $CFG->dataroot.'/lang';
+    get_string_manager(true);
 }
 
 

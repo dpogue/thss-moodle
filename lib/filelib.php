@@ -475,7 +475,7 @@ function file_get_drafarea_folders($draftitemid, $filepath, &$data) {
     if ($files = $fs->get_directory_files($context->id, 'user', 'draft', $draftitemid, $filepath, false)) {
         foreach ($files as $file) {
             if ($file->is_directory()) {
-                $item = new stdclass;
+                $item = new stdClass();
                 $item->sortorder = $file->get_sortorder();
                 $item->filepath = $file->get_filepath();
 
@@ -505,7 +505,7 @@ function file_get_drafarea_files($draftitemid, $filepath = '/') {
     $context = get_context_instance(CONTEXT_USER, $USER->id);
     $fs = get_file_storage();
 
-    $data = new stdclass;
+    $data = new stdClass();
     $data->path = array();
     $data->path[] = array('name'=>get_string('files'), 'path'=>'/');
 
@@ -526,7 +526,7 @@ function file_get_drafarea_files($draftitemid, $filepath = '/') {
     $maxlength = 12;
     if ($files = $fs->get_directory_files($context->id, 'user', 'draft', $draftitemid, $filepath, false)) {
         foreach ($files as $file) {
-            $item = new stdclass;
+            $item = new stdClass();
             $item->filename = $file->get_filename();
             $item->filepath = $file->get_filepath();
             $item->fullname = trim($item->filename, '/');
@@ -903,7 +903,7 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
     $url = str_replace($newlines, '', $url);
     if (!preg_match('|^https?://|i', $url)) {
         if ($fullresponse) {
-            $response = new object();
+            $response = new stdClass();
             $response->status        = 0;
             $response->headers       = array();
             $response->response_code = 'Invalid protocol specified in url';
@@ -962,7 +962,7 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
             } else {
                 curl_close($ch);
                 if ($fullresponse) {
-                    $response = new object();
+                    $response = new stdClass();
                     $response->status        = '0';
                     $response->headers       = array();
                     $response->response_code = 'SOCKS5 proxy is not supported in PHP4';
@@ -994,7 +994,7 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
     }
 
     // set up header and content handlers
-    $received = new object();
+    $received = new stdClass();
     $received->headers = array(); // received headers array
     $received->tofile  = $tofile;
     $received->fh      = null;
@@ -1021,7 +1021,7 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
         curl_close($ch);
 
         if ($fullresponse) {
-            $response = new object();
+            $response = new stdClass();
             if ($error_no == 28) {
                 $response->status    = '-100'; // mimic snoopy
             } else {
@@ -1043,7 +1043,7 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
 
         if (empty($info['http_code'])) {
             // for security reasons we support only true http connections (Location: file:// exploit prevention)
-            $response = new object();
+            $response = new stdClass();
             $response->status        = '0';
             $response->headers       = array();
             $response->response_code = 'Unknown cURL error';
@@ -1051,7 +1051,7 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
             $response->error         = 'Unknown cURL error';
 
         } else {
-            $response = new object();;
+            $response = new stdClass();;
             $response->status        = (string)$info['http_code'];
             $response->headers       = $received->headers;
             $response->response_code = $received->headers[0];
@@ -1193,6 +1193,8 @@ function get_mimetypes_array() {
         'odf'  => array ('type'=>'application/vnd.oasis.opendocument.formula', 'icon'=>'odf'),
         'odb'  => array ('type'=>'application/vnd.oasis.opendocument.database', 'icon'=>'odb'),
         'odi'  => array ('type'=>'application/vnd.oasis.opendocument.image', 'icon'=>'odi'),
+        'ogg'  => array ('type'=>'audio/ogg', 'icon'=>'audio'),
+        'ogv'  => array ('type'=>'video/ogg', 'icon'=>'video'),
 
         'pct'  => array ('type'=>'image/pict', 'icon'=>'image'),
         'pdf'  => array ('type'=>'application/pdf', 'icon'=>'pdf'),
@@ -1711,7 +1713,7 @@ function send_file($path, $filename, $lifetime = 'default' , $filter=0, $pathiss
         }
     } else {     // Try to put the file through filters
         if ($mimetype == 'text/html') {
-            $options = new object();
+            $options = new stdClass();
             $options->noclean = true;
             $options->nocache = true; // temporary workaround for MDL-5136
             $text = $pathisstring ? $path : implode('', file($path));
@@ -1729,7 +1731,7 @@ function send_file($path, $filename, $lifetime = 'default' , $filter=0, $pathiss
             echo $output;
         // only filter text if filter all files is selected
         } else if (($mimetype == 'text/plain') and ($filter == 1)) {
-            $options = new object();
+            $options = new stdClass();
             $options->newlines = false;
             $options->noclean = true;
             $text = htmlentities($pathisstring ? $path : implode('', file($path)));
@@ -1903,7 +1905,7 @@ function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownl
 
     } else {     // Try to put the file through filters
         if ($mimetype == 'text/html') {
-            $options = new object();
+            $options = new stdClass();
             $options->noclean = true;
             $options->nocache = true; // temporary workaround for MDL-5136
             $text = $stored_file->get_content();
@@ -1920,7 +1922,7 @@ function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownl
             echo $output;
         // only filter text if filter all files is selected
         } else if (($mimetype == 'text/plain') and ($filter == 1)) {
-            $options = new object();
+            $options = new stdClass();
             $options->newlines = false;
             $options->noclean = true;
             $text = $stored_file->get_content();
