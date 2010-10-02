@@ -65,11 +65,6 @@ define('FORMAT_WIKI',     '3');   // Wiki-formatted text
 define('FORMAT_MARKDOWN', '4');   // Markdown-formatted text http://daringfireball.net/projects/markdown/
 
 /**
- * TRUSTTEXT marker - if present in text, text cleaning should be bypassed
- */
-define('TRUSTTEXT', '#####TRUSTTEXT#####');
-
-/**
  * A moodle_url comparison using this flag will return true if the base URLs match, params are ignored
  */
 define('URL_MATCH_BASE', 0);
@@ -1371,12 +1366,10 @@ function format_module_intro($module, $activity, $cmid, $filter=true) {
  * Legacy function, used for cleaning of old forum and glossary text only.
  *
  * @global object
- * @param string $text text that may contain TRUSTTEXT marker
- * @return text without any TRUSTTEXT marker
+ * @param string $text text that may contain legacy TRUSTTEXT marker
+ * @return text without legacy TRUSTTEXT marker
  */
 function trusttext_strip($text) {
-    global $CFG;
-
     while (true) { //removing nested TRUSTTEXT
         $orig = $text;
         $text = str_replace('#####TRUSTTEXT#####', '', $text);
@@ -2518,6 +2511,11 @@ function redirect($url, $message='', $delay=-1) {
         throw new moodle_exception('redirecterrordetected', 'error');
     }
 
+    // prevent debug errors - make sure context is properly initialised
+    if ($PAGE) {
+        $PAGE->set_context(null);
+    }
+
     if ($url instanceof moodle_url) {
         $url = $url->out(false);
     }
@@ -2526,12 +2524,42 @@ function redirect($url, $message='', $delay=-1) {
        $url = $SESSION->sid_process_url($url);
     }
 
-    if (function_exists('error_get_last')) {
-        $lasterror = error_get_last();
-        //NOTE: problem here is that this contains error even if error hidden with @do();
-    }
-    $debugdisableredirect = defined('DEBUGGING_PRINTED') ||
-            (!empty($CFG->debugdisplay) && !empty($lasterror) && ($lasterror['type'] & DEBUG_DEVELOPER));
+    $debugdisableredirect = false;
+    do {
+        if (defined('DEBUGGING_PRINTED')) {
+            // some debugging already printed, no need to look more
+            $debugdisableredirect = true;
+            break;
+        }
+
+        if (empty($CFG->debugdisplay) or empty($CFG->debug)) {
+            // no errors should be displayed
+            break;
+        }
+
+        if (!function_exists('error_get_last') or !$lasterror = error_get_last()) {
+            break;
+        }
+
+        if (!($lasterror['type'] & $CFG->debug)) {
+            //last error not interesting
+            break;
+        }
+
+        // watch out here, @hidden() errors are returned from error_get_last() too
+        if (headers_sent()) {
+            //we already started printing something - that means errors likely printed
+            $debugdisableredirect = true;
+            break;
+        }
+
+        if (ob_get_level() and ob_get_contents()) {
+            // there is something waiting to be printed, hopefully it is the errors,
+            // but it might be some error hidden by @ too - such as the timezone mess from setup.php
+            $debugdisableredirect = true;
+            break;
+        }
+    } while (false);
 
     if (!empty($message)) {
         if ($delay === -1 || !is_numeric($delay)) {

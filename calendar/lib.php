@@ -248,7 +248,6 @@ function calendar_get_mini($courses, $groups, $users, $cal_month = false, $cal_y
             $hrefparams['view'] = 'day';
             $dayhref = calendar_get_link_href(new moodle_url(CALENDAR_URL.'view.php', $hrefparams), $day, $m, $y);
 
-            // OverLib popup
             $popupcontent = '';
             foreach($eventsbyday[$day] as $eventid) {
                 if (!isset($events[$eventid])) {
@@ -2428,7 +2427,22 @@ class calendar_information {
      * @param int $month
      * @param int $year
      */
-    public function __construct($day, $month, $year) {
+    public function __construct($day=0, $month=0, $year=0) {
+
+        $date = usergetdate(time());
+
+        if (empty($day)) {
+            $day = $date['mday'];
+        }
+
+        if (empty($month)) {
+            $month = $date['mon'];
+        }
+
+        if (empty($year)) {
+            $year =  $date['year'];
+        }
+
         $this->day = $day;
         $this->month = $month;
         $this->year = $year;
