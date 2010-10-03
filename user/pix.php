@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,21 +15,37 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * MOODLE VERSION INFORMATION
- *
- * This file defines the current version of the core Moodle code being used.
- * This is compared against the values stored in the database to determine
- * whether upgrades should be performed (see lib/db/*.php)
+ * BC user image location
  *
  * @package    core
- * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * @subpackage file
+ * @copyright  2010 Petr Skoda (http://skodak.org)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+define('NO_DEBUG_DISPLAY', true);
+define('NOMOODLECOOKIE', 1);
 
-$version = 2010092100;  // YYYYMMDD   = date of the last version bump
-                        //         XX = daily increments
+require('../config.php');
 
-$release = '2.0 RC1 (Build: 20101003)';  // Human-friendly version name
+$PAGE->set_url('/user/pix.php');
+$PAGE->set_context(null);
 
+$relativepath = get_file_argument('pix.php');
+
+$args = explode('/', trim($relativepath, '/'));
+
+if (count($args) == 2) {
+    $userid = (integer)$args[0];
+    if ($args[1] === 'f1.jpg') {
+        $image = 'f1';
+    } else {
+        $image = 'f2';
+    }
+    if ($usercontext = get_context_instance(CONTEXT_USER, $userid)) {
+        $url = moodle_url::make_pluginfile_url($usercontext->id, 'user', 'icon', NULL, '/', $image);
+        redirect($url);
+    }
+}
+
+redirect($OUTPUT->pix_url('u/f1'));
