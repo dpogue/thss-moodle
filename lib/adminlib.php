@@ -2750,8 +2750,10 @@ class admin_setting_users_with_capability extends admin_setting_configmultiselec
                 $this->choices[$user->id] = fullname($user);
             }
         }
-        foreach ($users as $user) {
-            $this->choices[$user->id] = fullname($user);
+        if (is_array($users)) {
+            foreach ($users as $user) {
+                $this->choices[$user->id] = fullname($user);
+            }
         }
         return true;
     }
@@ -6038,7 +6040,8 @@ function print_plugin_tables() {
         'mediaplugin',
         'multilang',
         'tex',
-        'tidy');
+        'tidy',
+        'urltolink');
 
     $plugins_installed = array();
     $installed_mods = $DB->get_records('modules', null, 'name');

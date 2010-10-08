@@ -1314,7 +1314,7 @@ class core_renderer extends renderer_base {
      * @param string $text The text to be displayed for the link
      * @return string
      */
-    public function doc_link($path, $text) {
+    public function doc_link($path, $text = '') {
         global $CFG;
 
         $icon = $this->pix_icon('docs', $text, 'moodle', array('class'=>'iconhelp'));
@@ -1417,6 +1417,7 @@ class core_renderer extends renderer_base {
                     $aggregatelabel .= get_string("aggregatesum", "rating");
                     break;
             }
+            $aggregatelabel .= get_string('labelsep', 'langconfig');
 
             //$scalemax = 0;//no longer displaying scale max
             $aggregatestr = '';
@@ -1442,15 +1443,16 @@ class core_renderer extends renderer_base {
             //$aggregatehtml = "{$ratingstr} / $scalemax ({$rating->count}) ";
             $aggregatehtml = "<span id='ratingaggregate{$rating->itemid}'>{$aggregatestr}</span> $countstr ";
 
+            $ratinghtml .= html_writer::tag('span', $aggregatelabel, array('class'=>'rating-aggregate-label'));
             if ($rating->settings->permissions->viewall && $rating->settings->pluginpermissions->viewall) {
                 $url = "/rating/index.php?contextid={$rating->context->id}&itemid={$rating->itemid}&scaleid={$rating->settings->scale->id}";
                 $nonpopuplink = new moodle_url($url);
                 $popuplink = new moodle_url("$url&popup=1");
 
                 $action = new popup_action('click', $popuplink, 'ratings', array('height' => 400, 'width' => 600));
-                $ratinghtml .= $aggregatelabel.get_string('labelsep', 'langconfig').$this->action_link($nonpopuplink, $aggregatehtml, $action);
+                $ratinghtml .= $this->action_link($nonpopuplink, $aggregatehtml, $action);
             } else {
-                $ratinghtml .= $aggregatelabel.get_string('labelsep', 'langconfig').$aggregatehtml;
+                $ratinghtml .= $aggregatehtml;
             }
         }
 
@@ -1919,7 +1921,11 @@ class core_renderer extends renderer_base {
         } else {
             $size = get_max_upload_file_size();
         }
-        $maxsize = get_string('maxfilesize', 'moodle', display_size($size));
+        if ($size == -1) {
+            $maxsize = '';
+        } else {
+            $maxsize = get_string('maxfilesize', 'moodle', display_size($size));
+        }
         $html = <<<EOD
 <div class="filemanager-loading mdl-align" id='filepicker-loading-{$client_id}'>
 $icon_progress

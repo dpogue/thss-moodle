@@ -51,7 +51,7 @@ define('VIEW_CONTACTS','contacts');
 define('VIEW_BLOCKED','blockedusers');
 define('VIEW_COURSE','course_');
 
-define('SHOW_ACTION_LINKS_IN_CONTACT_LIST', false);
+define('SHOW_ACTION_LINKS_IN_CONTACT_LIST', true);
 
 define('MESSAGE_SEARCH_MAX_RESULTS', 200);
 
@@ -119,7 +119,7 @@ function message_print_contact_selector($countunreadtotal, $usergroup, $user1, $
                 if ($usergroup == VIEW_CONTACTS) {
                     $managebuttonclass = 'visible';
                 }
-                $strmanagecontacts = get_string('managecontacts','message');
+                $strmanagecontacts = get_string('search','message');
                 echo html_writer::empty_tag('input', array('type'=>'submit','value'=>$strmanagecontacts,'class'=>$managebuttonclass));
             echo html_writer::end_tag('fieldset');
         echo html_writer::end_tag('form');
@@ -1508,21 +1508,29 @@ function message_format_message(&$message, &$user, $format='', $keywords='', $cl
  * via other means if appropriate.
  */
 function message_post_message($userfrom, $userto, $message, $format, $messagetype) {
-    global $CFG, $SITE, $USER, $DB;
-
+    global $SITE, $CFG, $USER;
+    
     $eventdata = new stdClass();
     $eventdata->component        = 'moodle';
     $eventdata->name             = 'instantmessage';
     $eventdata->userfrom         = $userfrom;
     $eventdata->userto           = $userto;
-    $eventdata->subject          = "IM";
+    $eventdata->subject          = get_string('unreadnewmessage', 'message', fullname($userfrom));
     $eventdata->fullmessage      = $message;
     $eventdata->fullmessageformat = $format;
     $eventdata->fullmessagehtml  = '';
     $eventdata->smallmessage     = '';
+
+    $s = new stdClass();
+    $s->sitename = $SITE->shortname;
+    $s->url = $CFG->wwwroot.'/message/index.php?id='.$userfrom->id;//.'&user='.$userto->id;
+
+    $emailtagline = get_string('emailtagline', 'message', $s);
+    $eventdata->footer = "\n\n---------------------------------------------------------------------\n".$emailtagline;
+    $eventdata->footerhtml = "<br /><br />---------------------------------------------------------------------<br />".$emailtagline;
+    
     $eventdata->timecreated     = time();
     return message_send($eventdata);
-
 }
 
 
@@ -1638,12 +1646,7 @@ function message_move_userfrom_unread2read($userid) {
     // move all unread messages from message table to message_read
     if ($messages = $DB->get_records_select('message', 'useridfrom = ?', array($userid), 'timecreated')) {
         foreach ($messages as $message) {
-            $message->timeread = 0; //the message was never read
-            $messageid = $message->id;
-            unset($message->id);
-            $DB->insert_record('message_read', $message);
-            $DB->delete_records('message', array('id' => $messageid));
-            $DB->delete_records('message_working', array('unreadmessageid' => $messageid));
+            message_mark_message_read($message, 0); //set timeread to 0 as the message was never read
         }
     }
     return true;
@@ -1673,35 +1676,49 @@ function message_get_popup_messages($destuserid, $fromuserid=NULL){
             //delete what we've processed and check if can move message
             $DB->delete_records('message_working', array('id' => $msgp->id));
             if ( $DB->count_records('message_working', array('unreadmessageid'=>$messageid)) == 0){
-                $DB->insert_record('message_read', $message);
-                $DB->delete_records('message', array('id' => $messageid));
+                message_mark_message_read($message, time(), true);
             }
         }
     }
     return $messages;
 }
 
-//marks ALL messages being sent from $fromuserid to $touserid as read
+/**
+* marks ALL messages being sent from $fromuserid to $touserid as read
+* @param int $touserid the id of the message recipient
+* @param int $fromuserid the id of the message sender
+* @return void
+*/
 function message_mark_messages_read($touserid, $fromuserid){
     global $DB;
 
-    $sql = 'SELECT m.*, mw.id AS mwid FROM {message} m JOIN {message_working} mw ON m.id=mw.unreadmessageid WHERE m.useridto=:useridto AND m.useridfrom=:useridfrom';
+    $sql = 'SELECT m.* FROM {message} m WHERE m.useridto=:useridto AND m.useridfrom=:useridfrom';
     $messages = $DB->get_recordset_sql($sql, array('useridto'=>$touserid,'useridfrom'=>$fromuserid));
 
-    //todo surely we can do this with one query rather than with a loop
-
     foreach ($messages as $message) {
-        $message->timeread = time();
-        $messageid = $message->id;
-        unset($message->id);//unset because it will get a new id on insert into message_read
-
-        //indicate the message is read
-        $DB->delete_records('message_working', array('id' => $message->mwid));
-
-        //have all message processors completed dealing with this message?
-        if ( $DB->count_records('message_working', array('unreadmessageid'=>$messageid)) == 0){
-            $DB->insert_record('message_read', $message);
-            $DB->delete_records('message', array('id' => $messageid));
-        }
+        message_mark_message_read($message, time());
     }
+}
+
+/**
+* Mark a single message as read
+* @param message an object with an object property ie $message->id which is an id in the message table
+* @param int $timeread the timestamp for when the message should be marked read. Usually time().
+* @param bool $messageworkingempty Is the message_working table already confirmed empty for this message?
+* @return void
+*/
+function message_mark_message_read($message, $timeread, $messageworkingempty=false) {
+    global $DB;
+    
+    $message->timeread = $timeread;
+
+    $messageid = $message->id;
+    unset($message->id);//unset because it will get a new id on insert into message_read
+
+    //If any processors have pending actions abort them
+    if (!$messageworkingempty) {
+        $DB->delete_records('message_working', array('unreadmessageid' => $messageid));
+    }
+    $DB->insert_record('message_read', $message);
+    $DB->delete_records('message', array('id' => $messageid));
 }

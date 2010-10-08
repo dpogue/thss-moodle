@@ -3019,14 +3019,15 @@ class dml_test extends UnitTestCase {
 
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('course', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0');
+        $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, null, null, null);
         $table->add_field('content', XMLDB_TYPE_TEXT, 'big', XMLDB_UNSIGNED, XMLDB_NOTNULL);
         $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
         $dbman->create_table($table);
 
-        $DB->insert_record($tablename, array('course' => 3, 'content' => 'hello'));
-        $DB->insert_record($tablename, array('course' => 3, 'content' => 'world'));
-        $DB->insert_record($tablename, array('course' => 5, 'content' => 'hello'));
-        $DB->insert_record($tablename, array('course' => 2, 'content' => 'universe'));
+        $DB->insert_record($tablename, array('course' => 3, 'content' => 'hello', 'name'=>'xyz'));
+        $DB->insert_record($tablename, array('course' => 3, 'content' => 'world', 'name'=>'abc'));
+        $DB->insert_record($tablename, array('course' => 5, 'content' => 'hello', 'name'=>'def'));
+        $DB->insert_record($tablename, array('course' => 2, 'content' => 'universe', 'name'=>'abc'));
 
         // we have sql like this in moodle, this syntax breaks on older versions of sqlite for example..
         $sql = "SELECT a.id AS id, a.course AS course
@@ -3034,7 +3035,7 @@ class dml_test extends UnitTestCase {
                   JOIN (SELECT * FROM {{$tablename}}) b ON a.id = b.id
                  WHERE a.course = ?";
 
-        $this->assertTrue($records = $DB->get_records_sql($sql, array(3)));
+        $records = $DB->get_records_sql($sql, array(3));
         $this->assertEqual(2, count($records));
         $this->assertEqual(1, reset($records)->id);
         $this->assertEqual(2, next($records)->id);
@@ -3042,6 +3043,22 @@ class dml_test extends UnitTestCase {
         // do NOT try embedding sql_xxxx() helper functions in conditions array of count_records(), they don't break params/binding!
         $count = $DB->count_records_select($tablename, "course = :course AND ".$DB->sql_compare_text('content')." = :content", array('course' => 3, 'content' => 'hello'));
         $this->assertEqual(1, $count);
+
+        // test int x string comparison
+        $sql = "SELECT *
+                  FROM {{$tablename}} c
+                 WHERE name = ?";
+        $this->assertEqual(count($DB->get_records_sql($sql, array(10))), 0);
+        $this->assertEqual(count($DB->get_records_sql($sql, array("10"))), 0);
+        $DB->insert_record($tablename, array('course' => 7, 'content' => 'xx', 'name'=>'1'));
+        $DB->insert_record($tablename, array('course' => 7, 'content' => 'yy', 'name'=>'2'));
+        $this->assertEqual(count($DB->get_records_sql($sql, array(1))), 1);
+        $this->assertEqual(count($DB->get_records_sql($sql, array("1"))), 1);
+        $this->assertEqual(count($DB->get_records_sql($sql, array(10))), 0);
+        $this->assertEqual(count($DB->get_records_sql($sql, array("10"))), 0);
+        $DB->insert_record($tablename, array('course' => 7, 'content' => 'xx', 'name'=>'1abc'));
+        $this->assertEqual(count($DB->get_records_sql($sql, array(1))), 1);
+        $this->assertEqual(count($DB->get_records_sql($sql, array("1"))), 1);
     }
 
     function test_onelevel_commit() {

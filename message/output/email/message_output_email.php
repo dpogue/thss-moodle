@@ -38,7 +38,7 @@ class message_output_email extends message_output {
      * @param object $message the message to be sent
      */
     function send_message($message) {
-        global $DB;
+        global $DB, $SITE;
 
         $userto = $DB->get_record('user', array('id' => $message->useridto));
         $userfrom = $DB->get_record('user', array('id' => $message->useridfrom));
@@ -50,12 +50,22 @@ class message_output_email extends message_output {
             $userto->email = $usertoemailaddress;
         }
 
-        $result = email_to_user($userto, $userfrom,
-            $message->subject, $message->fullmessage,
-            $message->fullmessagehtml);
+        //concatenating the footer on here so that it appears on emails but not within the saved message
+        $messagetosend = null;
+        if (!empty($message->fullmessage)) {
+            $messagetosend = $message->fullmessage.$message->footer;
+        }
 
-        //return $result===true; //email_to_user() can return true, false or "emailstop"
-        return true;//do we want to report an error if email sending fails?
+        $messagetosendhtml = null;
+        if (!empty($message->fullmessagehtml)) {
+            $messagetosendhtml = $message->fullmessagehtml.$message->footerhtml;
+        }
+
+        $result = email_to_user($userto, $userfrom,
+            $message->subject, $messagetosend, $messagetosendhtml);
+
+        return $result===true; //email_to_user() can return true, false or "emailstop"
+        //return true;//do we want to report an error if email sending fails?
     }
 
     /**

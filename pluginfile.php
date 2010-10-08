@@ -524,16 +524,20 @@ if ($component === 'blog') {
         send_file_not_found();
     }
 
-    require_login($course);
+    require_course_login($course, true, null, false);
 
     $groupid = (int)array_shift($args);
 
     $group = $DB->get_record('groups', array('id'=>$groupid, 'courseid'=>$course->id), '*', MUST_EXIST);
-    if (!has_capability('moodle/site:accessallgroups', $context) && !groups_is_member($group->id, $USER->id)) {
+    if (($course->groupmodeforce and $course->groupmode == SEPARATEGROUPS) and !has_capability('moodle/site:accessallgroups', $context) and !groups_is_member($group->id, $USER->id)) {
+        // do not allow access to separate group info if not member or teacher
         send_file_not_found();
     }
 
     if ($filearea === 'description') {
+
+        require_login($course);
+
         $filename = array_pop($args);
         $filepath = $args ? '/'.implode('/', $args).'/' : '/';
         if (!$file = $fs->get_file($context->id, 'group', 'description', $group->id, $filepath, $filename) or $file->is_directory()) {

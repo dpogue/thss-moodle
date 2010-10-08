@@ -64,6 +64,7 @@ $THEME->sheets = array(
 		'tabs',
 		'admin',
 		'tables',
+		'popups',
 );
 
 ////////////////////////////////////////////////////
@@ -266,3 +267,5 @@ $THEME->hidefromselector = true;
 ////////////////////////////////////////////////////
 // Controls the colours for the MP3 player
 ////////////////////////////////////////////////////
+
+$THEME->editor_sheets = array('editor');

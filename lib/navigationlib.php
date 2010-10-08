@@ -1007,7 +1007,7 @@ class global_navigation extends navigation_node {
                 // If the user is not enrolled then we only want to show the
                 // course node and not populate it.
                 $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
-                if (!is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext)) {
+                if ($course->id !== SITEID && !is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext)) {
                     $coursenode->make_active();
                     $canviewcourseprofile = false;
                     break;
@@ -1972,19 +1972,11 @@ class global_navigation extends navigation_node {
         $coursenode->add('frontpageloaded', null, self::TYPE_CUSTOM, null, 'frontpageloaded')->display = false;
 
         //Participants
-        if (has_capability('moodle/course:viewparticipants', $this->page->context)) {
+        if (has_capability('moodle/course:viewparticipants',  get_system_context())) {
             $coursenode->add(get_string('participants'), new moodle_url('/user/index.php?id='.$course->id), self::TYPE_CUSTOM, get_string('participants'), 'participants');
         }
 
-        $currentgroup = groups_get_course_group($course, true);
-        if ($course->id == SITEID) {
-            $filterselect = '';
-        } else if ($course->id && !$currentgroup) {
-            $filterselect = $course->id;
-        } else {
-            $filterselect = $currentgroup;
-        }
-        $filterselect = clean_param($filterselect, PARAM_INT);
+        $filterselect = 0;
 
         // Blogs
         if (has_capability('moodle/blog:view', $this->page->context)) {

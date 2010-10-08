@@ -15,11 +15,11 @@
 
         //check capabilities
         //glossary module doesn't require any capabilities to view glossary entries (aside from being logged in)
-        if (!is_enrolled($context)) {
+        if (!is_enrolled($context) && !isguestuser()) {
             return null;
         }
 
-        $glossaryid = $args[3];
+        $glossaryid  = clean_param($args[3], PARAM_INT);
         $glossary = $DB->get_record('glossary', array('id' => $glossaryid), '*', MUST_EXIST);
 
         if (!rss_enabled_for_mod('glossary', $glossary)) {
