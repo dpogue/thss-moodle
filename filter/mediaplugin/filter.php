@@ -176,7 +176,7 @@ function filter_mediaplugin_mp3_callback($link) {
 
     $output = <<<OET
     <span class="mediaplugin mediaplugin_mp3" id="$id"></span>
-    <noscript>
+    <noscript><div>
     <object width="100" height="15" id="nonjsmp3plugin" name="undefined" data="$playerpath" type="application/x-shockwave-flash">
     <param name="movie" value="$playerpath" />
     <param name="allowfullscreen" value="false" />
@@ -196,7 +196,7 @@ function filter_mediaplugin_mp3_callback($link) {
                                                    "autoPlay": false},
                                            "content":{"url":"$playerpath"}}}' />
     </object>
-    </noscript>
+    </div></noscript>
 OET;
 
     $jsoutput = create_flowplayer($id, $url, 'mp3', $playercolors);
@@ -284,7 +284,7 @@ function filter_mediaplugin_flv_callback($link) {
 
     $output = <<<EOT
     <span class="mediaplugin mediaplugin_flv" id="$id"></span>
-    <noscript>
+    <noscript><div>
     <object width="800" height="600" id="undefined" name="undefined" data="$playerpath" type="application/x-shockwave-flash">
     <param name="movie" value="$playerpath" />
     <param name="allowfullscreen" value="true" />
@@ -293,7 +293,7 @@ function filter_mediaplugin_flv_callback($link) {
                                                    "autoPlay": false},
                                            "content":{"url":"$playerpath"}}}' />
     </object>
-  </noscript>
+    </div></noscript>
 EOT;
 
     $jsoutput = create_flowplayer($id, $url, 'flv');

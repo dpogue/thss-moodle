@@ -89,11 +89,12 @@ $ALLOWED_TAGS =
 /**
  * Allowed protocols - array of protocols that are safe to use in links and so on
  * @global string $ALLOWED_PROTOCOLS
- * @name $ALLOWED_PROTOCOLS
  */
 $ALLOWED_PROTOCOLS = array('http', 'https', 'ftp', 'news', 'mailto', 'rtsp', 'teamspeak', 'gopher', 'mms',
                            'color', 'callto', 'cursor', 'text-align', 'font-size', 'font-weight', 'font-style', 'font-family',
-                           'border', 'margin', 'padding', 'background', 'background-color', 'text-decoration');   // CSS as well to get through kses
+                           'border', 'border-bottom', 'border-left', 'border-top', 'border-right', 'margin', 'margin-bottom', 'margin-left', 'margin-top', 'margin-right',
+                           'padding', 'padding-bottom', 'padding-left', 'padding-top', 'padding-right', 'vertical-align',
+                           'background', 'background-color', 'text-decoration');   // CSS as well to get through kses
 
 
 /// Functions
@@ -1298,7 +1299,7 @@ function wikify_links($string) {
 function fix_non_standard_entities($string) {
     $text = preg_replace('/&#0*([0-9]+);?/', '&#$1;', $string);
     $text = preg_replace('/&#x0*([0-9a-fA-F]+);?/', '&#x$1;', $text);
-    $text = preg_replace('/\p{Cc}/u', ' ', $text);
+    $text = preg_replace('[\x00-\x08\x0b-\x0c\x0e-\x1f]', '', $text);
     return $text;
 }
 

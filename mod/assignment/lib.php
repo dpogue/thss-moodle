@@ -948,7 +948,6 @@ class assignment_base {
         /// Get all ppl that can submit assignments
 
         $currentgroup = groups_get_activity_group($cm);
-        $gradebookroles = explode(",", $CFG->gradebookroles);
         $users = get_enrolled_users($context, 'mod/assignment:view', $currentgroup, 'u.id');
         if ($users) {
             $users = array_keys($users);
@@ -1097,7 +1096,6 @@ class assignment_base {
                         self::FILTER_REQUIRE_GRADING => get_string('requiregrading', 'assignment'));
 
         $updatepref = optional_param('updatepref', 0, PARAM_INT);
-        plagiarism_update_status($this->course, $this->cm);
 
         if (isset($_POST['updatepref'])){
             $perpage = optional_param('perpage', 10, PARAM_INT);
@@ -1139,6 +1137,9 @@ class assignment_base {
         echo $OUTPUT->header();
 
         echo '<div class="usersubmissions">';
+
+        //hook to allow plagiarism plugins to update status/print links.
+        plagiarism_update_status($this->course, $this->cm);
 
         /// Print quickgrade form around the table
         if ($quickgrade) {

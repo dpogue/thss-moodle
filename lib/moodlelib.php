@@ -2360,12 +2360,18 @@ function require_login($courseorid = NULL, $autologinguest = true, $cm = NULL, $
         return;
     }
 
-    // Check that the user has agreed to a site policy if there is one
-    if (!empty($CFG->sitepolicy)) {
-        if ($preventredirect) {
-            throw new require_login_exception('Policy not agreed');
-        }
-        if (!$USER->policyagreed) {
+    // Check that the user has agreed to a site policy if there is one - do not test in case of admins
+    if (!$USER->policyagreed and !is_siteadmin()) {
+        if (!empty($CFG->sitepolicy) and !isguestuser()) {
+            if ($preventredirect) {
+                throw new require_login_exception('Policy not agreed');
+            }
+            $SESSION->wantsurl = $FULLME;
+            redirect($CFG->wwwroot .'/user/policy.php');
+        } else if (!empty($CFG->sitepolicyguest) and isguestuser()) {
+            if ($preventredirect) {
+                throw new require_login_exception('Policy not agreed');
+            }
             $SESSION->wantsurl = $FULLME;
             redirect($CFG->wwwroot .'/user/policy.php');
         }
@@ -3623,18 +3629,18 @@ function guest_user() {
  * log that the user has logged in, and call complete_user_login() to set
  * the session up.
  *
- * @global object
- * @global object
+ * Note: this function works only with non-mnet accounts!
+ *
  * @param string $username  User's username
  * @param string $password  User's password
  * @return user|flase A {@link $USER} object or false if error
  */
 function authenticate_user_login($username, $password) {
-    global $CFG, $DB, $OUTPUT;
+    global $CFG, $DB;
 
     $authsenabled = get_enabled_auth_plugins();
 
-    if ($user = get_complete_user_data('username', $username)) {
+    if ($user = get_complete_user_data('username', $username, $CFG->mnet_localhost_id)) {
         $auth = empty($user->auth) ? 'manual' : $user->auth;  // use manual if auth not set
         if (!empty($user->suspended)) {
             add_to_log(0, 'login', 'error', 'index.php', $username);
@@ -3651,13 +3657,14 @@ function authenticate_user_login($username, $password) {
     } else {
         // check if there's a deleted record (cheaply)
         if ($DB->get_field('user', 'id', array('username'=>$username, 'deleted'=>1))) {
-            error_log('[client '.$_SERVER['REMOTE_ADDR']."]  $CFG->wwwroot  Deleted Login:  $username  ".$_SERVER['HTTP_USER_AGENT']);
+            error_log('[client '.getremoteaddr()."]  $CFG->wwwroot  Deleted Login:  $username  ".$_SERVER['HTTP_USER_AGENT']);
             return false;
         }
 
+        // User does not exist
         $auths = $authsenabled;
         $user = new stdClass();
-        $user->id = 0;     // User does not exist
+        $user->id = 0;
     }
 
     foreach ($auths as $auth) {
@@ -3726,15 +3733,12 @@ function authenticate_user_login($username, $password) {
  * NOTE:
  * - It will NOT log anything -- up to the caller to decide what to log.
  *
- * @global object
- * @global object
- * @global object
  * @param object $user
  * @param bool $setcookie
  * @return object A {@link $USER} object - BC only, do not use
  */
 function complete_user_login($user, $setcookie=true) {
-    global $CFG, $USER, $SESSION;
+    global $CFG, $USER;
 
     // regenerate session id and delete old session,
     // this helps prevent session fixation attacks from the same domain
@@ -3742,6 +3746,9 @@ function complete_user_login($user, $setcookie=true) {
 
     // check enrolments, load caps and setup $USER object
     session_set_user($user);
+
+    // clear the preferences and invalidate caches too
+    unset($USER->preference);
 
     update_user_login_times();
     set_login_session_preferences();
@@ -3758,7 +3765,7 @@ function complete_user_login($user, $setcookie=true) {
             // do not store last logged in user in cookie
             // auth plugins can temporarily override this from loginpage_hook()
             // do not save $CFG->nolastloggedin in database!
-            set_moodle_cookie('nobody');
+            set_moodle_cookie('');
         }
     }
 
@@ -6860,6 +6867,11 @@ function normalize_component($component) {
 
     } else {
         list($type, $plugin) = explode('_', $component, 2);
+        $plugintypes = get_plugin_types(false);
+        if ($type !== 'core' and !array_key_exists($type, $plugintypes)) {
+            $type   = 'mod';
+            $plugin = $component;
+        }
     }
 
     return array($type, $plugin);
@@ -8616,19 +8628,6 @@ function address_in_subnet($addr, $subnetstr) {
 }
 
 /**
- * This function sets the $HTTPSPAGEREQUIRED global
- * (used in some parts of moodle to change some links)
- * and calculate the proper wwwroot to be used
- *
- * By using this function properly, we can ensure 100% https-ized pages
- * at our entire discretion (login, forgot_password, change_password)
- */
-function httpsrequired() {
-    global $PAGE;
-    $PAGE->https_required();
-}
-
-/**
  * For outputting debugging info
  *
  * @uses STDOUT
@@ -8921,23 +8920,20 @@ function message_popup_window() {
 
     $message_users = null;
 
-    $sql = "SELECT m.id, u.firstname, u.lastname FROM {message} m
+    $messagesql = "SELECT m.id, m.smallmessage, u.firstname, u.lastname FROM {message} m
 JOIN {message_working} mw ON m.id=mw.unreadmessageid
 JOIN {message_processors} p ON mw.processorid=p.id
 JOIN {user} u ON m.useridfrom=u.id
-WHERE m.useridto = :userid AND m.timecreated > :ts AND p.name='popup'";
+WHERE m.useridto = :userid AND p.name='popup'";
+
+    $sql = $messagesql.' AND m.timecreated > :ts';
     $message_users = $DB->get_records_sql($sql, array('userid'=>$USER->id, 'ts'=>$USER->message_lastpopup));
     if (empty($message_users)) {
 
         //if the user was last notified over an hour ago remind them of any new messages regardless of when they were sent
         $canrenotify = (time() - $USER->message_lastpopup) > 3600;
         if ($canrenotify) {
-            $sql = "SELECT m.id, u.firstname, u.lastname FROM {message} m
-JOIN {message_working} mw ON m.id=mw.unreadmessageid
-JOIN {message_processors} p ON mw.processorid=p.id
-JOIN {user} u ON m.useridfrom=u.id
-WHERE m.useridto = :userid AND p.name='popup'";
-            $message_users = $DB->get_records_sql($sql, array('userid'=>$USER->id));
+            $message_users = $DB->get_records_sql($messagesql, array('userid'=>$USER->id));
         }
     }
 
@@ -8948,7 +8944,19 @@ WHERE m.useridto = :userid AND p.name='popup'";
         if (count($message_users)>1) {
             $strmessages = get_string('unreadnewmessages', 'message', count($message_users));
         } else {
-            $strmessages = get_string('unreadnewmessage', 'message', fullname(reset($message_users)) );
+            $message_users = reset($message_users);
+            $strmessages = get_string('unreadnewmessage', 'message', fullname($message_users) );
+
+            if (!empty($message_users->smallmessage)) {
+                //display the first 200 chars of the message in the popup
+                $smallmessage = null;
+                if (strlen($message_users->smallmessage>200)) {
+                    $smallmessage = substr($message_users->smallmessage,0,200).'...';
+                } else {
+                    $smallmessage = $message_users->smallmessage;
+                }
+                $strmessages .= '<div id="usermessage">'.$smallmessage.'</div>';
+            }
         }
 
         $strgomessage = get_string('gotomessages', 'message');

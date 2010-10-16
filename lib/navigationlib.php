@@ -979,11 +979,18 @@ class global_navigation extends navigation_node {
                 // Load the course associated with the page into the navigation
                 $course = $this->page->course;
                 $coursenode = $this->load_course($course);
+
+                // If the course wasn't added then don't try going any further.
+                if (!$coursenode) {
+                    $canviewcourseprofile = false;
+                    break;
+                }
+
                 // If the user is not enrolled then we only want to show the
                 // course node and not populate it.
                 $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
                 // Not enrolled, can't view, and hasn't switched roles
-                if (!is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext) && !is_role_switched($course->id)) {
+                if ((!is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext) && !is_role_switched($course->id))) {
                     $coursenode->make_active();
                     $canviewcourseprofile = false;
                     break;
@@ -1027,17 +1034,29 @@ class global_navigation extends navigation_node {
                     }
 
                     // Load all of the section activities for the section the cm belongs to.
-                    $activities = $this->load_section_activities($sections[$cm->sectionnumber]->sectionnode, $cm->sectionnumber, get_fast_modinfo($course));
+                    if (isset($cm->sectionnumber) and !empty($sections[$cm->sectionnumber])) {
+                        $activities = $this->load_section_activities($sections[$cm->sectionnumber]->sectionnode, $cm->sectionnumber, get_fast_modinfo($course));
+                    } else {
+                        $activities = array();
+                        if ($activity = $this->load_stealth_activity($coursenode, get_fast_modinfo($course))) {
+                            // "stealth" activity from unavailable section
+                            $activities[$cm->id] = $activity;
+                        }
+                    }
                 } else {
                     $activities = array();
                     $activities[$cm->id] = $coursenode->get($cm->id, navigation_node::TYPE_ACTIVITY);
                 }
-                // Finally load the cm specific navigaton information
-                $this->load_activity($cm, $course, $activities[$cm->id]);
-                // Check if we have an active ndoe
-                if (!$activities[$cm->id]->contains_active_node() && !$activities[$cm->id]->search_for_active_node()) {
-                    // And make the activity node active.
-                    $activities[$cm->id]->make_active();
+                if (!empty($activities[$cm->id])) {
+                    // Finally load the cm specific navigaton information
+                    $this->load_activity($cm, $course, $activities[$cm->id]);
+                    // Check if we have an active ndoe
+                    if (!$activities[$cm->id]->contains_active_node() && !$activities[$cm->id]->search_for_active_node()) {
+                        // And make the activity node active.
+                        $activities[$cm->id]->make_active();
+                    }
+                } else {
+                    //TODO: something is wrong, what to do? (Skodak)
                 }
                 break;
             case CONTEXT_USER :
@@ -1417,12 +1436,11 @@ class global_navigation extends navigation_node {
             return true;
         }
 
-        $viewhiddenactivities = has_capability('moodle/course:viewhiddenactivities', $this->page->context);
         $activities = array();
 
         foreach ($modinfo->sections[$sectionnumber] as $cmid) {
             $cm = $modinfo->cms[$cmid];
-            if (!$viewhiddenactivities && !$cm->visible) {
+            if (!$cm->uservisible) {
                 continue;
             }
             if ($cm->icon) {
@@ -1443,6 +1461,36 @@ class global_navigation extends navigation_node {
         }
 
         return $activities;
+    }
+    /**
+     * Loads a stealth module from unavailable section
+     * @param navigation_node $coursenode
+     * @param stdClass $modinfo
+     * @return navigation_node or null if not accessible
+     */
+    protected function load_stealth_activity(navigation_node $coursenode, $modinfo) {
+        if (empty($modinfo->cms[$this->page->cm->id])) {
+            return null;
+        }
+        $cm = $modinfo->cms[$this->page->cm->id];
+        if (!$cm->uservisible) {
+            return null;
+        }
+        if ($cm->icon) {
+            $icon = new pix_icon($cm->icon, get_string('modulename', $cm->modname), $cm->iconcomponent);
+        } else {
+            $icon = new pix_icon('icon', get_string('modulename', $cm->modname), $cm->modname);
+        }
+        $url = new moodle_url('/mod/'.$cm->modname.'/view.php', array('id'=>$cm->id));
+        $activitynode = $coursenode->add(format_string($cm->name), $url, navigation_node::TYPE_ACTIVITY, null, $cm->id, $icon);
+        $activitynode->title(get_string('modulename', $cm->modname));
+        $activitynode->hidden = (!$cm->visible);
+        if ($cm->modname == 'label') {
+            $activitynode->display = false;
+        } else if ($this->module_extends_navigation($cm->modname)) {
+            $activitynode->nodetype = navigation_node::NODETYPE_BRANCH;
+        }
+        return $activitynode;
     }
     /**
      * Loads the navigation structure for the given activity into the activities node.
@@ -1568,16 +1616,10 @@ class global_navigation extends navigation_node {
         }
 
         // Add nodes for forum posts and discussions if the user can view either or both
-        $canviewposts = has_capability('moodle/user:readuserposts', $usercontext);
-        $canviewdiscussions = has_capability('mod/forum:viewdiscussion', $coursecontext);
-        if ($canviewposts || $canviewdiscussions) {
+        if ($iscurrentuser || has_capability('moodle/user:readuserposts', $usercontext)) {
             $forumtab = $usernode->add(get_string('forumposts', 'forum'));
-            if ($canviewposts) {
-                $forumtab->add(get_string('posts', 'forum'), new moodle_url('/mod/forum/user.php', $baseargs));
-            }
-            if ($canviewdiscussions) {
-                $forumtab->add(get_string('discussions', 'forum'), new moodle_url('/mod/forum/user.php', array_merge($baseargs, array('mode'=>'discussions', 'course'=>$course->id))));
-            }
+            $forumtab->add(get_string('posts', 'forum'), new moodle_url('/mod/forum/user.php', $baseargs));
+            $forumtab->add(get_string('discussions', 'forum'), new moodle_url('/mod/forum/user.php', array_merge($baseargs, array('mode'=>'discussions'))));
         }
 
         // Add blog nodes
@@ -2924,7 +2966,7 @@ class settings_navigation extends navigation_node {
             $availableroles = get_switchable_roles($coursecontext);
             if (is_array($availableroles)) {
                 foreach ($availableroles as $key=>$role) {
-                    if ($key == $CFG->guestroleid || $assumedrole===(int)$key) {
+                    if ($assumedrole===(int)$key) {
                         continue;
                     }
                     $roles[$key] = $role;

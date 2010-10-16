@@ -38,8 +38,8 @@ table.message .searchresults td {padding:5px;}
 .message .messagearea .messagehistory .message_user_pictures .useractionlinks {font-size:0.9em;}
 
 .message .messagearea .messagehistory .heading {width:100%;clear:both;}
-.message .messagearea .messagehistory .left {padding-bottom:10px;width:50%;float:left;clear:both;padding-left:10%;}
-.message .messagearea .messagehistory .right {padding-bottom:10px;width:40%;float:right;clear:both;}
+.message .messagearea .messagehistory .left {padding-bottom:10px;width:50%;float:left;clear:both;}
+.message .messagearea .messagehistory .right {padding-bottom:10px;width:50%;float:right;clear:both;}
 .message .messagearea .messagesend {padding-top:20px;float:center;clear:both;}
 .message .messagearea .messagesend .messagesendbox {width:100%}
 .message .messagearea .messagesend fieldset {padding:0px;margin:0;} /** bring the message send button closer to the message box */
@@ -52,4 +52,5 @@ table.message .searchresults td {padding:5px;}
 .messagesearchresults td span {white-space:nowrap;}
 
 #newmessageoverlay {background-color:LightGrey;padding:20px;position:fixed;bottom:0;right:0;}
+#newmessageoverlay #usermessage {padding:10px;font-weight:bold;}
 .ie6 #newmessageoverlay {position:static;}

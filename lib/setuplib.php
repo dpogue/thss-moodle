@@ -146,7 +146,14 @@ class webservice_parameter_exception extends moodle_exception {
 class required_capability_exception extends moodle_exception {
     function __construct($context, $capability, $errormessage, $stringfile) {
         $capabilityname = get_capability_string($capability);
-        parent::__construct($errormessage, $stringfile, get_context_url($context), $capabilityname);
+        if ($context->contextlevel == CONTEXT_MODULE and preg_match('/:view$/', $capability)) {
+            // we can not go to mod/xx/view.php because we most probably do not have cap to view it, let's go to course instead
+            $paranetcontext = get_context_instance_by_id(get_parent_contextid($context));
+            $link = get_context_url($paranetcontext);
+        } else {
+            $link = get_context_url($context);
+        }
+        parent::__construct($errormessage, $stringfile, $link, $capabilityname);
     }
 }
 
@@ -590,7 +597,7 @@ function initialise_fullme() {
         if ($wwwroot['scheme'] !== 'https') {
             throw new coding_exception('Must use https address in wwwroot when ssl proxy enabled!');
         }
-        $rurl['scheme'] === 'https'; // make moodle believe it runs on https, squid or something else it doing it
+        $rurl['scheme'] = 'https'; // make moodle believe it runs on https, squid or something else it doing it
     }
 
     // $CFG->reverseproxy specifies if reverse proxy server used.

@@ -1173,7 +1173,7 @@ class core_renderer extends renderer_base {
         $output .= html_writer::select($select->options, $select->name, $select->selected, $select->nothing, $select->attributes);
 
         $go = html_writer::empty_tag('input', array('type'=>'submit', 'value'=>get_string('go')));
-        $output .= html_writer::tag('noscript', $go, array('style'=>'inline'));
+        $output .= html_writer::tag('noscript', html_writer::tag('div', $go), array('style'=>'inline'));
 
         $nothing = empty($select->nothing) ? false : key($select->nothing);
         $this->page->requires->js_init_call('M.util.init_select_autosubmit', array($select->formid, $select->attributes['id'], $nothing));
@@ -1289,7 +1289,7 @@ class core_renderer extends renderer_base {
         $output .= html_writer::select($urls, 'jump', $selected, $select->nothing, $select->attributes);
 
         $go = html_writer::empty_tag('input', array('type'=>'submit', 'value'=>get_string('go')));
-        $output .= html_writer::tag('noscript', $go, array('style'=>'inline'));
+        $output .= html_writer::tag('noscript', html_writer::tag('div', $go), array('style'=>'inline'));
 
         $nothing = empty($select->nothing) ? false : key($select->nothing);
         $output .= $this->page->requires->js_init_call('M.util.init_url_select', array($select->formid, $select->attributes['id'], $nothing));
@@ -1431,7 +1431,7 @@ class core_renderer extends renderer_base {
                     $aggregatestr .= round($rating->aggregate,1);
                 }
             } else {
-                $aggregatestr = ' - ';
+                $aggregatestr = '';
             }
 
             $countstr = html_writer::start_tag('span', array('id'=>"ratingcount{$rating->itemid}"));
@@ -1704,7 +1704,9 @@ class core_renderer extends renderer_base {
 
         $icon = $this->pix_icon('help', get_string('scales'), 'moodle', array('class'=>'iconhelp'));
 
-        $link = new moodle_url('/course/scales.php', array('id' => $courseid, 'list' => true, 'scaleid' => $scale->id));
+        $scaleid = abs($scale->id);
+
+        $link = new moodle_url('/course/scales.php', array('id' => $courseid, 'list' => true, 'scaleid' => $scaleid));
         $action = new popup_action('click', $link, 'ratingscale');
 
         return html_writer::tag('span', $this->action_link($link, $icon, $action), array('class' => 'helplink'));
@@ -1823,7 +1825,7 @@ class core_renderer extends renderer_base {
             $src = $this->pix_url('u/' . $file);
         }
 
-        $attributes = array('src'=>$src, 'alt'=>$alt, 'class'=>$class, 'width'=>$size, 'height'=>$size);
+        $attributes = array('src'=>$src, 'alt'=>$alt, 'title'=>$alt, 'class'=>$class, 'width'=>$size, 'height'=>$size);
 
         // get the image html output fisrt
         $output = html_writer::empty_tag('img', $attributes);;
