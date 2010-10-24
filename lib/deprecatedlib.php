@@ -535,6 +535,26 @@ function convert_urls_into_links($text) {
 }
 
 /**
+ * Used to be called from help.php to inject a list of smilies into the
+ * emoticons help file.
+ *
+ * @return string HTML
+ */
+function get_emoticons_list_for_help_file() {
+    debugging('get_emoticons_list_for_help_file() has been deprecated, see the new emoticon_manager API');
+    return '';
+}
+
+/**
+ * Was used to replace all known smileys in the text with image equivalents
+ *
+ * This core function has been replaced with filter_emoticon since Moodle 2.0
+ */
+function replace_smilies(&$text) {
+    debugging('replace_smilies() has been deprecated and replaced with the new filter_emoticon');
+}
+
+/**
  * deprecated - use clean_param($string, PARAM_FILE); instead
  * Check for bad characters ?
  *

@@ -27,6 +27,16 @@
 function cron_run() {
     global $DB, $CFG, $OUTPUT;
 
+    if (CLI_MAINTENANCE) {
+        echo "CLI maintenance mode active, cron execution suspended.\n";
+        exit(1);
+    }
+
+    if (moodle_needs_upgrading()) {
+        echo "Moodle upgrade pending, cron execution suspended.\n";
+        exit(1);
+    }
+
     require_once($CFG->libdir.'/adminlib.php');
     require_once($CFG->libdir.'/gradelib.php');
 
@@ -41,8 +51,8 @@ function cron_run() {
     set_time_limit(0);
     $starttime = microtime();
 
-/// increase memory limit (PHP 5.2 does different calculation, we need more memory now)
-    @raise_memory_limit('128M');
+/// increase memory limit
+    raise_memory_limit(MEMORY_EXTRA);
 
 /// emulate normal session
     cron_setup_user();
@@ -323,13 +333,7 @@ function cron_run() {
         //Execute backup's cron
         //Perhaps a long time and memory could help in large sites
         @set_time_limit(0);
-        @raise_memory_limit("192M");
-        if (function_exists('apache_child_terminate')) {
-            // if we are running from Apache, give httpd a hint that
-            // it can recycle the process after it's done. Apache's
-            // memory management is truly awful but we can help it.
-            @apache_child_terminate();
-        }
+        raise_memory_limit(MEMORY_EXTRA);
         if (file_exists("$CFG->dirroot/backup/backup_scheduled.php") and
             file_exists("$CFG->dirroot/backup/backuplib.php") and
             file_exists("$CFG->dirroot/backup/lib.php") and

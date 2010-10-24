@@ -1409,7 +1409,8 @@ class global_navigation extends navigation_node {
                 } else {
                     $sectionname = get_string('section').' '.$section->section;
                 }
-                $url = new moodle_url('/course/view.php', array('id'=>$course->id, $activeparam=>$section->section));
+                //$url = new moodle_url('/course/view.php', array('id'=>$course->id));
+                $url = null;
                 $sectionnode = $coursenode->add($sectionname, $url, navigation_node::TYPE_SECTION, null, $section->id);
                 $sectionnode->nodetype = navigation_node::NODETYPE_BRANCH;
                 $sectionnode->hidden = (!$section->visible);
@@ -1616,11 +1617,11 @@ class global_navigation extends navigation_node {
         }
 
         // Add nodes for forum posts and discussions if the user can view either or both
-        if ($iscurrentuser || has_capability('moodle/user:readuserposts', $usercontext)) {
-            $forumtab = $usernode->add(get_string('forumposts', 'forum'));
-            $forumtab->add(get_string('posts', 'forum'), new moodle_url('/mod/forum/user.php', $baseargs));
-            $forumtab->add(get_string('discussions', 'forum'), new moodle_url('/mod/forum/user.php', array_merge($baseargs, array('mode'=>'discussions'))));
-        }
+        // There are no capability checks here as the content of the page is based
+        // purely on the forums the current user has access too.
+        $forumtab = $usernode->add(get_string('forumposts', 'forum'));
+        $forumtab->add(get_string('posts', 'forum'), new moodle_url('/mod/forum/user.php', $baseargs));
+        $forumtab->add(get_string('discussions', 'forum'), new moodle_url('/mod/forum/user.php', array_merge($baseargs, array('mode'=>'discussions'))));
 
         // Add blog nodes
         if (!empty($CFG->bloglevel)) {

@@ -188,7 +188,6 @@ $string['configdoctonewwindow'] = 'If you enable this, then links to Moodle Docs
 $string['configeditordictionary'] = 'This value will be used if aspell doesn\'t have dictionary for users own language.';
 $string['configeditorfontlist'] = 'Select the fonts that should appear in the editor\'s drop-down list.';
 $string['configemailchangeconfirmation'] = 'Require an email confirmation step when users change their email address in their profile.';
-$string['configemoticons'] = 'Change the code on the left that relates to the name of the emoticon on the right.  To add new emoticons, add a code and a name, then add an image as name.gif in /pix/s.';
 $string['configenableajax'] = 'This setting allows you to control the use of AJAX (advanced client/server interfaces using Javascript) across the whole site.  With this setting enabled users can still make a choice in their profile, otherwise AJAX is disabled for everybody.';
 $string['configenablecalendarexport'] = 'Enable exporting or subscribing to calendars.';
 $string['configenablecomments'] = 'Enable comments';
@@ -234,6 +233,11 @@ $string['configintroadmin'] = 'On this page you should configure your main admin
 $string['configintrosite'] = 'This page allows you to configure the front page and name of this new site.  You can come back here later to change these settings any time using the Administration menus.';
 $string['configintrotimezones'] = 'This page will search for new information about world timezones (including daylight savings time rules) and update your local database with this information.  These locations will be checked, in order: {$a} This procedure is generally very safe and can not break normal installations.  Do you wish to update your timezones now?';
 $string['configiplookup'] = 'When you click on an IP address (such as 34.12.222.93), such as in the logs, you are shown a map with a best guess of where that IP is located.  There are different plugins for this that you can choose from, each has benefits and disadvantages.';
+$string['configjabberhost'] = 'The server to connect to to send jabber message notifications';
+$string['configjabberserver'] = 'XMPP host ID (can be left empty if the same as Jabber host)';
+$string['configjabberusername'] = 'The user name to use when connecting to the Jabber server';
+$string['configjabberpassword'] = 'The password to use when connecting to the Jabber server';
+$string['configjabberport'] = 'The port to use when connecting to the Jabber server';
 $string['configkeeptagnamecase'] = 'Check this if you want tag names to keep the original casing as entered by users who created them';
 $string['configlang'] = 'Choose a default language for the whole site. Users can override this setting using the language menu or the setting in their personal profile.';
 $string['configlangcache'] = 'Cache the language menu. Saves a lot of memory and processing power. If you enable this, the menu takes a few minutes to update after you have added or removed languages.';
@@ -458,7 +462,18 @@ $string['editorspelling'] = 'Editor spelling';
 $string['editorspellinghelp'] = 'Enable or disable spell-checking. When enabled, <strong>aspell</strong> must be installed on the server.';
 $string['editstrings'] = 'Edit words or phrases';
 $string['emailchangeconfirmation'] = 'Email change confirmation';
+$string['emoticontext'] = 'Text';
+$string['emoticonimagename'] = 'Image name';
+$string['emoticonalt'] = 'Alternative text';
+$string['emoticoncomponent'] = 'Image component';
 $string['emoticons'] = 'Emoticons';
+$string['emoticons_desc'] = 'This form defines the emoticons (or smileys) used at your site. To remove a row from the table, save the form with an empty value in any of the required fields. To register a new emoticon, fill the fields in the last blank row. To reset all the fields into default values, follow the link above.
+
+* Text (required) - This text will be replaced with the emoticon image. It must be at least two characters long.
+* Image name (required) - The emoticon image file name without the extension, relative to the component pix folder.
+* Image component (required) - The component providing the icon.
+* Alternative text (optional) - String identifier and component of the alternative text of the emoticon.';
+$string['emoticonsreset'] = 'Reset emoticons setting to default values';
 $string['emptysettingvalue'] = 'Empty';
 $string['enableajax'] = 'Enable AJAX';
 $string['enablecalendarexport'] = 'Enable calendar export';
@@ -597,6 +612,12 @@ It is recommended to install local copy of free GeoLite City database from MaxMi
 IP address location is displayed on simple map or using Google Maps. Please note that you need to have a Google account and apply for free Google Maps API key to enable interactive maps.';
 $string['iplookupmaxmindnote'] = 'This product includes GeoLite data created by MaxMind, available from <a href="http://www.maxmind.com/">http://www.maxmind.com/</a>.';
 $string['iplookupnetgeonote'] = 'The NetGeo server is currently being used to look up geographical information. For more accurate results we recommend installing a local copy of the MaxMind GeoLite database.';
+$string['jabber'] = 'Jabber';
+$string['jabberhost'] = 'Jabber host';
+$string['jabberserver'] = 'Jabber server';
+$string['jabberusername'] = 'Jabber user name';
+$string['jabberpassword'] = 'Jabber password';
+$string['jabberport'] = 'Jabber port';
 $string['keeptagnamecase'] = 'Keep tag name casing';
 $string['lang'] = 'Default language';
 $string['langcache'] = 'Cache language menu';

@@ -151,6 +151,30 @@ if (defined('WEB_CRON_EMULATED_CLI')) {
     }
 }
 
+// Detect CLI maintenance mode - this is useful when you need to mess with database, such as during upgrades
+if (file_exists("$CFG->dataroot/climaintenance.html")) {
+    if (!CLI_SCRIPT) {
+        @header('Content-type: text/html');
+        /// Headers to make it not cacheable and json
+        @header('Cache-Control: no-store, no-cache, must-revalidate');
+        @header('Cache-Control: post-check=0, pre-check=0', false);
+        @header('Pragma: no-cache');
+        @header('Expires: Mon, 20 Aug 1969 09:23:00 GMT');
+        @header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+        @header('Accept-Ranges: none');
+        readfile("$CFG->dataroot/climaintenance.html");
+        die;
+    } else {
+        if (!defined('CLI_MAINTENANCE')) {
+            define('CLI_MAINTENANCE', true);
+        }
+    }
+} else {
+    if (!defined('CLI_MAINTENANCE')) {
+        define('CLI_MAINTENANCE', false);
+    }
+}
+
 // Detect ajax scripts - they are similar to CLI because we can not redirect, output html, etc.
 if (!defined('AJAX_SCRIPT')) {
     define('AJAX_SCRIPT', false);
@@ -313,6 +337,9 @@ $CFG->httpswwwroot = $CFG->wwwroot;
 
 require_once($CFG->libdir .'/setuplib.php');        // Functions that MUST be loaded first
 
+// Increase memory limits if possible
+raise_memory_limit(MEMORY_STANDARD);
+
 // Time to start counting
 init_performance_info();
 
@@ -379,9 +406,6 @@ require_once($CFG->libdir .'/messagelib.php');      // Messagelib functions
 // make sure PHP is not severly misconfigured
 setup_validate_php_configuration();
 
-// Increase memory limits if possible
-raise_memory_limit('96M');    // We should never NEED this much but just in case...
-
 // Connect to the database
 setup_DB();
 
@@ -424,7 +448,7 @@ if (function_exists('gc_enable')) {
     gc_enable();
 }
 
-// For now, only needed under apache (and probably unstable in other contexts)
+// Register default shutdown tasks - such as Apache memory release helper, perf logging, etc.
 if (function_exists('register_shutdown_function')) {
     register_shutdown_function('moodle_request_shutdown');
 }

@@ -885,15 +885,34 @@ function get_file_argument() {
 
     $relativepath = optional_param('file', FALSE, PARAM_PATH);
 
-    // then try extract file from PATH_INFO (slasharguments method)
-    if ($relativepath === false and isset($_SERVER['PATH_INFO']) and $_SERVER['PATH_INFO'] !== '') {
-        // check that PATH_INFO works == must not contain the script name
-        if (strpos($_SERVER['PATH_INFO'], $SCRIPT) === false) {
-            $relativepath = clean_param(urldecode($_SERVER['PATH_INFO']), PARAM_PATH);
+    if ($relativepath !== false and $relativepath !== '') {
+        return $relativepath;
+    }
+    $relativepath = false;
+
+    // then try extract file from the slasharguments
+    if (stripos($_SERVER['SERVER_SOFTWARE'], 'iis') !== false) {
+        // NOTE: ISS tends to convert all file paths to single byte DOS encoding,
+        //       we can not use other methods because they break unicode chars,
+        //       the only way is to use URL rewriting
+        if (isset($_SERVER['PATH_INFO']) and $_SERVER['PATH_INFO'] !== '') {
+            // check that PATH_INFO works == must not contain the script name
+            if (strpos($_SERVER['PATH_INFO'], $SCRIPT) === false) {
+                $relativepath = clean_param(urldecode($_SERVER['PATH_INFO']), PARAM_PATH);
+            }
+        }
+    } else {
+        // all other apache-like servers depend on PATH_INFO
+        if (isset($_SERVER['PATH_INFO'])) {
+            if (isset($_SERVER['SCRIPT_NAME']) and strpos($_SERVER['PATH_INFO'], $_SERVER['SCRIPT_NAME']) === 0) {
+                $relativepath = substr($_SERVER['PATH_INFO'], strlen($_SERVER['SCRIPT_NAME']));
+            } else {
+                $relativepath = $_SERVER['PATH_INFO'];
+            }
+            $relativepath = clean_param($relativepath, PARAM_PATH);
         }
     }
 
-    // note: we are not using any other way because they are not compatible with unicode file names ;-)
 
     return $relativepath;
 }
@@ -933,7 +952,6 @@ function format_text_menu() {
  */
 function format_text($text, $format = FORMAT_MOODLE, $options = NULL, $courseid_do_not_use = NULL) {
     global $CFG, $COURSE, $DB, $PAGE;
-
     static $croncache = array();
 
     if ($text === '') {
@@ -941,7 +959,6 @@ function format_text($text, $format = FORMAT_MOODLE, $options = NULL, $courseid_
     }
 
     $options = (array)$options; // detach object, we can not modify it
-
 
     if (!isset($options['trusted'])) {
         $options['trusted'] = false;
@@ -956,9 +973,6 @@ function format_text($text, $format = FORMAT_MOODLE, $options = NULL, $courseid_
     }
     if (!isset($options['nocache'])) {
         $options['nocache'] = false;
-    }
-    if (!isset($options['smiley'])) {
-        $options['smiley'] = true;
     }
     if (!isset($options['filter'])) {
         $options['filter'] = true;
@@ -1003,7 +1017,7 @@ function format_text($text, $format = FORMAT_MOODLE, $options = NULL, $courseid_
 
     if (!empty($CFG->cachetext) and empty($options['nocache'])) {
         $hashstr = $text.'-'.$filtermanager->text_filtering_hash($context).'-'.$context->id.'-'.current_language().'-'.
-                (int)$format.(int)$options['trusted'].(int)$options['noclean'].(int)$options['smiley'].
+                (int)$format.(int)$options['trusted'].(int)$options['noclean'].
                 (int)$options['para'].(int)$options['newlines'];
 
         $time = time() - $CFG->cachetext;
@@ -1031,9 +1045,6 @@ function format_text($text, $format = FORMAT_MOODLE, $options = NULL, $courseid_
 
     switch ($format) {
         case FORMAT_HTML:
-            if ($options['smiley']) {
-                replace_smilies($text);
-            }
             if (!$options['noclean']) {
                 $text = clean_text($text, FORMAT_HTML);
             }
@@ -1057,9 +1068,6 @@ function format_text($text, $format = FORMAT_MOODLE, $options = NULL, $courseid_
 
         case FORMAT_MARKDOWN:
             $text = markdown_to_html($text);
-            if ($options['smiley']) {
-                replace_smilies($text);
-            }
             if (!$options['noclean']) {
                 $text = clean_text($text, FORMAT_HTML);
             }
@@ -1067,7 +1075,7 @@ function format_text($text, $format = FORMAT_MOODLE, $options = NULL, $courseid_
             break;
 
         default:  // FORMAT_MOODLE or anything else
-            $text = text_to_html($text, $options['smiley'], $options['para'], $options['newlines']);
+            $text = text_to_html($text, null, $options['para'], $options['newlines']);
             if (!$options['noclean']) {
                 $text = clean_text($text, FORMAT_HTML);
             }
@@ -1431,49 +1439,50 @@ function trusttext_active() {
  * Given raw text (eg typed in by a user), this function cleans it up
  * and removes any nasty tags that could mess up Moodle pages.
  *
- * @global string
- * @global object
+ * NOTE: the format parameter was deprecated because we can safely clean only HTML.
+ *
  * @param string $text The text to be cleaned
- * @param int $format Identifier of the text format to be used
- *            [FORMAT_MOODLE, FORMAT_HTML, FORMAT_PLAIN, FORMAT_WIKI, FORMAT_MARKDOWN]
+ * @param int $format deprecated parameter, should always contain FORMAT_HTML or FORMAT_MOODLE
  * @return string The cleaned up text
  */
-function clean_text($text, $format = FORMAT_MOODLE) {
+function clean_text($text, $format = FORMAT_HTML) {
     global $ALLOWED_TAGS, $CFG;
 
     if (empty($text) or is_numeric($text)) {
        return (string)$text;
     }
 
-    switch ($format) {
-        case FORMAT_PLAIN:
-            return $text;
-
-        default:
-
-            if (!empty($CFG->enablehtmlpurifier)) {
-                $text = purify_html($text);
-            } else {
-            /// Fix non standard entity notations
-                $text = fix_non_standard_entities($text);
-
-            /// Remove tags that are not allowed
-                $text = strip_tags($text, $ALLOWED_TAGS);
-
-            /// Clean up embedded scripts and , using kses
-                $text = cleanAttributes($text);
-
-            /// Again remove tags that are not allowed
-                $text = strip_tags($text, $ALLOWED_TAGS);
-
-            }
-
-        /// Remove potential script events - some extra protection for undiscovered bugs in our code
-            $text = preg_replace("~([^a-z])language([[:space:]]*)=~i", "$1Xlanguage=", $text);
-            $text = preg_replace("~([^a-z])on([a-z]+)([[:space:]]*)=~i", "$1Xon$2=", $text);
-
-            return $text;
+    if ($format != FORMAT_HTML and $format != FORMAT_HTML) {
+        // TODO: we need to standardise cleanup of text when loading it into editor first
+        //debugging('clean_text() is designed to work only with html');
     }
+
+    if ($format == FORMAT_PLAIN) {
+        return $text;
+    }
+
+    if (!empty($CFG->enablehtmlpurifier)) {
+        $text = purify_html($text);
+    } else {
+    /// Fix non standard entity notations
+        $text = fix_non_standard_entities($text);
+
+    /// Remove tags that are not allowed
+        $text = strip_tags($text, $ALLOWED_TAGS);
+
+    /// Clean up embedded scripts and , using kses
+        $text = cleanAttributes($text);
+
+    /// Again remove tags that are not allowed
+        $text = strip_tags($text, $ALLOWED_TAGS);
+
+    }
+
+    // Remove potential script events - some extra protection for undiscovered bugs in our code
+    $text = preg_replace("~([^a-z])language([[:space:]]*)=~i", "$1Xlanguage=", $text);
+    $text = preg_replace("~([^a-z])on([a-z]+)([[:space:]]*)=~i", "$1Xon$2=", $text);
+
+    return $text;
 }
 
 /**
@@ -1618,129 +1627,22 @@ function cleanAttributes2($htmlArray){
 }
 
 /**
- * Replaces all known smileys in the text with image equivalents
- *
- * @global object
- * @staticvar array $e
- * @staticvar array $img
- * @staticvar array $emoticons
- * @param string $text Passed by reference. The string to search for smiley strings.
- * @return string
- */
-function replace_smilies(&$text) {
-    global $CFG, $OUTPUT;
-
-    if (empty($CFG->emoticons)) { /// No emoticons defined, nothing to process here
-        return;
-    }
-
-    $lang = current_language();
-    $emoticonstring = $CFG->emoticons;
-    static $e = array();
-    static $img = array();
-    static $emoticons = null;
-
-    if (is_null($emoticons)) {
-        $emoticons = array();
-        if ($emoticonstring) {
-            $items = explode('{;}', $CFG->emoticons);
-            foreach ($items as $item) {
-               $item = explode('{:}', $item);
-              $emoticons[$item[0]] = $item[1];
-            }
-        }
-    }
-
-    if (empty($img[$lang])) {  /// After the first time this is not run again
-        $e[$lang] = array();
-        $img[$lang] = array();
-        foreach ($emoticons as $emoticon => $image){
-            $alttext = get_string($image, 'pix');
-            if ($alttext === '') {
-                $alttext = $image;
-            }
-            $e[$lang][] = $emoticon;
-            $img[$lang][] = '<img alt="'. $alttext .'" width="15" height="15" src="'. $OUTPUT->pix_url('s/' . $image) . '" />';
-        }
-    }
-
-    // Exclude from transformations all the code inside <script> tags
-    // Needed to solve Bug 1185. Thanks to jouse 2001 detecting it. :-)
-    // Based on code from glossary filter by Williams Castillo.
-    //       - Eloy
-
-    // Detect all the <script> zones to take out
-    $excludes = array();
-    preg_match_all('/<script language(.+?)<\/script>/is',$text,$list_of_excludes);
-
-    // Take out all the <script> zones from text
-    foreach (array_unique($list_of_excludes[0]) as $key=>$value) {
-        $excludes['<+'.$key.'+>'] = $value;
-    }
-    if ($excludes) {
-        $text = str_replace($excludes,array_keys($excludes),$text);
-    }
-
-/// this is the meat of the code - this is run every time
-    $text = str_replace($e[$lang], $img[$lang], $text);
-
-    // Recover all the <script> zones to text
-    if ($excludes) {
-        $text = str_replace(array_keys($excludes),$excludes,$text);
-    }
-}
-
-/**
- * This code is called from help.php to inject a list of smilies into the
- * emoticons help file.
- *
- * @global object
- * @global object
- * @return string HTML for a list of smilies.
- */
-function get_emoticons_list_for_help_file() {
-    global $CFG, $SESSION, $PAGE, $OUTPUT;
-    if (empty($CFG->emoticons)) {
-        return '';
-    }
-
-    $items = explode('{;}', $CFG->emoticons);
-    $output = '<ul id="emoticonlist">';
-    foreach ($items as $item) {
-        $item = explode('{:}', $item);
-        $output .= '<li><img src="' . $OUTPUT->pix_url('s/' . $item[1]) . '" alt="' .
-                $item[0] . '" /><code>' . $item[0] . '</code></li>';
-    }
-    $output .= '</ul>';
-    if (!empty($SESSION->inserttextform)) {
-        $formname = $SESSION->inserttextform;
-        $fieldname = $SESSION->inserttextfield;
-    } else {
-        $formname = 'theform';
-        $fieldname = 'message';
-    }
-
-    $PAGE->requires->yui2_lib('event');
-    $PAGE->requires->js_function_call('emoticons_help.init', array($formname, $fieldname, 'emoticonlist'));
-    return $output;
-
-}
-
-/**
  * Given plain text, makes it into HTML as nicely as possible.
  * May contain HTML tags already
  *
+ * Do not abuse this function. It is intended as lower level formatting feature used
+ * by {@see format_text()} to convert FORMAT_MOODLE to HTML. You are supposed
+ * to call format_text() in most of cases.
+ *
  * @global object
  * @param string $text The string to convert.
- * @param boolean $smiley Convert any smiley characters to smiley images?
+ * @param boolean $smiley_ignored Was used to determine if smiley characters should convert to smiley images, ignored now
  * @param boolean $para If true then the returned string will be wrapped in div tags
  * @param boolean $newlines If true then lines newline breaks will be converted to HTML newline breaks.
  * @return string
  */
 
-function text_to_html($text, $smiley=true, $para=true, $newlines=true) {
-///
-
+function text_to_html($text, $smiley_ignored=null, $para=true, $newlines=true) {
     global $CFG;
 
 /// Remove any whitespace that may be between HTML tags
@@ -1753,11 +1655,6 @@ function text_to_html($text, $smiley=true, $para=true, $newlines=true) {
 /// Make returns into HTML newlines.
     if ($newlines) {
         $text = nl2br($text);
-    }
-
-/// Turn smileys into images.
-    if ($smiley) {
-        replace_smilies($text);
     }
 
 /// Wrap the whole thing in a div if required

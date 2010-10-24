@@ -806,13 +806,18 @@ class quiz_attempt extends quiz {
      * @param string $thispageurl the URL of the page this question is being printed on.
      */
     public function print_question($id, $reviewing, $thispageurl = '') {
+        global $CFG;
+
         if ($reviewing) {
             $options = $this->get_review_options();
         } else {
             $options = $this->get_render_options($id);
         }
+        if ($thispageurl instanceof moodle_url) {
+            $thispageurl = $thispageurl->out(false);
+        }
         if ($thispageurl) {
-            $this->quiz->thispageurl = $thispageurl;
+            $this->quiz->thispageurl = str_replace($CFG->wwwroot, '', $thispageurl);
         } else {
             unset($thispageurl);
         }
@@ -992,7 +997,7 @@ class quiz_attempt extends quiz {
             }
         }
 
-        // Add a fragment to scroll down ot the question.
+        // Add a fragment to scroll down to the question.
         if ($questionid) {
             if ($questionid == reset($this->pagequestionids[$page])) {
                 // First question on page, go to top.

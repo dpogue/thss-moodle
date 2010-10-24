@@ -1729,6 +1729,7 @@ class assignment_base {
                 $info->username = fullname($user, true);
                 $info->assignment = format_string($this->assignment->name,true);
                 $info->url = $CFG->wwwroot.'/mod/assignment/submissions.php?id='.$this->cm->id;
+                $info->timeupdated = strftime('%c',$submission->timemodified);
 
                 $postsubject = $strsubmitted.': '.$info->username.' -> '.$this->assignment->name;
                 $posttext = $this->email_teachers_text($info);
@@ -1743,6 +1744,10 @@ class assignment_base {
                 $eventdata->fullmessageformat = FORMAT_PLAIN;
                 $eventdata->fullmessagehtml  = $posthtml;
                 $eventdata->smallmessage     = '';
+
+                $eventdata->name       = 'assignment_submitted';
+                $eventdata->component       = 'mod_assignment';
+                
                 message_send($eventdata);
             }
         }
