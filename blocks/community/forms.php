@@ -66,7 +66,7 @@ class community_hub_search_form extends moodleform {
         if (isset($this->_customdata['language'])) {
             $language = $this->_customdata['language'];
         } else {
-            $language = 'all';
+            $language = current_language();
         }
         if (isset($this->_customdata['educationallevel'])) {
             $educationallevel = $this->_customdata['educationallevel'];
@@ -170,6 +170,7 @@ class community_hub_search_form extends moodleform {
                     $hubdescription = html_writer::tag('span',
                                     $hubdescription,
                                     array('class' => $hub['trusted'] ? 'hubtrusted' : 'hubnottrusted'));
+                     $hubdescription .= ' ' . $OUTPUT->doc_link('trusted_hubs');
                 } else {
                     $hubdescription = '&nbsp;&nbsp;';
                     $hubdescription .= html_writer::tag('a', $hub['name'],

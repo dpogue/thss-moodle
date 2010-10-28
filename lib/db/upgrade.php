@@ -5301,7 +5301,7 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
     //install.xml so there are 2.0 sites that are missing it.
     if ($oldversion < 2010101900) {
         $table = new xmldb_table('grade_categories');
-        $field = new xmldb_field('hidden', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, 0);
+        $field = new xmldb_field('hidden', XMLDB_TYPE_INTEGER, '1', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, 0);
 
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
@@ -5315,6 +5315,67 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         $DB->delete_records('config', array('name' => 'emoticons'));
         $DB->delete_records('cache_text'); // changed md5 hash calculation
         upgrade_main_savepoint(true, 2010102300);
+    }
+
+    //MDL-24771
+    if ($oldversion < 2010102601) {
+
+        $fieldnotification = new xmldb_field('notification', XMLDB_TYPE_INTEGER, '1', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, 0, 'smallmessage');
+        $fieldcontexturl = new xmldb_field('contexturl', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'notification');
+        $fieldcontexturlname = new xmldb_field('contexturlname', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'contexturl');
+        $fieldstoadd = array($fieldnotification, $fieldcontexturl, $fieldcontexturlname);
+
+        $tablestomodify = array(new xmldb_table('message'), new xmldb_table('message_read'));
+
+        foreach($tablestomodify as $table) {
+            foreach($fieldstoadd as $field) {
+                if (!$dbman->field_exists($table, $field)) {
+                    $dbman->add_field($table, $field);
+                }
+            }
+        }
+
+        upgrade_main_savepoint(true, 2010102601);
+    }
+
+    // MDL-24694 needs increasing size of user_preferences.name(varchar[50]) field due to
+    // long preferences names for messaging which need components parts within the name
+    // eg: 'message_provider_mod_assignment_assignments_loggedin'
+    if ($oldversion < 2010102602) {
+
+        // Define index userid-name (unique) to be dropped form user_preferences
+        $table = new xmldb_table('user_preferences');
+        $index = new xmldb_index('userid-name', XMLDB_INDEX_UNIQUE, array('userid', 'name'));
+
+        // Conditionally launch drop index userid-name
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        // Changing precision of field name on table user_preferences to (255)
+        $field = new xmldb_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null, 'userid');
+
+        // Launch change of precision for field name
+        $dbman->change_field_precision($table, $field);
+
+        // Conditionally launch add index userid-name
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached
+        upgrade_main_savepoint(true, 2010102602);
+    }
+
+    if ($oldversion < 2010102700) {
+
+        $table = new xmldb_table('post');
+        $field = new xmldb_field('uniquehash', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null, 'content');
+        // Launch change of precision for field name
+        $dbman->change_field_precision($table, $field);
+
+        // Main savepoint reached
+        upgrade_main_savepoint(true, 2010102700);
     }
 
     return true;

@@ -887,7 +887,7 @@ class core_renderer extends renderer_base {
             $lis[] = $item;
             $row = 1 - $row; // Flip even/odd.
         }
-        return html_writer::tag('ul', implode("\n", $lis), array('class' => 'list'));
+        return html_writer::tag('ul', implode("\n", $lis), array('class' => 'unlist'));
     }
 
     /**
@@ -2558,30 +2558,6 @@ EOD;
         // Return the sub menu
         return $content;
     }
-
-    /**
-     * Renders the image_gallery component and initialises its JavaScript
-     *
-     * @param image_gallery $imagegallery
-     * @return string
-     */
-    protected function render_image_gallery(image_gallery $imagegallery) {
-        $this->page->requires->yui_module(array('gallery-lightbox','gallery-lightbox-skin'),
-                 'Y.Lightbox.init', null, '2010.04.08-12-35');
-        if (count($imagegallery->images) == 0) {
-            return '';
-        }
-        $classes = array('image_gallery');
-        if ($imagegallery->displayfirstimageonly) {
-            $classes[] = 'oneimageonly';
-        }
-        $content = html_writer::start_tag('div', array('class'=>join(' ', $classes)));
-        foreach ($imagegallery->images as $image) {
-            $content .= html_writer::tag('a', html_writer::empty_tag('img', $image->thumb), $image->link);
-        }
-        $content .= html_writer::end_tag('div');
-        return $content;
-    }
 }
 
 
@@ -2639,12 +2615,14 @@ class core_renderer_cli extends core_renderer {
 
         if (debugging('', DEBUG_DEVELOPER)) {
             if (!empty($debuginfo)) {
-                $this->notification($debuginfo, 'notifytiny');
+                $output .= $this->notification($debuginfo, 'notifytiny');
             }
             if (!empty($backtrace)) {
-                $this->notification('Stack trace: ' . format_backtrace($backtrace, true), 'notifytiny');
+                $output .= $this->notification('Stack trace: ' . format_backtrace($backtrace, true), 'notifytiny');
             }
         }
+
+        return $output;
     }
 
     /**

@@ -452,7 +452,7 @@ function forum_cron() {
                 if ($cm = get_coursemodule_from_instance('forum', $forumid, $courseid)) {
                     $coursemodules[$forumid] = $cm;
                 } else {
-                    mtrace('Could not course module for forum '.$forumid);
+                    mtrace('Could not find course module for forum '.$forumid);
                     unset($posts[$pid]);
                     continue;
                 }
@@ -635,13 +635,16 @@ function forum_cron() {
                 $eventdata->fullmessage      = $posttext;
                 $eventdata->fullmessageformat = FORMAT_PLAIN;
                 $eventdata->fullmessagehtml  = $posthtml;
+                $eventdata->notification = 1;
 
                 $smallmessagestrings = new stdClass();
                 $smallmessagestrings->user = fullname($userfrom);
-                $smallmessagestrings->forumname = "{$course->shortname}->".format_string($forum->name,true);
-                $smallmessagestrings->replylink = "$CFG->wwwroot/mod/forum/discuss.php?d=$discussion->id#p$post->id";
+                $smallmessagestrings->forumname = "{$course->shortname}: ".format_string($forum->name,true).": ".$discussion->name;
                 $smallmessagestrings->message = $post->message;
                 $eventdata->smallmessage = get_string('smallmessage', 'forum', $smallmessagestrings);
+
+                $eventdata->contexturl = "{$CFG->wwwroot}/mod/forum/discuss.php?d={$discussion->id}#p{$post->id}";
+                $eventdata->contexturlname = $discussion->name;
 
                 $mailresult = message_send($eventdata);
                 if (!$mailresult){
@@ -5954,7 +5957,7 @@ function forum_remove_user_tracking($userid, $context) {
             if (!is_enrolled($context, $userid)) {
                  if ($course = $DB->get_record('course', array('id' => $context->instanceid), 'id')) {
                     // find all forums in which this user has reading tracked
-                    if ($forums = $DB->get_records_sql("SELECT f.id, cm.id as coursemodule
+                    if ($forums = $DB->get_records_sql("SELECT DISTINCT f.id, cm.id as coursemodule
                                                      FROM {forum} f,
                                                           {modules} m,
                                                           {course_modules} cm,

@@ -24,7 +24,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['addedtoblock'] = 'Course added to block';
 $string['addscreenshots'] = 'Add screenshots';
 $string['advertise'] = 'Advertise this course for people to join';
 $string['advertised'] = 'Advertised';
@@ -184,9 +183,8 @@ $string['selecthub'] = 'Select hub';
 $string['selecthubinfo'] = 'A community hub is a server that lists courses. You can only publish your courses on hubs that this Moodle site is registered with.  If the hub you want is not listed below, please contact your site administrator.';
 $string['selecthubforadvertise'] = 'Select hub for advertising';
 $string['selecthubforsharing'] = 'Select hub for uploading';
-$string['sending'] = 'Do not refresh your browser ! The site is sending the course backup...';
 $string['sendingcourse'] = 'Sending course';
-$string['sendingsize'] = 'Sending the backup ({$a->total}Mb) should take approximately between {$a->dsl}s and {$a->modem}s, depending on the site/hub connection...';
+$string['sendingsize'] = 'Please wait the course file is uploading ({$a->total}Mb)...';
 $string['sendfollowinginfo'] = 'More information';
 $string['sendfollowinginfo_help'] = 'The following information will be sent to contribute to overall statistics only.  It will not be made public on any site listing.';
 $string['sent'] = '...finished';
