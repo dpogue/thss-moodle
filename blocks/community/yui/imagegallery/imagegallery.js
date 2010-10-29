@@ -15,8 +15,16 @@ YUI.add('moodle-block_community-imagegallery', function(Y) {
         overlay:null, //all the comment boxes
         imageidnumbers: [],
         imageloadingevent: null,
+        loadingimage: null,
 
         initializer : function(params) {
+
+            //create the loading image
+            var objBody = Y.one(document.body);
+            this.loadingimage = Y.Node.create('<div id="hubloadingimage" class="hiddenoverlay">'
+                +'<img src=\'' + M.cfg.wwwroot +'/pix/i/loading.gif\'>'
+                +'</div>');
+            objBody.append(this.loadingimage);
 
             /// create the div for overlay
             var objBody = Y.one(document.body);
@@ -65,6 +73,12 @@ YUI.add('moodle-block_community-imagegallery', function(Y) {
             objBody.prepend(mask);
             this.set('maskNode', Y.one('#ss-mask'));
 
+            //display loading image
+            Y.one('#hubloadingimage').setStyle('display', 'block');
+            Y.one('#hubloadingimage').setStyle("position", 'fixed');
+            Y.one('#hubloadingimage').setStyle("top", '50%');
+            Y.one('#hubloadingimage').setStyle("left", '50%');
+
             var windowheight = e.target.get('winHeight');
             var windowwidth = e.target.get('winWidth');
 
@@ -89,11 +103,10 @@ YUI.add('moodle-block_community-imagegallery', function(Y) {
                 bodyContent:Y.one('#imageoverlay').get('innerHTML'),
                 visible: false, //by default it is not displayed
                 lightbox : false,
-                zIndex:100,
-                width: windowwidth - 100
+                zIndex:100
             });
             this.overlay.render();
-            this.overlay.show(); //show the overlay
+            this.overlay.hide(); //show the overlay
             this.overlay.set("centered", true);
 
             e.halt(); // we are going to attach a new 'hide overlay' event to the body,
@@ -101,9 +114,25 @@ YUI.add('moodle-block_community-imagegallery', function(Y) {
             // we need to tell Yahoo to stop to call the event on parent tag
             // otherwise the hide event will be call right away.
 
-            this.imageloadingevent = Y.one('#imagetodisplay').on('load', function(e){
-                this.overlay.set("centered", true)
-            }, this);
+            //once the image is loaded, update display
+            this.imageloadingevent = Y.one('#imagetodisplay').on('load', function(e, url){
+                //hide the loading image
+                Y.one('#hubloadingimage').setStyle('display', 'none');
+
+                //display the screenshot
+                var screenshot = new Image();
+                screenshot.src = url;
+
+                var overlaywidth = windowwidth - 100;
+                if(overlaywidth > screenshot.width) {
+                    overlaywidth = screenshot.width;
+                }
+                
+                this.overlay.set('width', overlaywidth);
+                this.overlay.set("centered", true);
+                this.overlay.show();
+
+            }, this, url);
 
             var previousnumber = screennumber - 1;
             var nextnumber = screennumber + 1;
@@ -134,6 +163,9 @@ YUI.add('moodle-block_community-imagegallery', function(Y) {
 
             // remove the mask
             this.get('maskNode').remove();
+
+            //hide the loading image
+            Y.one('#hubloadingimage').setStyle('display', 'none');
 
             this.overlay.hide(); //hide the overlay
             if (this.event != null) {
