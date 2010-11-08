@@ -125,6 +125,12 @@ require_once($CFG->dirroot.'/search/lib.php');
 
     if ($searchables){
         foreach ($searchables as $mod) {
+
+            //mark last update times for mods to now.
+            $indexdatestring = 'search_indexer_update_date_'.$mod->name;
+            set_config($indexdatestring, time());
+            $indexdatestring = 'search_indexer_run_date_'.$mod->name;
+            set_config($indexdatestring, time());
         
             mtrace("starting indexing {$mod->name}\n");
         
@@ -210,7 +216,7 @@ require_once($CFG->dirroot.'/search/lib.php');
 /// mark the time we last updated
 
     set_config('search_indexer_run_date', time());
-    
+
 /// and the index size
 
     set_config('search_index_size', (int)$index->count());

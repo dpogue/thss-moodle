@@ -75,8 +75,8 @@ class restore_qtype_multichoice_plugin extends restore_qtype_plugin {
             $data->answers = implode(',', $answersarr);
             // Insert record
             $newitemid = $DB->insert_record('question_multichoice', $data);
-            // Create mapping (not needed, no files nor childs nor states here)
-            //$this->set_mapping('question_multichoice', $oldid, $newitemid);
+            // Create mapping (needed for decoding links)
+            $this->set_mapping('question_multichoice', $oldid, $newitemid);
         } else {
             // Nothing to remap if the question already existed
         }
@@ -102,13 +102,13 @@ class restore_qtype_multichoice_plugin extends restore_qtype_plugin {
         }
         // Map order
         foreach (explode(',', $lists[0]) as $id) {
-            if ($newid = $this->get_mappingid('question_answer', $id)) {
+            if (!empty($id) && $newid = $this->get_mappingid('question_answer', $id)) {
                 $orderarr[] = $newid;
             }
         }
         // Map responses
         foreach (explode(',', $lists[1]) as $id) {
-            if ($newid = $this->get_mappingid('question_answer', $id)) {
+            if (!empty($id) && $newid = $this->get_mappingid('question_answer', $id)) {
                 $responsesarr[] = $newid;
             }
         }
@@ -120,5 +120,18 @@ class restore_qtype_multichoice_plugin extends restore_qtype_plugin {
             $result = implode(',', $orderarr) . ':' . implode(',', $responsesarr);
         }
         return $result;
+    }
+
+    /**
+     * Return the contents of this qtype to be processed by the links decoder
+     */
+    static public function define_decode_contents() {
+
+        $contents = array();
+
+        $fields = array('correctfeedback', 'partiallycorrectfeedback', 'incorrectfeedback');
+        $contents[] = new restore_decode_content('question_multichoice', $fields, 'question_multichoice');
+
+        return $contents;
     }
 }

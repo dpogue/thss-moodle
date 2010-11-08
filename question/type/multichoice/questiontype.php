@@ -74,14 +74,27 @@ class question_multichoice_qtype extends default_questiontype {
                     $answer->feedback = file_save_draft_area_files($question->feedback[$key]['itemid'], $context->id, 'question', 'answerfeedback', $answer->id, self::$fileoptions, $question->feedback[$key]['text']);
                     $DB->update_record("question_answers", $answer);
                 } else {
+                    // import goes here too
                     unset($answer);
-                    $answer->answer   = $dataanswer;
+                    if (is_array($dataanswer)) {
+                        $answer->answer = $dataanswer['text'];
+                        $answer->answerformat = $dataanswer['format'];
+                    } else {
+                        $answer->answer = $dataanswer;
+                    }
                     $answer->question = $question->id;
                     $answer->fraction = $question->fraction[$key];
-                    $answer->feedback = '';
+                    $answer->feedback = $question->feedback[$key]['text'];
                     $answer->feedbackformat = $feedbackformat;
                     $answer->id = $DB->insert_record("question_answers", $answer);
-                    $answer->feedback = file_save_draft_area_files($question->feedback[$key]['itemid'], $context->id, 'question', 'answerfeedback', $answer->id, self::$fileoptions, $question->feedback[$key]['text']);
+                    if (isset($question->feedback[$key]['files'])) {
+                        foreach ($question->feedback[$key]['files'] as $file) {
+                            $this->import_file($context, 'question', 'answerfeedback', $answer->id, $file);
+                        }
+                    } else {
+                        $answer->feedback = file_save_draft_area_files($question->feedback[$key]['itemid'], $context->id, 'question', 'answerfeedback', $answer->id, self::$fileoptions, $question->feedback[$key]['text']);
+                    }
+
                     $DB->set_field('question_answers', 'feedback', $answer->feedback, array('id'=>$answer->id));
                 }
                 $answers[] = $answer->id;
@@ -114,9 +127,18 @@ class question_multichoice_qtype extends default_questiontype {
         foreach (array('correct', 'partiallycorrect', 'incorrect') as $feedbacktype) {
             $feedbackname = $feedbacktype . 'feedback';
             $feedbackformat = $feedbackname . 'format';
+            $feedbackfiles = $feedbackname . 'files';
             $feedback = $question->$feedbackname;
             $options->$feedbackformat = trim($feedback['format']);
-            $options->$feedbackname = file_save_draft_area_files($feedback['itemid'], $context->id, 'qtype_multichoice', $feedbackname, $question->id, self::$fileoptions, trim($feedback['text']));
+            $options->$feedbackname = trim($feedback['text']);
+            if (isset($feedback['files'])) {
+                // import
+                foreach ($feedback['files'] as $file) {
+                    $this->import_file($context, 'qtype_multichoice', $feedbackname, $question->id, $file);
+                }
+            } else {
+                $options->$feedbackname = file_save_draft_area_files($feedback['itemid'], $context->id, 'qtype_multichoice', $feedbackname, $question->id, self::$fileoptions, trim($feedback['text']));
+            }
         }
 
         if ($update) {
@@ -358,6 +380,23 @@ class question_multichoice_qtype extends default_questiontype {
         include("$CFG->dirroot/question/type/multichoice/display.html");
     }
 
+    function compare_responses($question, $state, $teststate) {
+        if ($question->options->single) {
+            if (!empty($state->responses[''])) {
+                return $state->responses[''] == $teststate->responses[''];
+            } else {
+                return empty($teststate->response['']);
+            }
+        } else {
+            foreach ($question->options->answers as $ansid => $notused) {
+                if (empty($state->responses[$ansid]) != empty($teststate->responses[$ansid])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
     function grade_responses(&$question, &$state, $cmoptions) {
         $state->raw_grade = 0;
         if($question->options->single) {
@@ -418,46 +457,6 @@ class question_multichoice_qtype extends default_questiontype {
             $totalfraction += $answer->fraction;
         }
         return $totalfraction / count($question->options->answers);
-    }
-
-    /**
-     * Decode links in question type specific tables.
-     * @return bool success or failure.
-     */
-    function decode_content_links_caller($questionids, $restore, &$i) {
-        global $DB;
-
-        $status = true;
-
-        // Decode links in the question_multichoice table.
-        if ($multichoices = $DB->get_records_list('question_multichoice', 'question',
-            $questionids, '', 'id, correctfeedback, partiallycorrectfeedback, incorrectfeedback')) {
-
-                foreach ($multichoices as $multichoice) {
-                    $correctfeedback = restore_decode_content_links_worker($multichoice->correctfeedback, $restore);
-                    $partiallycorrectfeedback = restore_decode_content_links_worker($multichoice->partiallycorrectfeedback, $restore);
-                    $incorrectfeedback = restore_decode_content_links_worker($multichoice->incorrectfeedback, $restore);
-                    if ($correctfeedback != $multichoice->correctfeedback ||
-                        $partiallycorrectfeedback != $multichoice->partiallycorrectfeedback ||
-                        $incorrectfeedback != $multichoice->incorrectfeedback) {
-                            $subquestion->correctfeedback = $correctfeedback;
-                            $subquestion->partiallycorrectfeedback = $partiallycorrectfeedback;
-                            $subquestion->incorrectfeedback = $incorrectfeedback;
-                            $DB->update_record('question_multichoice', $multichoice);
-                        }
-
-                    // Do some output.
-                    if (++$i % 5 == 0 && !defined('RESTORE_SILENTLY')) {
-                        echo ".";
-                        if ($i % 100 == 0) {
-                            echo "<br />";
-                        }
-                        backup_flush(300);
-                    }
-                }
-            }
-
-        return $status;
     }
 
     /**

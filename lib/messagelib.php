@@ -49,9 +49,6 @@ defined('MOODLE_INTERNAL') || die();
 function message_send($eventdata) {
     global $CFG, $DB;
 
-    //TODO: this function is very slow and inefficient, it would be a major bottleneck in cron processing, this has to be improved in 2.0
-    //      probably we could add two parameters with user messaging preferences and we could somehow preload/cache them in cron
-
     //TODO: we need to solve problems with database transactions here somehow, for now we just prevent transactions - sorry
     $DB->transactions_forbidden();
 
@@ -148,13 +145,19 @@ function message_send($eventdata) {
                         }
                     }
                 } else {
-                    debugging('Error calling message processor '.$procname);
+                    debugging('Error finding message processor '.$procname);
                     return false;
                 }
             }
-
-            //if there is no more processors that want to process this we can move message to message_read
-            if ( $DB->count_records('message_working', array('unreadmessageid' => $savemessage->id)) == 0){
+            
+            //if messaging is disabled and they previously had forum notifications handled by the popup processor
+            //or any processor that puts a row in message_working then the notification will remain forever
+            //unread. To prevent this mark the message read if messaging is disabled
+            if (empty($CFG->messaging)) {
+                require_once($CFG->dirroot.'/message/lib.php');
+                message_mark_message_read($savemessage, time());
+            } else if ( $DB->count_records('message_working', array('unreadmessageid' => $savemessage->id)) == 0){
+                //if there is no more processors that want to process this we can move message to message_read
                 require_once($CFG->dirroot.'/message/lib.php');
                 message_mark_message_read($savemessage, time(), true);
             }
@@ -293,25 +296,34 @@ function message_uninstall($component) {
 function message_set_default_message_preferences($user) {
     global $DB;
 
-    $defaultonlineprocessor = 'email';
-    $defaultofflineprocessor = 'email';
-    $offlineprocessortouse = $onlineprocessortouse = null;
+    //check for the pre 2.0 disable email setting
+    $useemail = empty($user->emailstop);
 
     //look for the pre-2.0 preference if it exists
     $oldpreference = get_user_preferences('message_showmessagewindow', -1, $user->id);
     //if they elected to see popups or the preference didnt exist
     $usepopups = (intval($oldpreference)==1 || intval($oldpreference)==-1);
 
+    $defaultonlineprocessor = 'none';
+    $defaultofflineprocessor = 'none';
+    
+    if ($useemail) {
+        $defaultonlineprocessor = 'email';
+        $defaultofflineprocessor = 'email';
+    } else if ($usepopups) {
+        $defaultonlineprocessor = 'popup';
+        $defaultofflineprocessor = 'popup';
+    }
+
+    $offlineprocessortouse = $onlineprocessortouse = null;
 
     $providers = $DB->get_records('message_providers');
     $preferences = array();
 
     foreach ($providers as $providerid => $provider) {
 
-        //force some specific defaults for some types of message
-
-        //if old popup preference was set to 1 or is missing use popups for IMs
-        if ($provider->name=='instantmessage' && $usepopups) {
+        //force some specific defaults for IMs
+        if ($provider->name=='instantmessage' && $usepopups && $useemail) {
             $onlineprocessortouse = 'popup';
             $offlineprocessortouse = 'email,popup';
         } else {

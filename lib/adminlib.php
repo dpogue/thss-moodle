@@ -3230,13 +3230,18 @@ class admin_setting_emoticons extends admin_setting {
         global $CFG;
 
         $manager = get_emoticon_manager();
-        $config = $this->config_read($this->name);
 
+        $config = $this->config_read($this->name);
         if (is_null($config)) {
             return null;
         }
 
-        return $this->prepare_form_data($manager->decode_stored_config($config));
+        $config = $manager->decode_stored_config($config);
+        if (is_null($config)) {
+            return null;
+        }
+
+        return $this->prepare_form_data($config);
     }
 
     /**
@@ -5521,8 +5526,10 @@ class admin_setting_manageportfolio extends admin_setting {
  *      added to the turn blocks editing on/off form, so this page reloads correctly.
  * @param string $actualurl if the actual page being viewed is not the normal one for this
  *      page (e.g. admin/roles/allowassin.php, instead of admin/roles/manage.php, you can pass the alternate URL here.
+ * @param array $options Additional options that can be specified for page setup.
+ *      pagelayout - This option can be used to set a specific pagelyaout, admin is default.
  */
-function admin_externalpage_setup($section, $extrabutton = '', array $extraurlparams = null, $actualurl = '') {
+function admin_externalpage_setup($section, $extrabutton = '', array $extraurlparams = null, $actualurl = '', array $options = array()) {
     global $CFG, $PAGE, $USER, $SITE, $OUTPUT;
 
     $PAGE->set_context(null); // hack - set context to something, by default to system context
@@ -5544,7 +5551,10 @@ function admin_externalpage_setup($section, $extrabutton = '', array $extraurlpa
         die;
     }
 
-    if ($section === 'upgradesettings') {
+    if (!empty($options['pagelayout'])) {
+        // A specific page layout has been requested.
+        $PAGE->set_pagelayout($options['pagelayout']);
+    } else if ($section === 'upgradesettings') {
         $PAGE->set_pagelayout('maintenance');
     } else {
         $PAGE->set_pagelayout('admin');
@@ -5563,7 +5573,6 @@ function admin_externalpage_setup($section, $extrabutton = '', array $extraurlpa
     if (strpos($PAGE->pagetype, 'admin-') !== 0) {
         $PAGE->set_pagetype('admin-' . $PAGE->pagetype);
     }
-    $PAGE->set_pagelayout('admin');
 
     if (empty($SITE->fullname) || empty($SITE->shortname)) {
         // During initial install.

@@ -1015,7 +1015,9 @@ class global_navigation extends navigation_node {
                 // course node and not populate it.
                 $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
                 if ($course->id !== SITEID && !is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext)) {
-                    $coursenode->make_active();
+                    if ($coursenode) {
+                        $coursenode->make_active();
+                    }
                     $canviewcourseprofile = false;
                     break;
                 }
@@ -3144,6 +3146,13 @@ class settings_navigation extends navigation_node {
         if (function_exists($featuresfunc) && $featuresfunc(FEATURE_BACKUP_MOODLE2) && has_capability('moodle/backup:backupactivity', $this->page->cm->context)) {
             $url = new moodle_url('/backup/backup.php', array('id'=>$this->page->cm->course, 'cm'=>$this->page->cm->id));
             $modulenode->add(get_string('backup'), $url, self::TYPE_SETTING);
+        }
+
+        // Restore this activity
+        $featuresfunc = $this->page->activityname.'_supports';
+        if (function_exists($featuresfunc) && $featuresfunc(FEATURE_BACKUP_MOODLE2) && has_capability('moodle/restore:restoreactivity', $this->page->cm->context)) {
+            $url = new moodle_url('/backup/restorefile.php', array('contextid'=>$this->page->cm->context->id));
+            $modulenode->add(get_string('restore'), $url, self::TYPE_SETTING);
         }
 
         $function = $this->page->activityname.'_extend_settings_navigation';

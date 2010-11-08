@@ -1046,7 +1046,11 @@ function get_config($plugin, $name = NULL) {
                 }
             }
         }
-        return (object)$localcfg;
+        if ($localcfg) {
+            return (object)$localcfg;
+        } else {
+            return null;
+        }
 
     } else {
         // this part is not really used any more, but anyway...
@@ -4583,9 +4587,9 @@ function moodle_process_email($modargs,$body) {
  *
  * @global object
  * @param string $action 'get', 'buffer', 'close' or 'flush'
- * @return object|null reference to mailer instance if 'get' used or nothing
+ * @return object|null mailer instance if 'get' used or nothing
  */
-function &get_mailer($action='get') {
+function get_mailer($action='get') {
     global $CFG;
 
     static $mailer  = null;
@@ -4599,7 +4603,7 @@ function &get_mailer($action='get') {
         $prevkeepalive = false;
 
         if (isset($mailer) and $mailer->Mailer == 'smtp') {
-            if ($counter < $CFG->smtpmaxbulk and empty($mailer->error_count)) {
+            if ($counter < $CFG->smtpmaxbulk and !$mailer->IsError()) {
                 $counter++;
                 // reset the mailer
                 $mailer->Priority         = 3;
@@ -4635,7 +4639,6 @@ function &get_mailer($action='get') {
         $mailer->CharSet   = 'UTF-8';
 
         // some MTAs may do double conversion of LF if CRLF used, CRLF is required line ending in RFC 822bis
-        // hmm, this is a bit hacky because LE should be private
         if (isset($CFG->mailnewline) and $CFG->mailnewline == 'CRLF') {
             $mailer->LE = "\r\n";
         } else {
@@ -4672,7 +4675,7 @@ function &get_mailer($action='get') {
     if ($action == 'buffer') {
         if (!empty($CFG->smtpmaxbulk)) {
             get_mailer('flush');
-            $m =& get_mailer();
+            $m = get_mailer();
             if ($m->Mailer == 'smtp') {
                 $m->SMTPKeepAlive = true;
             }
@@ -4724,13 +4727,11 @@ function &get_mailer($action='get') {
  * @param string $replyto Email address to reply to
  * @param string $replytoname Name of reply to recipient
  * @param int $wordwrapwidth custom word wrap width, default 79
- * @return bool|string Returns "true" if mail was sent OK, "emailstop" if email
- *          was blocked by user and "false" if there was another sort of error.
+ * @return bool Returns true if mail was sent OK and false if there was an error.
  */
 function email_to_user($user, $from, $subject, $messagetext, $messagehtml='', $attachment='', $attachname='', $usetrueaddress=true, $replyto='', $replytoname='', $wordwrapwidth=79) {
 
-    global $CFG, $FULLME, $MNETIDPJUMPURL;
-    static $mnetjumps = array();
+    global $CFG, $FULLME;
 
     if (empty($user) || empty($user->email)) {
         mtrace('Error: lib/moodlelib.php email_to_user(): User is null or has no email');
@@ -4760,10 +4761,6 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml='', $a
         return true;
     }
 
-    if (!empty($user->emailstop)) {
-        return 'emailstop';
-    }
-
     if (over_bounce_threshold($user)) {
         $bouncemsg = "User $user->id (".fullname($user).") is over bounce threshold! Not sending.";
         error_log($bouncemsg);
@@ -4787,14 +4784,14 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml='', $a
                 $callback,
                 $messagehtml);
     }
-    $mail =& get_mailer();
+    $mail = get_mailer();
 
     if (!empty($mail->SMTPDebug)) {
         echo '<pre>' . "\n";
     }
 
-/// We are going to use textlib services here
-    $textlib = textlib_get_instance();
+    $temprecipients = array();
+    $tempreplyto = array();
 
     $supportuser = generate_email_supportuser();
 
@@ -4816,17 +4813,17 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml='', $a
         $mail->From     = $CFG->noreplyaddress;
         $mail->FromName = fullname($from);
         if (empty($replyto)) {
-            $mail->AddReplyTo($CFG->noreplyaddress,get_string('noreplyname'));
+            $tempreplyto[] = array($CFG->noreplyaddress, get_string('noreplyname'));
         }
     }
 
     if (!empty($replyto)) {
-        $mail->AddReplyTo($replyto,$replytoname);
+        $tempreplyto[] = array($replyto, $replytoname);
     }
 
     $mail->Subject = substr($subject, 0, 900);
 
-    $mail->AddAddress($user->email, fullname($user) );
+    $temprecipients[] = array($user->email, fullname($user));
 
     $mail->WordWrap = $wordwrapwidth;                   // set word wrap
 
@@ -4856,7 +4853,7 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml='', $a
 
     if ($attachment && $attachname) {
         if (preg_match( "~\\.\\.~" ,$attachment )) {    // Security check for ".." in dir path
-            $mail->AddAddress($supportuser->email, fullname($supportuser, true) );
+            $temprecipients[] = array($supportuser->email, fullname($supportuser, true));
             $mail->AddStringAttachment('Error in attachment.  User attempted to attach a filename with a unsafe name.', 'error.txt', '8bit', 'text/plain');
         } else {
             require_once($CFG->libdir.'/filelib.php');
@@ -4865,37 +4862,42 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml='', $a
         }
     }
 
-
-
-/// If we are running under Unicode and sitemailcharset or allowusermailcharset are set, convert the email
-/// encoding to the specified one
+    // Check if the email should be sent in an other charset then the default UTF-8
     if ((!empty($CFG->sitemailcharset) || !empty($CFG->allowusermailcharset))) {
-    /// Set it to site mail charset
+
+        // use the defined site mail charset or eventually the one preferred by the recipient
         $charset = $CFG->sitemailcharset;
-    /// Overwrite it with the user mail charset
         if (!empty($CFG->allowusermailcharset)) {
             if ($useremailcharset = get_user_preferences('mailcharset', '0', $user->id)) {
                 $charset = $useremailcharset;
             }
         }
-    /// If it has changed, convert all the necessary strings
+
+        // convert all the necessary strings if the charset is supported
         $charsets = get_list_of_charsets();
         unset($charsets['UTF-8']);
         if (in_array($charset, $charsets)) {
-        /// Save the new mail charset
-            $mail->CharSet = $charset;
-        /// And convert some strings
-            $mail->FromName = $textlib->convert($mail->FromName, 'utf-8', $mail->CharSet); //From Name
-            foreach ($mail->ReplyTo as $key => $rt) {                                      //ReplyTo Names
-                $mail->ReplyTo[$key][1] = $textlib->convert($rt[1], 'utf-8', $mail->CharSet);
+            $textlib = textlib_get_instance();
+            $mail->CharSet  = $charset;
+            $mail->FromName = $textlib->convert($mail->FromName, 'utf-8', strtolower($charset));
+            $mail->Subject  = $textlib->convert($mail->Subject, 'utf-8', strtolower($charset));
+            $mail->Body     = $textlib->convert($mail->Body, 'utf-8', strtolower($charset));
+            $mail->AltBody  = $textlib->convert($mail->AltBody, 'utf-8', strtolower($charset));
+
+            foreach ($temprecipients as $key => $values) {
+                $temprecipients[$key][1] = $textlib->convert($values[1], 'utf-8', strtolower($charset));
             }
-            $mail->Subject = $textlib->convert($mail->Subject, 'utf-8', $mail->CharSet);   //Subject
-            foreach ($mail->to as $key => $to) {
-                $mail->to[$key][1] = $textlib->convert($to[1], 'utf-8', $mail->CharSet);      //To Names
+            foreach ($tempreplyto as $key => $values) {
+                $tempreplyto[$key][1] = $textlib->convert($values[1], 'utf-8', strtolower($charset));
             }
-            $mail->Body = $textlib->convert($mail->Body, 'utf-8', $mail->CharSet);         //Body
-            $mail->AltBody = $textlib->convert($mail->AltBody, 'utf-8', $mail->CharSet);   //Subject
         }
+    }
+
+    foreach ($temprecipients as $values) {
+        $mail->AddAddress($values[0], $values[1]);
+    }
+    foreach ($tempreplyto as $values) {
+        $mail->AddReplyTo($values[0], $values[1]);
     }
 
     if ($mail->Send()) {
@@ -4967,8 +4969,7 @@ function generate_email_supportuser() {
  * @global object
  * @global object
  * @param user $user A {@link $USER} object
- * @return boolean|string Returns "true" if mail was sent OK, "emailstop" if email
- *          was blocked by user and "false" if there was another sort of error.
+ * @return boolean|string Returns "true" if mail was sent OK and "false" if there was an error
  */
 function setnew_password_and_mail($user) {
     global $CFG, $DB;
@@ -5002,8 +5003,7 @@ function setnew_password_and_mail($user) {
  *
  * @global object
  * @param user $user A {@link $USER} object
- * @return bool|string Returns "true" if mail was sent OK, "emailstop" if email
- *          was blocked by user and "false" if there was another sort of error.
+ * @return bool Returns true if mail was sent OK and false if there was an error.
  */
 function reset_password_and_mail($user) {
     global $CFG;
@@ -5045,8 +5045,7 @@ function reset_password_and_mail($user) {
  *
  * @global object
  * @param user $user A {@link $USER} object
- * @return bool|string Returns "true" if mail was sent OK, "emailstop" if email
- *          was blocked by user and "false" if there was another sort of error.
+ * @return bool Returns true if mail was sent OK and false if there was an error.
  */
  function send_confirmation_email($user) {
     global $CFG;
@@ -5076,8 +5075,7 @@ function reset_password_and_mail($user) {
  *
  * @global object
  * @param user $user A {@link $USER} object
- * @return bool|string Returns "true" if mail was sent OK, "emailstop" if email
- *          was blocked by user and "false" if there was another sort of error.
+ * @return bool Returns true if mail was sent OK and false if there was an error.
  */
 function send_password_change_confirmation_email($user) {
     global $CFG;
@@ -5104,8 +5102,7 @@ function send_password_change_confirmation_email($user) {
  *
  * @global object
  * @param user $user A {@link $USER} object
- * @return bool|string Returns "true" if mail was sent OK, "emailstop" if email
- *          was blocked by user and "false" if there was another sort of error.
+ * @return bool Returns true if mail was sent OK and false if there was an error.
  */
 function send_password_change_info($user) {
     global $CFG;

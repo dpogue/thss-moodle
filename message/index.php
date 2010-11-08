@@ -49,30 +49,25 @@ $removecontact  = optional_param('removecontact',  0, PARAM_INT); // removing a 
 $blockcontact   = optional_param('blockcontact',   0, PARAM_INT); // blocking a contact
 $unblockcontact = optional_param('unblockcontact', 0, PARAM_INT); // unblocking a contact
 
+//for search
+$advancedsearch = optional_param('advanced', 0, PARAM_INT);
+
 //if they have numerous contacts or are viewing course participants we might need to page through them
 $page = optional_param('page', 0, PARAM_INT);
 
 $url = new moodle_url('/message/index.php');
 
-if ($usergroup !== 0) {
-    $url->param('usergroup', $usergroup);
-}
 if ($user2id !== 0) {
     $url->param('id', $user2id);
 }
 
-/*if ($addcontact !== 0) {
-    $url->param('addcontact', $addcontact);
+if ($usergroup !== 0) {
+    if ($user2id !== 0 && $usergroup==VIEW_SEARCH) {
+        //if theyve searched and selected a user change the view back to contacts so the search button is displayed
+        $usergroup = VIEW_CONTACTS;
+    }
+    $url->param('usergroup', $usergroup);
 }
-if ($removecontact !== 0) {
-    $url->param('removecontact', $removecontact);
-}
-if ($blockcontact !== 0) {
-    $url->param('blockcontact', $blockcontact);
-}
-if ($unblockcontact !== 0) {
-    $url->param('unblockcontact', $unblockcontact);
-}*/
 
 $PAGE->set_url($url);
 
@@ -113,20 +108,20 @@ if ($user1->id!=$USER->id && $user2->id!=$USER->id && !has_capability('moodle/si
 
 /// Process any contact maintenance requests there may be
 if ($addcontact and confirm_sesskey()) {
-    add_to_log(SITEID, 'message', 'add contact', 'history.php?user1='.$addcontact.'&amp;user2='.$USER->id, $addcontact);
+    add_to_log(SITEID, 'message', 'add contact', 'index.php?user1='.$addcontact.'&amp;user2='.$USER->id, $addcontact);
     message_add_contact($addcontact);
     redirect($CFG->wwwroot . '/message/index.php?usergroup=contacts&id='.$addcontact);
 }
 if ($removecontact and confirm_sesskey()) {
-    add_to_log(SITEID, 'message', 'remove contact', 'history.php?user1='.$removecontact.'&amp;user2='.$USER->id, $removecontact);
+    add_to_log(SITEID, 'message', 'remove contact', 'index.php?user1='.$removecontact.'&amp;user2='.$USER->id, $removecontact);
     message_remove_contact($removecontact);
 }
 if ($blockcontact and confirm_sesskey()) {
-    add_to_log(SITEID, 'message', 'block contact', 'history.php?user1='.$blockcontact.'&amp;user2='.$USER->id, $blockcontact);
+    add_to_log(SITEID, 'message', 'block contact', 'index.php?user1='.$blockcontact.'&amp;user2='.$USER->id, $blockcontact);
     message_block_contact($blockcontact);
 }
 if ($unblockcontact and confirm_sesskey()) {
-    add_to_log(SITEID, 'message', 'unblock contact', 'history.php?user1='.$unblockcontact.'&amp;user2='.$USER->id, $unblockcontact);
+    add_to_log(SITEID, 'message', 'unblock contact', 'index.php?user1='.$unblockcontact.'&amp;user2='.$USER->id, $unblockcontact);
     message_unblock_contact($unblockcontact);
 }
 
@@ -202,6 +197,11 @@ if (!empty($user2)) {
     }
 }
 $countunreadtotal = message_count_unread_messages($user1);
+
+if ($countunreadtotal==0 && $usergroup==VIEW_UNREAD_MESSAGES && empty($user2)) {
+    //default to showing the search
+    $usergroup = VIEW_SEARCH;
+}
 
 $blockedusers = message_get_blocked_users($user1, $user2);
 $countblocked = count($blockedusers);
@@ -283,6 +283,8 @@ echo html_writer::start_tag('div', array('class'=>'messagearea mdl-align'));
                 }
             echo html_writer::end_tag('div');
         }
+    } else if ($usergroup==VIEW_SEARCH) {
+        message_print_search($advancedsearch, $user1);
     }
 echo html_writer::end_tag('div');
 

@@ -5312,6 +5312,7 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
 
     // new format of the emoticons setting
     if ($oldversion < 2010102300) {
+        unset($CFG->emoticons);
         $DB->delete_records('config', array('name' => 'emoticons'));
         $DB->delete_records('cache_text'); // changed md5 hash calculation
         upgrade_main_savepoint(true, 2010102300);
@@ -5378,9 +5379,31 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         upgrade_main_savepoint(true, 2010102700);
     }
 
+    if ($oldversion < 2010110200) {
+
+        // fix tags itemtype for wiki
+        $sql = "UPDATE {tag_instance}
+                SET itemtype = 'wiki_pages'
+                WHERE itemtype = 'wiki_page'";
+        $DB->execute($sql);
+
+        echo $OUTPUT->notification('Updating tags itemtype', 'notifysuccess');
+
+        // Main savepoint reached
+        upgrade_main_savepoint(true, 2010110200);
+    }
+
+    //remove forum_logblocked from config. No longer required after user->emailstop was removed
+    if ($oldversion < 2010110500) {
+        unset_config('forum_logblocked');
+        upgrade_main_savepoint(true, 2010110500);
+    }
+
     return true;
 }
 
 //TODO: Cleanup before the 2.0 release - we do not want to drag along these dev machine fixes forever
 // 1/ drop block_pinned_old table here and in install.xml
 // 2/ drop block_instance_old table here and in install.xml
+
+//TODO: AFTER 2.0 remove the column user->emailstop and the user preference "message_showmessagewindow"

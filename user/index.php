@@ -305,7 +305,8 @@
                 if (!isset($group->descriptionformat)) {
                     $group->descriptionformat = FORMAT_MOODLE;
                 }
-                $contentcell->text = $OUTPUT->heading($contentheading, 3) . format_text($group->description, $group->descriptionformat);
+                $options = array('overflowdiv'=>true);
+                $contentcell->text = $OUTPUT->heading($contentheading, 3) . format_text($group->description, $group->descriptionformat, $options);
                 $groupinfotable->data[] = new html_table_row(array($picturecell, $contentcell));
                 echo html_writer::table($groupinfotable);
             }
@@ -373,7 +374,7 @@
     if ($isfrontpage) {
         $select = "SELECT u.id, u.username, u.firstname, u.lastname,
                           u.email, u.city, u.country, u.picture,
-                          u.lang, u.timezone, u.emailstop, u.maildisplay, u.imagealt,
+                          u.lang, u.timezone, u.maildisplay, u.imagealt,
                           u.lastaccess";
         $joins[] = "JOIN ($esql) e ON e.id = u.id"; // everybody on the frontpage usually
         if ($accesssince) {
@@ -383,7 +384,7 @@
     } else {
         $select = "SELECT u.id, u.username, u.firstname, u.lastname,
                           u.email, u.city, u.country, u.picture,
-                          u.lang, u.timezone, u.emailstop, u.maildisplay, u.imagealt,
+                          u.lang, u.timezone, u.maildisplay, u.imagealt,
                           COALESCE(ul.timeaccess, 0) AS lastaccess";
         $joins[] = "JOIN ($esql) e ON e.id = u.id"; // course enrolled users only
         $joins[] = "LEFT JOIN {user_lastaccess} ul ON (ul.userid = u.id AND ul.courseid = :courseid)"; // not everybody accessed course yet

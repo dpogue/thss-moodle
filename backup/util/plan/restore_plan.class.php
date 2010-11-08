@@ -61,7 +61,6 @@ class restore_plan extends base_plan implements loggable {
 
     public function build() {
         restore_plan_builder::build_plan($this->controller); // We are moodle2 always, go straight to builder
-        restore_decode_processor::register_link_decoders($this->decoder); // Add decoder contents and rules
         $this->built = true;
     }
 
@@ -147,6 +146,16 @@ class restore_plan extends base_plan implements loggable {
         $this->controller->set_status(backup::STATUS_EXECUTING);
         parent::execute();
         $this->controller->set_status(backup::STATUS_FINISHED_OK);
+    }
+
+    /**
+     * Execute the after_restore methods of all the executed tasks in the plan
+     */
+    public function execute_after_restore() {
+        // Simply iterate over each task in the plan and delegate to them the execution
+        foreach ($this->tasks as $task) {
+            $task->execute_after_restore();
+        }
     }
 }
 

@@ -51,7 +51,12 @@ class question_match_qtype extends default_questiontype {
 
         // Insert all the new question+answer pairs
         foreach ($question->subquestions as $key => $questiontext) {
-            $itemid = $questiontext['itemid'];
+            if (!empty($questiontext['itemid'])) {
+                $itemid = $questiontext['itemid'];
+            }
+            if (!empty($questiontext['files'])) {
+                $files = $questiontext['files'];
+            }
             $format = $questiontext['format'];
             $questiontext = trim($questiontext['text']);
             $answertext = trim($question->subanswers[$key]);
@@ -73,7 +78,13 @@ class question_match_qtype extends default_questiontype {
                     $subquestion->questiontextformat = $format;
                     $subquestion->answertext = $answertext;
                     $subquestion->id = $DB->insert_record("question_match_sub", $subquestion);
-                    $questiontext = file_save_draft_area_files($itemid, $context->id, 'qtype_match', 'subquestion', $subquestion->id, self::$fileoptions, $questiontext);
+                    if (!isset($itemid)) {
+                        foreach ($files as $file) {
+                            $this->import_file($context, 'qtype_match', 'subquestion', $subquestion->id, $file);
+                        }
+                    } else {
+                        $questiontext = file_save_draft_area_files($itemid, $context->id, 'qtype_match', 'subquestion', $subquestion->id, self::$fileoptions, $questiontext);
+                    }
                     $DB->set_field('question_match_sub', 'questiontext', $questiontext, array('id'=>$subquestion->id));
                 }
                 $subquestions[] = $subquestion->id;
@@ -481,39 +492,6 @@ class question_match_qtype extends default_questiontype {
      */
     function get_random_guess_score($question) {
         return 1 / count($question->options->subquestions);
-    }
-
-    /**
-     * Decode links in question type specific tables.
-     * @return bool success or failure.
-     */
-    function decode_content_links_caller($questionids, $restore, &$i) {
-        global $DB;
-
-        $status = true;
-
-        // Decode links in the question_match_sub table.
-        if ($subquestions = $DB->get_records_list('question_match_sub', 'question', $questionids, '', 'id, questiontext')) {
-
-            foreach ($subquestions as $subquestion) {
-                $questiontext = restore_decode_content_links_worker($subquestion->questiontext, $restore);
-                if ($questiontext != $subquestion->questiontext) {
-                    $subquestion->questiontext = $questiontext;
-                    $DB->update_record('question_match_sub', $subquestion);
-                }
-
-                // Do some output.
-                if (++$i % 5 == 0 && !defined('RESTORE_SILENTLY')) {
-                    echo ".";
-                    if ($i % 100 == 0) {
-                        echo "<br />";
-                    }
-                    backup_flush(300);
-                }
-            }
-        }
-
-        return $status;
     }
 
     function find_file_links($question, $courseid){
