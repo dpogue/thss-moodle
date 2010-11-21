@@ -42,75 +42,63 @@ class question_match_qtype extends default_questiontype {
         $context = $question->context;
         $result = new stdClass;
 
-        if (!$oldsubquestions = $DB->get_records("question_match_sub", array("question" => $question->id), "id ASC")) {
-            $oldsubquestions = array();
-        }
+        $oldsubquestions = $DB->get_records('question_match_sub',
+                array('question' => $question->id), 'id ASC');
 
         // $subquestions will be an array with subquestion ids
         $subquestions = array();
 
         // Insert all the new question+answer pairs
         foreach ($question->subquestions as $key => $questiontext) {
-            if (!empty($questiontext['itemid'])) {
-                $itemid = $questiontext['itemid'];
+            if ($questiontext['text'] == '' && trim($question->subanswers[$key]) == '') {
+                continue;
             }
-            if (!empty($questiontext['files'])) {
-                $files = $questiontext['files'];
-            }
-            $format = $questiontext['format'];
-            $questiontext = trim($questiontext['text']);
-            $answertext = trim($question->subanswers[$key]);
-            if ($questiontext != '' || $answertext != '') {
-                if ($subquestion = array_shift($oldsubquestions)) {  // Existing answer, so reuse it
-                    $subquestion->answertext   = $answertext;
-                    $subquestion->questiontext = file_save_draft_area_files($itemid, $context->id, 'qtype_match', 'subquestion', $subquestion->id, self::$fileoptions, $questiontext);
-                    $subquestion->questiontextformat = $format;
-                    $DB->update_record("question_match_sub", $subquestion);
-                } else {
-                    $subquestion = new stdClass;
-                    // Determine a unique random code
-                    $subquestion->code = rand(1, 999999999);
-                    while ($DB->record_exists('question_match_sub', array('code' => $subquestion->code, 'question' => $question->id))) {
-                        $subquestion->code = rand();
-                    }
-                    $subquestion->question = $question->id;
-                    $subquestion->questiontext = $questiontext;
-                    $subquestion->questiontextformat = $format;
-                    $subquestion->answertext = $answertext;
-                    $subquestion->id = $DB->insert_record("question_match_sub", $subquestion);
-                    if (!isset($itemid)) {
-                        foreach ($files as $file) {
-                            $this->import_file($context, 'qtype_match', 'subquestion', $subquestion->id, $file);
-                        }
-                    } else {
-                        $questiontext = file_save_draft_area_files($itemid, $context->id, 'qtype_match', 'subquestion', $subquestion->id, self::$fileoptions, $questiontext);
-                    }
-                    $DB->set_field('question_match_sub', 'questiontext', $questiontext, array('id'=>$subquestion->id));
-                }
-                $subquestions[] = $subquestion->id;
-            }
-            if ($questiontext != '' && $answertext == '') {
+            if ($questiontext['text'] != '' && trim($question->subanswers[$key]) == '') {
                 $result->notice = get_string('nomatchinganswer', 'quiz', $questiontext);
             }
-        }
 
-        // delete old subquestions records
-        if (!empty($oldsubquestions)) {
-            foreach($oldsubquestions as $os) {
-                $DB->delete_records('question_match_sub', array('id' => $os->id));
+            // Update an existing subquestion if possible.
+            $subquestion = array_shift($oldsubquestions);
+            if (!$subquestion) {
+                $subquestion = new stdClass;
+                // Determine a unique random code
+                $subquestion->code = rand(1, 999999999);
+                while ($DB->record_exists('question_match_sub', array('code' => $subquestion->code, 'question' => $question->id))) {
+                    $subquestion->code = rand(1, 999999999);
+                }
+                $subquestion->question = $question->id;
+                $subquestion->questiontext = '';
+                $subquestion->answertext = '';
+                $subquestion->id = $DB->insert_record('question_match_sub', $subquestion);
             }
+
+            $subquestion->questiontext = $this->import_or_save_files($questiontext,
+                    $context, 'qtype_match', 'subquestion', $subquestion->id);
+            $subquestion->questiontextformat = $questiontext['format'];
+            $subquestion->answertext = trim($question->subanswers[$key]);
+
+            $DB->update_record('question_match_sub', $subquestion);
+
+            $subquestions[] = $subquestion->id;
         }
 
-        if ($options = $DB->get_record("question_match", array("question" => $question->id))) {
-            $options->subquestions = implode(",",$subquestions);
+        // Delete old subquestions records
+        $fs = get_file_storage();
+        foreach($oldsubquestions as $oldsub) {
+            $fs->delete_area_files($context->id, 'qtype_match', 'subquestion', $oldsub->id);
+            $DB->delete_records('question_match_sub', array('id' => $oldsub->id));
+        }
+
+        if ($options = $DB->get_record('question_match', array('question' => $question->id))) {
+            $options->subquestions = implode(',', $subquestions);
             $options->shuffleanswers = $question->shuffleanswers;
-            $DB->update_record("question_match", $options);
+            $DB->update_record('question_match', $options);
         } else {
             unset($options);
             $options->question = $question->id;
-            $options->subquestions = implode(",",$subquestions);
+            $options->subquestions = implode(',', $subquestions);
             $options->shuffleanswers = $question->shuffleanswers;
-            $DB->insert_record("question_match", $options);
+            $DB->insert_record('question_match', $options);
         }
 
         if (!empty($result->notice)) {
@@ -125,17 +113,12 @@ class question_match_qtype extends default_questiontype {
         return true;
     }
 
-    /**
-    * Deletes question from the question-type specific tables
-    *
-    * @return boolean Success/Failure
-    * @param integer $question->id
-    */
-    function delete_question($questionid) {
+    function delete_question($questionid, $contextid) {
         global $DB;
-        $DB->delete_records("question_match", array("question" => $questionid));
-        $DB->delete_records("question_match_sub", array("question" => $questionid));
-        return true;
+        $DB->delete_records('question_match', array('question' => $questionid));
+        $DB->delete_records('question_match_sub', array('question' => $questionid));
+
+        parent::delete_question($questionid, $contextid);
     }
 
     function create_session_and_responses(&$question, &$state, $cmoptions, $attempt) {
@@ -494,39 +477,6 @@ class question_match_qtype extends default_questiontype {
         return 1 / count($question->options->subquestions);
     }
 
-    function find_file_links($question, $courseid){
-        // find links in the question_match_sub table.
-        $urls = array();
-        if (isset($question->options->subquestions)){
-            foreach ($question->options->subquestions as $subquestion) {
-                $urls += question_find_file_links_from_html($subquestion->questiontext, $courseid);
-            }
-
-            //set all the values of the array to the question object
-            if ($urls){
-                $urls = array_combine(array_keys($urls), array_fill(0, count($urls), array($question->id)));
-            }
-        }
-        $urls = array_merge_recursive($urls, parent::find_file_links($question, $courseid));
-
-        return $urls;
-    }
-
-    function replace_file_links($question, $fromcourseid, $tocourseid, $url, $destination){
-        global $DB;
-        parent::replace_file_links($question, $fromcourseid, $tocourseid, $url, $destination);
-        // replace links in the question_match_sub table.
-        if (isset($question->options->subquestions)){
-            foreach ($question->options->subquestions as $subquestion) {
-                $subquestionchanged = false;
-                $subquestion->questiontext = question_replace_file_links_in_html($subquestion->questiontext, $fromcourseid, $tocourseid, $url, $destination, $subquestionchanged);
-                if ($subquestionchanged){//need to update rec in db
-                    $DB->update_record('question_match_sub', $subquestion);
-                }
-            }
-        }
-    }
-
     /**
      * Runs all the code required to set up and save an essay question for testing purposes.
      * Alternate DB table prefix may be used to facilitate data deletion.
@@ -546,36 +496,33 @@ class question_match_qtype extends default_questiontype {
         return $this->save_question($question, $form, $course);
     }
 
-    function move_files($question, $newcategory) {
+    function move_files($questionid, $oldcontextid, $newcontextid) {
         global $DB;
-        // move files belonging to question component
-        parent::move_files($question, $newcategory);
-
-        // move files belonging to qtype_multichoice
         $fs = get_file_storage();
-        // process files in answer
-        if (!$oldanswers = $DB->get_records('question_answers', array('question' => $question->id), 'id ASC')) {
-            $oldanswers = array();
-        }
 
-        // process files in sub questions
-        if (!$subquestions = $DB->get_records('question_match_sub', array('question' => $question->id), 'id ASC')) {
-            $subquestions = array();
-        }
-        $component = 'qtype_match';
-        $filearea = 'subquestion';
-        foreach ($subquestions as $sub) {
-            $files = $fs->get_area_files($question->contextid, $component, $filearea, $sub->id);
-            foreach ($files as $storedfile) {
-                if (!$storedfile->is_directory()) {
-                    $newfile = new stdClass();
-                    $newfile->contextid = (int)$newcategory->contextid;
-                    $fs->create_file_from_storedfile($newfile, $storedfile);
-                    $storedfile->delete();
-                }
-            }
+        parent::move_files($questionid, $oldcontextid, $newcontextid);
+
+        $subquestionids = $DB->get_records_menu('question_match_sub',
+                array('question' => $questionid), 'id', 'id,1');
+        foreach ($subquestionids as $subquestionid => $notused) {
+            $fs->move_area_files_to_new_context($oldcontextid,
+                    $newcontextid, 'qtype_match', 'subquestion', $subquestionid);
         }
     }
+
+    protected function delete_files($questionid, $contextid) {
+        global $DB;
+        $fs = get_file_storage();
+
+        parent::delete_files($questionid, $contextid);
+
+        $subquestionids = $DB->get_records_menu('question_match_sub',
+                array('question' => $questionid), 'id', 'id,1');
+        foreach ($subquestionids as $subquestionid => $notused) {
+            $fs->delete_area_files($contextid, 'qtype_match', 'subquestion', $subquestionid);
+        }
+    }
+
     function check_file_access($question, $state, $options, $contextid, $component,
             $filearea, $args) {
 

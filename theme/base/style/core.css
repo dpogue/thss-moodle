@@ -128,6 +128,8 @@ a.skip:active {position: static;display: block;}
 .arrow,
 .arrow_button input {font-family: Arial,Helvetica,Courier,sans-serif;}
 
+#yui-module-debug {display:none;}
+
 /**
  * Header
  */
@@ -541,7 +543,7 @@ body.tag .managelink {padding: 5px;}
 /**
  * Help Content (pop-up)
  */
-#helppopupbox {background-color: #eee; border: 1px solid #848484;z-index: 10000;}
+#helppopupbox {background-color: #eee; border: 1px solid #848484;z-index: 10000 !important;}
 #helppopupbox .yui3-widget-hd {float:right;margin:3px 3px 0 0;}
 #helppopupbox .yui3-widget-bd {margin:0 1em 1em 1em;border-top:1px solid #eee;}
 #helppopupbox .helpheading {font-size: 1em;}
@@ -684,3 +686,20 @@ body.tag .managelink {padding: 5px;}
  */
 .yui3-skin-sam .yui3-menu-horizontal .yui3-menu-label,
 .yui3-skin-sam .yui3-menu-horizontal .yui3-menu-content {background-image:none;}
+
+.mod-indent-1 {margin-left:20px;}
+.mod-indent-2 {margin-left:40px;}
+.mod-indent-3 {margin-left:60px;}
+.mod-indent-4 {margin-left:80px;}
+.mod-indent-5 {margin-left:100px;}
+.mod-indent-6 {margin-left:120px;}
+.mod-indent-7 {margin-left:140px;}
+.mod-indent-8 {margin-left:160px;}
+.mod-indent-9 {margin-left:180px;}
+.mod-indent-10 {margin-left:200px;}
+.mod-indent-11 {margin-left:220px;}
+.mod-indent-12 {margin-left:240px;}
+.mod-indent-13 {margin-left:260px;}
+.mod-indent-14 {margin-left:280px;}
+.mod-indent-15,
+.mod-indent-huge {margin-left:300px;}

@@ -24,7 +24,6 @@
 /** Include required files */
 require_once($CFG->libdir.'/filelib.php');
 require_once($CFG->libdir.'/eventslib.php');
-require_once($CFG->libdir . '/completionlib.php');
 require_once($CFG->dirroot.'/user/selector/lib.php');
 
 /// CONSTANTS ///////////////////////////////////////////////////////////
@@ -3215,7 +3214,7 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
 
     // Prepare the attachements for the post, files then images
     list($attachments, $attachedimages) = forum_print_attachments($post, $cm, 'separateimages');
-    
+
     // Determine if we need to shorten this post
     $shortenpost = ($link && (strlen(strip_tags($post->message)) > $CFG->forum_longpost));
 
@@ -3241,12 +3240,12 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
     }
 
     // Zoom in to the parent specifically
-    if ($post->parent) {  
+    if ($post->parent) {
         $url = new moodle_url($discussionlink);
         if ($str->displaymode == FORUM_MODE_THREADED) {
             $url->param('parent', $post->parent);
         } else {
-            $url->set_anchor('p'.$post->id);
+            $url->set_anchor('p'.$post->parent);
         }
         $commands[] = array('url'=>$url, 'text'=>$str->parent);
     }
@@ -3319,7 +3318,7 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
     $output .= $OUTPUT->user_picture($postuser, array('courseid'=>$course->id));
     $output .= html_writer::end_tag('div');
 
-    
+
     $output .= html_writer::start_tag('div', array('class'=>'topic'.$topicclass));
 
     $postsubject = $post->subject;
@@ -3327,7 +3326,7 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
         $postsubject = format_string($postsubject);
     }
     $output .= html_writer::tag('div', $postsubject, array('class'=>'subject'));
-    
+
     $by = new stdClass();
     $by->name = html_writer::link($postuser->profilelink, $postuser->fullname);
     $by->date = userdate($post->modified);
@@ -3759,24 +3758,18 @@ function forum_move_attachments($discussion, $forumfrom, $forumto) {
     // loop through all posts, better not use attachment flag ;-)
     if ($posts = $DB->get_records('forum_posts', array('discussion'=>$discussion->id), '', 'id, attachment')) {
         foreach ($posts as $post) {
-            if ($oldfiles = $fs->get_area_files($oldcontext->id, 'mod_forum', 'attachment', $post->id, "id", false)) {
-                foreach ($oldfiles as $oldfile) {
-                    $file_record = new stdClass();
-                    $file_record->contextid = $newcontext->id;
-                    $fs->create_file_from_storedfile($file_record, $oldfile);
-                }
-                $fs->delete_area_files($oldcontext->id, 'mod_forum', 'attachment', $post->id);
-                if ($post->attachment != '1') {
-                    //weird - let's fix it
-                    $post->attachment = '1';
-                    $DB->update_record('forum_posts', $post);
-                }
-            } else {
-                if ($post->attachment != '') {
-                    //weird - let's fix it
-                    $post->attachment = '';
-                    $DB->update_record('forum_posts', $post);
-                }
+            $fs->move_area_files_to_new_context($oldcontext->id,
+                    $newcontext->id, 'mod_forum', 'post', $post->id);
+            $attachmentsmoved = $fs->move_area_files_to_new_context($oldcontext->id,
+                    $newcontext->id, 'mod_forum', 'attachment', $post->id);
+            if ($attachmentsmoved > 0 && $post->attachment != '1') {
+                // Weird - let's fix it
+                $post->attachment = '1';
+                $DB->update_record('forum_posts', $post);
+            } else if ($attachmentsmoved == 0 && $post->attachment != '') {
+                // Weird - let's fix it
+                $post->attachment = '';
+                $DB->update_record('forum_posts', $post);
             }
         }
     }
@@ -4159,7 +4152,9 @@ function forum_add_discussion($discussion, $mform=null, &$message=null, $userid=
  * @return bool
  */
 function forum_delete_discussion($discussion, $fulldelete, $course, $cm, $forum) {
-    global $DB;
+    global $DB, $CFG;
+    require_once($CFG->libdir.'/completionlib.php');
+
     $result = true;
 
     if ($posts = $DB->get_records("forum_posts", array("discussion" => $discussion->id))) {
@@ -4211,6 +4206,7 @@ function forum_delete_discussion($discussion, $fulldelete, $course, $cm, $forum)
  */
 function forum_delete_post($post, $children, $course, $cm, $forum, $skipcompletion=false) {
     global $DB, $CFG;
+    require_once($CFG->libdir.'/completionlib.php');
 
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
 
@@ -4235,6 +4231,7 @@ function forum_delete_post($post, $children, $course, $cm, $forum, $skipcompleti
     //delete attachments
     $fs = get_file_storage();
     $fs->delete_area_files($context->id, 'mod_forum', 'attachment', $post->id);
+    $fs->delete_area_files($context->id, 'mod_forum', 'post', $post->id);
 
     if ($DB->delete_records("forum_posts", array("id" => $post->id))) {
 
@@ -5026,10 +5023,19 @@ function forum_print_latest_discussions($course, $forum, $maxdiscussions=-1, $di
 // button for it. We do not show the button if we are showing site news
 // and the current user is a guest.
 
-    if (forum_user_can_post_discussion($forum, $currentgroup, $groupmode, $cm, $context) ||
-        ($forum->type != 'news'
-         and (isguestuser() or !isloggedin() or (!is_enrolled($context) and !is_viewing($context)))) ) {
+    $canstart = forum_user_can_post_discussion($forum, $currentgroup, $groupmode, $cm, $context);
+    if (!$canstart and $forum->type !== 'news') {
+        if (isguestuser() or !isloggedin()) {
+            $canstart = true;
+        }
+        if (!is_enrolled($context) and !is_viewing($context)) {
+            // allow guests and not-logged-in to see the button - they are prompted to log in after clicking the link
+            // normal users with temporary guest access see this button too, they are asked to enrol instead
+            $canstart = enrol_selfenrol_available($course->id);
+        }
+    }
 
+    if ($canstart) {
         echo '<div class="singlebutton forumaddnew">';
         echo "<form id=\"newdiscussionform\" method=\"get\" action=\"$CFG->wwwroot/mod/forum/post.php\">";
         echo '<div>';
@@ -6997,6 +7003,7 @@ function forum_reset_userdata($data) {
                 }
                 $context = get_context_instance(CONTEXT_MODULE, $cm->id);
                 $fs->delete_area_files($context->id, 'mod_forum', 'attachment');
+                $fs->delete_area_files($context->id, 'mod_forum', 'post');
 
                 //remove ratings
                 $ratingdeloptions->contextid = $context->id;
@@ -7405,8 +7412,7 @@ function forum_get_extra_capabilities() {
  * @param stdClass $module
  * @param stdClass $cm
  */
-/******
- * Removing temporarily
+/*************************************************
 function forum_extend_navigation($navref, $course, $module, $cm) {
     global $CFG, $OUTPUT, $USER;
 
@@ -7419,6 +7425,7 @@ function forum_extend_navigation($navref, $course, $module, $cm) {
     }
     $discussionnode = $navref->add(get_string('discussions', 'forum').' ('.$discussioncount.')');
     $discussionnode->mainnavonly = true;
+    $discussionnode->display = false; // Do not display on navigation (only on navbar)
 
     foreach ($discussions as $discussion) {
         $icon = new pix_icon('i/feedback', '');
@@ -7448,6 +7455,7 @@ function forum_extend_navigation($navref, $course, $module, $cm) {
     if (is_array($recentposts) && count($recentposts)>0) {
         $recentnode = $navref->add(get_string('recentactivity').' ('.count($recentposts).')');
         $recentnode->mainnavonly = true;
+        $recentnode->display = false;
         foreach ($recentposts as $post) {
             $icon = new pix_icon('i/feedback', '');
             $url = new moodle_url('/mod/forum/discuss.php', array('d'=>$post->content->discussion));
@@ -7456,7 +7464,7 @@ function forum_extend_navigation($navref, $course, $module, $cm) {
         }
     }
 }
-***********/
+*************************/
 
 /**
  * Adds module specific settings to the settings block
@@ -7477,7 +7485,7 @@ function forum_extend_settings_navigation(settings_navigation $settingsnav, navi
 
     $canmanage  = has_capability('mod/forum:managesubscriptions', $PAGE->cm->context);
     $subscriptionmode = forum_get_forcesubscribed($forumobject);
-    $cansubscribe = ($enrolled &&($subscriptionmode != FORUM_FORCESUBSCRIBE && ($subscriptionmode != FORUM_DISALLOWSUBSCRIBE || $canmanage)));
+    $cansubscribe = ($enrolled && $subscriptionmode != FORUM_FORCESUBSCRIBE && ($subscriptionmode != FORUM_DISALLOWSUBSCRIBE || $canmanage));
 
     if ($canmanage) {
         $mode = $forumnode->add(get_string('subscriptionmode', 'forum'), null, navigation_node::TYPE_CONTAINER);

@@ -41,10 +41,11 @@ require_once($CFG->dirroot . '/' . $CFG->admin . '/registration/lib.php');
 
 admin_externalpage_setup('registrationindex');
 
-$huburl = optional_param('huburl', '', PARAM_URL);
+$huburl = required_param('huburl', PARAM_URL);
+$huburl = rtrim($huburl, "/");
 $password = optional_param('password', '', PARAM_TEXT);
 $hubname = optional_param('hubname', '', PARAM_TEXT);
-if (empty($huburl) or !confirm_sesskey()) {
+if (!confirm_sesskey()) {
     throw new moodle_exception('missingparameter');
 }
 
@@ -100,10 +101,8 @@ if (!empty($fromform) and confirm_sesskey()) {
     set_config('site_participantnumberaverage_' . $cleanhuburl, $fromform->participantnumberaverage, 'hub');
 }
 
-/////// UNREGISTER ACTION //////
-//TO DO
-
 /////// UPDATE ACTION ////////
+
 // update the hub registration
 $update = optional_param('update', 0, PARAM_INT);
 if ($update and confirm_sesskey()) {

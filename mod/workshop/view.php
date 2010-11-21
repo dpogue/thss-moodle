@@ -29,6 +29,7 @@
 
 require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 require_once(dirname(__FILE__).'/locallib.php');
+require_once($CFG->libdir.'/completionlib.php');
 
 $id         = optional_param('id', 0, PARAM_INT); // course_module ID, or
 $w          = optional_param('w', 0, PARAM_INT);  // workshop instance ID
@@ -46,9 +47,9 @@ if ($id) {
 
 require_login($course, true, $cm);
 require_capability('mod/workshop:view', $PAGE->context);
-add_to_log($course->id, 'workshop', 'view', 'view.php?id=' . $cm->id, $workshop->name, $cm->id);
 
 $workshop = new workshop($workshop, $cm, $course);
+$workshop->log('view');
 
 if (!is_null($editmode) && $PAGE->user_allowed_editing()) {
     $USER->editing = $editmode;

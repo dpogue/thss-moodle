@@ -143,9 +143,8 @@ function wiki_get_current_version($pageid) {
     $sql = "SELECT *
             FROM {wiki_versions}
             WHERE pageid = ?
-            ORDER BY version DESC
-            LIMIT 1";
-    return $DB->get_record_sql($sql, array($pageid));
+            ORDER BY version DESC";
+    return array_pop($DB->get_records_sql($sql, array($pageid), 0, 1));
 
 }
 
@@ -704,20 +703,20 @@ function wiki_user_can_view($subwiki) {
             // There is one wiki for all the class.
             //
             // Only view capbility needed
-            return has_capability('mod/wiki:viewpage', $context, $USER);
+            return has_capability('mod/wiki:viewpage', $context);
         } else if ($wiki->wikimode == 'individual') {
             // Individual Mode:
             // Each person owns a wiki.
             if ($subwiki->userid == $USER->id) {
                 // Only the owner of the wiki can view it
-                return has_capability('mod/wiki:viewpage', $context, $USER);
+                return has_capability('mod/wiki:viewpage', $context);
             } else { // User has special capabilities
                 // User must have:
                 //      mod/wiki:viewpage capability
                 // and
                 //      mod/wiki:managewiki capability
-                $view = has_capability('mod/wiki:viewpage', $context, $USER);
-                $manage = has_capability('mod/wiki:managewiki', $context, $USER);
+                $view = has_capability('mod/wiki:viewpage', $context);
+                $manage = has_capability('mod/wiki:managewiki', $context);
 
                 return $view && $manage;
             }
@@ -736,7 +735,7 @@ function wiki_user_can_view($subwiki) {
             // Only members of subwiki group could view that wiki
             if ($subwiki->groupid == groups_get_activity_group($cm)) {
                 // Only view capability needed
-                return has_capability('mod/wiki:viewpage', $context, $USER);
+                return has_capability('mod/wiki:viewpage', $context);
 
             } else { // User is not part of that group
                 // User must have:
@@ -745,9 +744,9 @@ function wiki_user_can_view($subwiki) {
                 //      moodle/site:accessallgroups capability
                 // and
                 //      mod/wiki:viewpage capability
-                $view = has_capability('mod/wiki:viewpage', $context, $USER);
-                $manage = has_capability('mod/wiki:managewiki', $context, $USER);
-                $access = has_capability('moodle/site:accessallgroups', $context, $USER);
+                $view = has_capability('mod/wiki:viewpage', $context);
+                $manage = has_capability('mod/wiki:managewiki', $context);
+                $access = has_capability('moodle/site:accessallgroups', $context);
                 return ($manage || $access) && $view;
             }
         } else {
@@ -765,7 +764,7 @@ function wiki_user_can_view($subwiki) {
             // Everybody can read all wikis
             //
             // Only view capability needed
-            return has_capability('mod/wiki:viewpage', $context, $USER);
+            return has_capability('mod/wiki:viewpage', $context);
         } else {
             //Error
             return false;
@@ -796,22 +795,22 @@ function wiki_user_can_edit($subwiki) {
             // There is a wiki for all the class.
             //
             // Only edit capbility needed
-            return has_capability('mod/wiki:editpage', $context, $USER);
+            return has_capability('mod/wiki:editpage', $context);
         } else if ($wiki->wikimode == 'individual') {
             // Individual Mode
             // There is a wiki per user
 
             // Only the owner of that wiki can edit it
             if ($subwiki->userid == $USER->id) {
-                return has_capability('mod/wiki:editpage', $context, $USER);
+                return has_capability('mod/wiki:editpage', $context);
             } else { // Current user is not the owner of that wiki.
 
                 // User must have:
                 //      mod/wiki:editpage capability
                 // and
                 //      mod/wiki:managewiki capability
-                $edit = has_capability('mod/wiki:editpage', $context, $USER);
-                $manage = has_capability('mod/wiki:managewiki', $context, $USER);
+                $edit = has_capability('mod/wiki:editpage', $context);
+                $manage = has_capability('mod/wiki:managewiki', $context);
 
                 return $edit && $manage;
             }
@@ -827,7 +826,7 @@ function wiki_user_can_edit($subwiki) {
             // Only members of subwiki group could edit that wiki
             if ($subwiki->groupid == groups_get_activity_group($cm)) {
                 // Only edit capability needed
-                return has_capability('mod/wiki:editpage', $context, $USER);
+                return has_capability('mod/wiki:editpage', $context);
             } else { // User is not part of that group
                 // User must have:
                 //      mod/wiki:managewiki capability
@@ -835,9 +834,9 @@ function wiki_user_can_edit($subwiki) {
                 //      moodle/site:accessallgroups capability
                 // and
                 //      mod/wiki:editpage capability
-                $manage = has_capability('mod/wiki:managewiki', $context, $USER);
-                $access = has_capability('moodle/site:accessallgroups', $context, $USER);
-                $edit = has_capability('mod/wiki:editpage', $context, $USER);
+                $manage = has_capability('mod/wiki:managewiki', $context);
+                $access = has_capability('moodle/site:accessallgroups', $context);
+                $edit = has_capability('mod/wiki:editpage', $context);
                 return $manage && $access && $edit;
             }
         } else if ($wiki->wikimode == 'individual') {
@@ -846,7 +845,7 @@ function wiki_user_can_edit($subwiki) {
             //
             // Only the owner of that wiki can edit it
             if ($subwiki->userid == $USER->id) {
-                return has_capability('mod/wiki:editpage', $context, $USER);
+                return has_capability('mod/wiki:editpage', $context);
             } else { // Current user is not the owner of that wiki.
                 // User must have:
                 //      mod/wiki:managewiki capability
@@ -854,9 +853,9 @@ function wiki_user_can_edit($subwiki) {
                 //      moodle/site:accessallgroups capability
                 // and
                 //      mod/wiki:editpage capability
-                $manage = has_capability('mod/wiki:managewiki', $context, $USER);
-                $access = has_capability('moodle/site:accessallgroups', $context, $USER);
-                $edit = has_capability('mod/wiki:editpage', $context, $USER);
+                $manage = has_capability('mod/wiki:managewiki', $context);
+                $access = has_capability('moodle/site:accessallgroups', $context);
+                $edit = has_capability('mod/wiki:editpage', $context);
                 return $manage && $access && $edit;
             }
         } else {
@@ -871,14 +870,14 @@ function wiki_user_can_edit($subwiki) {
             // Only members of subwiki group could edit that wiki
             if ($subwiki->groupid == groups_get_activity_group($cm)) {
                 // Only edit capability needed
-                return has_capability('mod/wiki:editpage', $context, $USER);
+                return has_capability('mod/wiki:editpage', $context);
             } else { // User is not part of that group
                 // User must have:
                 //      mod/wiki:managewiki capability
                 // and
                 //      mod/wiki:editpage capability
-                $manage = has_capability('mod/wiki:managewiki', $context, $USER);
-                $edit = has_capability('mod/wiki:editpage', $context, $USER);
+                $manage = has_capability('mod/wiki:managewiki', $context);
+                $edit = has_capability('mod/wiki:editpage', $context);
                 return $manage && $edit;
             }
         } else if ($wiki->wikimode == 'individual') {
@@ -887,14 +886,14 @@ function wiki_user_can_edit($subwiki) {
             //
             // Only the owner of that wiki can edit it
             if ($subwiki->userid == $USER->id) {
-                return has_capability('mod/wiki:editpage', $context, $USER);
+                return has_capability('mod/wiki:editpage', $context);
             } else { // Current user is not the owner of that wiki.
                 // User must have:
                 //      mod/wiki:managewiki capability
                 // and
                 //      mod/wiki:editpage capability
-                $manage = has_capability('mod/wiki:managewiki', $context, $USER);
-                $edit = has_capability('mod/wiki:editpage', $context, $USER);
+                $manage = has_capability('mod/wiki:managewiki', $context);
+                $edit = has_capability('mod/wiki:editpage', $context);
                 return $manage && $edit;
             }
         } else {

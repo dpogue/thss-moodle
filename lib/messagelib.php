@@ -32,7 +32,8 @@ defined('MOODLE_INTERNAL') || die();
  * then tries to send it.
  *
  * Required parameter $eventdata structure:
- *  modulename     -
+ *  component string component name. must exist in message_providers
+ *  name string message type name. must exist in message_providers
  *  userfrom object the user sending the message
  *  userto object the message recipient
  *  subject string the message subject
@@ -43,7 +44,7 @@ defined('MOODLE_INTERNAL') || die();
  *  contexturl - if this is a notification then you can specify a url to view the event. For example the forum post the user is being notified of.
  *  contexturlname - the display text for contexturl
  *
- * @param object $eventdata information about the message (modulename, userfrom, userto, ...)
+ * @param object $eventdata information about the message (component, userfrom, userto, ...)
  * @return boolean success
  */
 function message_send($eventdata) {
@@ -51,6 +52,9 @@ function message_send($eventdata) {
 
     //TODO: we need to solve problems with database transactions here somehow, for now we just prevent transactions - sorry
     $DB->transactions_forbidden();
+
+    //flag we'll return indicating that all processors ran successfully
+    $success = true;
 
     if (is_int($eventdata->userto)) {
         mtrace('message_send() userto is a user ID when it should be a user object');
@@ -69,7 +73,7 @@ function message_send($eventdata) {
     }
 
     // Work out if the user is logged in or not
-    if ((time() - $timetoshowusers) < $eventdata->userto->lastaccess) {
+    if (!empty($eventdata->userto->lastaccess) && (time()-$timetoshowusers) < $eventdata->userto->lastaccess) {
         $userstate = 'loggedin';
     } else {
         $userstate = 'loggedoff';
@@ -115,6 +119,12 @@ function message_send($eventdata) {
             print_error('cannotsavemessageprefs', 'message');
         }
         $processor = get_user_preferences($preferencename, NULL, $eventdata->userto->id);
+        if (empty($processor)) {
+            //MDL-25114 They supplied an $eventdata->component $eventdata->name combination which doesn't
+            //exist in the message_provider table
+            $preferrormsg = get_string('couldnotfindpreference', 'message', $preferencename);
+            throw new coding_exception($preferrormsg,'blah');
+        }
     }
 
     if ($processor=='none' && $savemessage->notification) {
@@ -141,12 +151,12 @@ function message_send($eventdata) {
 
                         if (!$pclass->send_message($eventdata)) {
                             debugging('Error calling message processor '.$procname);
-                            return false;
+                            $success = false;
                         }
                     }
                 } else {
                     debugging('Error finding message processor '.$procname);
-                    return false;
+                    $success = false;
                 }
             }
             
@@ -164,7 +174,7 @@ function message_send($eventdata) {
         }
     }
 
-    return true;
+    return $success;
 }
 
 

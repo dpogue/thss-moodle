@@ -266,6 +266,25 @@ function cron_run() {
         }
         flush();
 
+        // Delete old backup_controllers and logs
+
+        if (!empty($CFG->loglifetime)) {  // value in days
+            $loglifetime = $timenow - ($CFG->loglifetime * 3600 * 24);
+            // Delete child records from backup_logs
+            $DB->execute("DELETE FROM {backup_logs}
+                           WHERE EXISTS (
+                               SELECT 'x'
+                                 FROM {backup_controllers} bc
+                                WHERE bc.backupid = {backup_logs}.backupid
+                                  AND bc.timecreated < ?)", array($loglifetime));
+            // Delete records from backup_controllers
+            $DB->execute("DELETE FROM {backup_controllers}
+                          WHERE timecreated < ?", array($loglifetime));
+            mtrace("Deleted old backup records");
+        }
+        flush();
+
+
 
         /// Delete old cached texts
 
@@ -333,28 +352,10 @@ function cron_run() {
 
     } // End of occasional clean-up tasks
 
-    // Disabled until implemented. MDL-21432, MDL-22184
-    if (1 == 2 && empty($CFG->disablescheduledbackups)) {   // Defined in config.php
-        //Execute backup's cron
-        //Perhaps a long time and memory could help in large sites
-        @set_time_limit(0);
-        raise_memory_limit(MEMORY_EXTRA);
-        if (file_exists("$CFG->dirroot/backup/backup_scheduled.php") and
-            file_exists("$CFG->dirroot/backup/backuplib.php") and
-            file_exists("$CFG->dirroot/backup/lib.php") and
-            file_exists("$CFG->libdir/blocklib.php")) {
-            include_once("$CFG->dirroot/backup/backup_scheduled.php");
-            include_once("$CFG->dirroot/backup/backuplib.php");
-            include_once("$CFG->dirroot/backup/lib.php");
-            mtrace("Running backups if required...");
-
-            if (! schedule_backup_cron()) {
-                mtrace("ERROR: Something went wrong while performing backup tasks!!!");
-            } else {
-                mtrace("Backup tasks finished.");
-            }
-        }
-    }
+    // Run automated backups if required.
+    require_once($CFG->dirroot.'/backup/util/includes/backup_includes.php');
+    require_once($CFG->dirroot.'/backup/util/helper/backup_cron_helper.class.php');
+    backup_cron_automated_helper::run_automated_backup();
 
 /// Run the auth cron, if any
 /// before enrolments because it might add users that will be needed in enrol plugins

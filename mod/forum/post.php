@@ -25,6 +25,7 @@
 
 require_once('../../config.php');
 require_once('lib.php');
+require_once($CFG->libdir.'/completionlib.php');
 
 $reply   = optional_param('reply', 0, PARAM_INT);
 $forum   = optional_param('forum', 0, PARAM_INT);
@@ -111,9 +112,11 @@ if (!empty($forum)) {      // User is starting a new discussion in a forum
     if (! forum_user_can_post_discussion($forum, $groupid, -1, $cm)) {
         if (!isguestuser()) {
             if (!is_enrolled($coursecontext)) {
-                $SESSION->wantsurl = $FULLME;
-                $SESSION->enrolcancel = $_SERVER['HTTP_REFERER'];
-                redirect($CFG->wwwroot.'/enrol/index.php?id='.$course->id, get_string('youneedtoenrol'));
+                if (enrol_selfenrol_available($course->id)) {
+                    $SESSION->wantsurl = $FULLME;
+                    $SESSION->enrolcancel = $_SERVER['HTTP_REFERER'];
+                    redirect($CFG->wwwroot.'/enrol/index.php?id='.$course->id, get_string('youneedtoenrol'));
+                }
             }
         }
         print_error('nopostforum', 'forum');
@@ -253,7 +256,7 @@ if (!empty($forum)) {      // User is starting a new discussion in a forum
     }
 
     $PAGE->set_cm($cm, $course, $forum);
-    
+
     if (!($forum->type == 'news' && !$post->parent && $discussion->timestart > time())) {
         if (((time() - $post->created) > $CFG->maxeditingtime) and
                     !has_capability('mod/forum:editanypost', $modcontext)) {
@@ -846,7 +849,7 @@ if (!empty($parent)) {
         if ($forum->type != 'qanda' || forum_user_can_see_discussion($forum, $discussion, $modcontext)) {
             $forumtracked = forum_tp_is_tracked($forum);
             $posts = forum_get_all_discussion_posts($discussion->id, "created ASC", $forumtracked);
-            forum_print_posts_threaded($course, $cm, $forum, $discussion, $parent, 0, false, false, $forumtracked, $posts);
+            forum_print_posts_threaded($course, $cm, $forum, $discussion, $parent, 0, false, $forumtracked, $posts);
         }
     }
 } else {

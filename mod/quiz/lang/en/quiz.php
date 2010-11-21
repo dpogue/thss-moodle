@@ -294,6 +294,7 @@ at {$a->submissiontime}.
 This email confirms that we have safely received your answers.
 
 You can access this quiz at {$a->quizurl}.';
+$string['emailconfirmsmall'] = 'Thank you for submitting your answers to \'{$a->quizname}\'';
 $string['emailconfirmsubject'] = 'Quiz submission confirmation: {$a->quizname}';
 $string['emailnotifybody'] = 'Dear {$a->username},
 
@@ -302,6 +303,7 @@ $string['emailnotifybody'] = 'Dear {$a->username},
 in course \'{$a->coursename}\'
 
 You can review this attempt at {$a->quizreviewurl}.';
+$string['emailnotifysmall'] = '{$a->studentname} has completed {$a->quizname}';
 $string['emailnotifysubject'] = '{$a->studentname} has completed quiz {$a->quizname}';
 $string['empty'] = 'Empty';
 $string['enabled'] = 'Enabled';
@@ -329,10 +331,8 @@ $string['examview'] = 'Examview';
 $string['export'] = 'Export';
 $string['exportcategory'] = 'export category';
 $string['exporterror'] = 'An error occurred during export processing';
-$string['exportfilename'] = 'quiz';
 $string['exportingquestions'] = 'Questions are being exported to file';
 $string['exportname'] = 'File name';
-$string['exportnameformat'] = '%Y%m%d-%H%M';
 $string['exportquestions'] = 'Export questions to file';
 $string['extraattemptrestrictions'] = 'Extra restrictions on attempts';
 $string['false'] = 'False';
@@ -475,6 +475,8 @@ $string['matcherror'] = 'Grades do not match grade options - question skipped';
 $string['matchgrades'] = 'Match grades';
 $string['matchgradeserror'] = 'Error if grade not listed';
 $string['matchgradesnearest'] = 'Nearest grade if not listed';
+$string['messageprovider:confirmation'] = 'Confirmation of your own quiz submissions';
+$string['messageprovider:submission'] = 'Notification of quiz submissions';
 $string['max'] = 'Max';
 $string['min'] = 'Min';
 $string['minutes'] = 'Minutes';
@@ -551,6 +553,11 @@ $string['open'] = 'Not answered';
 $string['openclosedatesupdated'] = 'Quiz open and close dates updated';
 $string['optional'] = 'optional';
 $string['orderandpaging'] = 'Order and paging';
+$string['orderandpaging_help'] = 'The numbers 10, 20, 30, ... opposite each question indicate the order of the questions. The numbers increase in steps of 10 to leave space for additional questions to be inserted. To reorder the questions, change the numbers then click the "Reorder questions" button.
+
+To add page breaks after particular questions, tick the checkboxes next to the questions then click the "Add new pages after selected questions" button.
+
+To arrange the questions over a number of pages, click the Repaginate button and select the desired number of questions per page.';
 $string['orderingquiz'] = 'Order and paging';
 $string['outof'] = '{$a->grade} out of a maximum of {$a->maxgrade}';
 $string['outofpercent'] = '{$a->grade} out of a maximum of {$a->maxgrade} ({$a->percent}%)';
@@ -713,6 +720,7 @@ $string['reverttodefaults'] = 'Revert to quiz defaults';
 $string['review'] = 'Review';
 $string['reviewafter'] = 'Allow review after quiz is closed';
 $string['reviewalways'] = 'Allow review at any time';
+$string['reviewattempt'] = 'Review attempt';
 $string['reviewbefore'] = 'Allow review while quiz is open';
 $string['reviewclosed'] = 'After the quiz is closed';
 $string['reviewimmediately'] = 'Immediately after the attempt';

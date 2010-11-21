@@ -66,8 +66,9 @@ class message_output_email extends message_output {
     function config_form($preferences){
         global $USER;
         $string = get_string('email','message_email').': <input size="30" name="email_email" value="'.$preferences->email_email.'" />';
-        if (empty($preferences->email_email)) {
-            $string .= ' ('.get_string('default').': '.$USER->email.')';
+
+        if (empty($preferences->email_email) && !empty($preferences->userdefaultemail)) {
+            $string .= ' ('.get_string('default').': '.$preferences->userdefaultemail.')';
         }
         return $string;
     }

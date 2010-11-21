@@ -8,7 +8,8 @@
  * @package SimpleTestEx
  */
 
-/** */
+define('NO_OUTPUT_BUFFERING', true);
+
 require_once(dirname(__FILE__).'/../../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->libdir.'/simpletestcoveragelib.php');

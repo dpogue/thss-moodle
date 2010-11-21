@@ -268,16 +268,39 @@ class invalid_dataroot_permissions extends moodle_exception {
 }
 
 /**
+ * An exception that indicates that file can not be served
+ *
+ * @package    core
+ * @subpackage lib
+ * @copyright  2010 Petr Skoda {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class file_serving_exception extends moodle_exception {
+    /**
+     * Constructor
+     * @param string $debuginfo optional more detailed information
+     */
+    function __construct($debuginfo = NULL) {
+        parent::__construct('cannotservefile', 'error', '', NULL, $debuginfo);
+    }
+}
+
+/**
  * Default exception handler, uncaught exceptions are equivalent to error() in 1.9 and earlier
  *
  * @param Exception $ex
  * @return void -does not return. Terminates execution!
  */
 function default_exception_handler($ex) {
-    global $DB, $OUTPUT;
+    global $CFG, $DB, $OUTPUT, $USER, $FULLME, $SESSION;
 
     // detect active db transactions, rollback and log as error
     abort_all_db_transactions();
+
+    if (($ex instanceof required_capability_exception) && !CLI_SCRIPT && !AJAX_SCRIPT && !empty($CFG->autologinguests) && !empty($USER->autologinguest)) {
+        $SESSION->wantsurl = $FULLME;
+        redirect(get_login_url());
+    }
 
     $info = get_exception_info($ex);
 
@@ -522,6 +545,26 @@ function format_backtrace($callers, $plaintext = false) {
     $from .= $plaintext ? '' : '</ul>';
 
     return $from;
+}
+
+/**
+ * This function makes the return value of ini_get consistent if you are
+ * setting server directives through the .htaccess file in apache.
+ *
+ * Current behavior for value set from php.ini On = 1, Off = [blank]
+ * Current behavior for value set from .htaccess On = On, Off = Off
+ * Contributed by jdell @ unr.edu
+ *
+ * @param string $ini_get_arg The argument to get
+ * @return bool True for on false for not
+ */
+function ini_get_bool($ini_get_arg) {
+    $temp = ini_get($ini_get_arg);
+
+    if ($temp == '1' or strtolower($temp) == 'on') {
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -833,7 +876,7 @@ function raise_memory_limit($newlimit) {
         return false;
     }
 
-    $cur = @ini_get('memory_limit');
+    $cur = ini_get('memory_limit');
     if (empty($cur)) {
         // if php is compiled without --enable-memory-limits
         // apparently memory_limit is set to ''
@@ -867,7 +910,7 @@ function reduce_memory_limit($newlimit) {
     if (empty($newlimit)) {
         return false;
     }
-    $cur = @ini_get('memory_limit');
+    $cur = ini_get('memory_limit');
     if (empty($cur)) {
         // if php is compiled without --enable-memory-limits
         // apparently memory_limit is set to ''
@@ -921,6 +964,36 @@ function get_real_size($size = 0) {
 }
 
 /**
+ * Try to disable all output buffering and purge
+ * all headers.
+ *
+ * @private to be called only from lib/setup.php !
+ * @return void
+ */
+function disable_output_buffering() {
+    $olddebug = error_reporting(0);
+
+    // disable compression, it would prevent closing of buffers
+    if (ini_get_bool('zlib.output_compression')) {
+        ini_set('zlib.output_compression', 'Off');
+    }
+
+    // try to flush everything all the time
+    ob_implicit_flush(true);
+
+    // close all buffers if possible and discard any existing output
+    // this can actually work around some whitespace problems in config.php
+    while(ob_get_level()) {
+        if (!ob_end_clean()) {
+            // prevent infinite loop when buffer can not be closed
+            break;
+        }
+    }
+
+    error_reporting($olddebug);
+}
+
+/**
  * Check whether a major upgrade is needed. That is defined as an upgrade that
  * changes something really fundamental in the database, so nothing can possibly
  * work until the database has been updated, and that is defined by the hard-coded
@@ -928,7 +1001,7 @@ function get_real_size($size = 0) {
  */
 function redirect_if_major_upgrade_required() {
     global $CFG;
-    $lastmajordbchanges = 2010070300;
+    $lastmajordbchanges = 2010111700;
     if (empty($CFG->version) or (int)$CFG->version < $lastmajordbchanges or
             during_initial_install() or !empty($CFG->adminsetuppending)) {
         try {

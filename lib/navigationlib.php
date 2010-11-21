@@ -990,7 +990,8 @@ class global_navigation extends navigation_node {
                 // course node and not populate it.
                 $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
                 // Not enrolled, can't view, and hasn't switched roles
-                if ((!is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext) && !is_role_switched($course->id))) {
+
+                if (!can_access_course($coursecontext)) {
                     $coursenode->make_active();
                     $canviewcourseprofile = false;
                     break;
@@ -1014,7 +1015,7 @@ class global_navigation extends navigation_node {
                 // If the user is not enrolled then we only want to show the
                 // course node and not populate it.
                 $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
-                if ($course->id !== SITEID && !is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext)) {
+                if (!can_access_course($coursecontext)) {
                     if ($coursenode) {
                         $coursenode->make_active();
                     }
@@ -1069,7 +1070,7 @@ class global_navigation extends navigation_node {
                     // If the user is not enrolled then we only want to show the
                     // course node and not populate it.
                     $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
-                    if (!is_enrolled($coursecontext) && !has_capability('moodle/course:view', $coursecontext)) {
+                    if (!can_access_course($coursecontext)) {
                         $coursenode->make_active();
                         $canviewcourseprofile = false;
                         break;
@@ -1763,7 +1764,7 @@ class global_navigation extends navigation_node {
                     $usercoursenode->add(get_string('notes', 'notes'), $url, self::TYPE_SETTING);
                 }
 
-                if (has_capability('moodle/course:view', get_context_instance(CONTEXT_COURSE, $usercourse->id))) {
+                if (can_access_course(get_context_instance(CONTEXT_COURSE, $usercourse->id), $user->id)) {
                     $usercoursenode->add(get_string('entercourse'), new moodle_url('/course/view.php', array('id'=>$usercourse->id)), self::TYPE_SETTING, null, null, new pix_icon('i/course', ''));
                 }
 
@@ -3288,7 +3289,7 @@ class settings_navigation extends navigation_node {
                     return false;
                 }
             } else {
-                if ((!has_capability('moodle/user:viewdetails', $coursecontext) && !has_capability('moodle/user:viewdetails', $usercontext)) || !is_enrolled($coursecontext, $user->id)) {
+                if ((!has_capability('moodle/user:viewdetails', $coursecontext) && !has_capability('moodle/user:viewdetails', $usercontext)) || !can_access_course($coursecontext, $user->id)) {
                     return false;
                 }
                 if (groups_get_course_groupmode($course) == SEPARATEGROUPS && !has_capability('moodle/site:accessallgroups', $coursecontext)) {
@@ -3510,8 +3511,10 @@ class settings_navigation extends navigation_node {
         }
 
         // Assign local roles
-        $assignurl = new moodle_url('/'.$CFG->admin.'/roles/assign.php', array('contextid'=>$this->context->id));
-        $categorynode->add(get_string('assignroles', 'role'), $assignurl, self::TYPE_SETTING);
+        if (has_capability('moodle/role:assign', $this->context)) {
+            $assignurl = new moodle_url('/'.$CFG->admin.'/roles/assign.php', array('contextid'=>$this->context->id));
+            $categorynode->add(get_string('assignroles', 'role'), $assignurl, self::TYPE_SETTING);
+        }
 
         // Override roles
         if (has_capability('moodle/role:review', $this->context) or count(get_overridable_roles($this->context))>0) {

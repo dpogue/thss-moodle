@@ -27,7 +27,11 @@ require_once($CFG->libdir.'/eventslib.php');
 
 
 define ('MESSAGE_SHORTLENGTH', 300);
-define ('MESSAGE_WINDOW', true);          // We are in a message window (so don't pop up a new one!)
+
+//$PAGE isnt set if we're being loaded by cron which doesnt display popups anyway
+if (isset($PAGE)) {
+    $PAGE->set_popup_notification_allowed(false); // We are in a message window (so don't pop up a new one)
+}
 
 define ('MESSAGE_DISCUSSION_WIDTH',600);
 define ('MESSAGE_DISCUSSION_HEIGHT',500);
@@ -1333,7 +1337,7 @@ function message_shorten_message($message, $minlength=0) {
  */
 function message_get_fragment($message, $keywords) {
 
-    $fullsize = 120;
+    $fullsize = 160;
     $halfsize = (int)($fullsize/2);
 
     $message = strip_tags($message);
@@ -1413,9 +1417,10 @@ function message_get_history($user1, $user2, $limitnum=0, $viewingnewmessages=fa
     }
 
     //if we only want the last $limitnum messages
-    if ($limitnum>0) {
-        ksort($messages);
-        $messages = array_slice($messages, count($messages)-$limitnum, $limitnum, true);
+    ksort($messages);
+    $messagecount = count($messages);
+    if ($limitnum>0 && $messagecount>$limitnum) {
+        $messages = array_slice($messages, $messagecount-$limitnum, $limitnum, true);
     }
 
     return $messages;
@@ -1516,7 +1521,7 @@ function message_format_message(&$message, &$user, $format='', $keywords='', $cl
 
     //if supplied display small messages as fullmessage may contain boilerplate text that shouldnt appear in the messaging UI
     if (!empty($message->smallmessage)) {
-        $messagetext = format_text($message->smallmessage, null, $options);
+        $messagetext = format_text($message->smallmessage, FORMAT_MOODLE, $options);
     } else {
         $messagetext = format_text($message->fullmessage, $message->fullmessageformat, $options);
     }

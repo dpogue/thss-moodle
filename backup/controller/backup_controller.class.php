@@ -72,7 +72,7 @@ class backup_controller extends backup implements loggable {
      * @param int $id The ID of the item to backup; e.g the course id
      * @param int $format The backup format to use; Most likely backup::FORMAT_MOODLE
      * @param bool $interactive Whether this backup will require user interaction; backup::INTERACTIVE_YES or INTERACTIVE_NO
-     * @param int $mode One of backup::MODE_GENERAL, MODE_IMPORT, MODE_SAMESITE, MODE_HUB
+     * @param int $mode One of backup::MODE_GENERAL, MODE_IMPORT, MODE_SAMESITE, MODE_HUB, MODE_AUTOMATED
      * @param int $userid The id of the user making the backup
      */
     public function __construct($type, $id, $format, $interactive, $mode, $userid){
@@ -139,6 +139,23 @@ class backup_controller extends backup implements loggable {
         }
     }
 
+    /**
+     * Clean structures used by the backup_controller
+     *
+     * This method clean various structures used by the backup_controller,
+     * destroying them in an ordered way, so their memory will be gc properly
+     * by PHP (mainly circular references).
+     *
+     * Note that, while it's not mandatory to execute this method, it's highly
+     * recommended to do so, specially in scripts performing multiple operations
+     * (like the automated backups) or the system will run out of memory after
+     * a few dozens of backups)
+     */
+    public function destroy() {
+        // Only need to destroy circulars under the plan. Delegate to it.
+        $this->plan->destroy();
+    }
+
     public function finish_ui() {
         if ($this->status != backup::STATUS_SETTING_UI) {
             throw new backup_controller_exception('cannot_finish_ui_if_not_setting_ui');
@@ -161,7 +178,9 @@ class backup_controller extends backup implements loggable {
         // containing all the steps will be sent to DB. 100% (monster) useless.
         if ($status == backup::STATUS_AWAITING) {
             $this->save_controller();
-            $this->logger = self::load_controller($this->backupid)->logger; // wakeup loggers
+            $tbc = self::load_controller($this->backupid);
+            $this->logger = $tbc->logger; // wakeup loggers
+            $tbc->destroy(); // Clean temp controller structures
         }
     }
 

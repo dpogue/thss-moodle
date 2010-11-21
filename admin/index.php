@@ -38,19 +38,7 @@ if (version_compare(phpversion(), '5.2.0') < 0) {
     die;
 }
 
-// disable compression, it would prevent closing of buffers
-if (ini_get('zlib.output_compression')) {
-    ini_set('zlib.output_compression', 'Off');
-}
-
-// try to flush everything all the time
-ob_implicit_flush(true);
-while(ob_get_level()) {
-    if (!ob_end_clean()) {
-        // prevent infinite loop
-        break;
-    }
-}
+define('NO_OUTPUT_BUFFERING', true);
 
 require('../config.php');
 require_once($CFG->libdir.'/adminlib.php');    // various admin-only functions
@@ -111,7 +99,7 @@ $CFG->xmlstrictheaders = false;
 
 if (!core_tables_exist()) {
     $PAGE->set_pagelayout('maintenance');
-    define('MESSAGE_WINDOW', true);
+    $PAGE->set_popup_notification_allowed(false);
 
     // fake some settings
     $CFG->docroot = 'http://docs.moodle.org';
@@ -194,7 +182,7 @@ if (empty($CFG->version)) {
 
 if ($version > $CFG->version) {  // upgrade
     $PAGE->set_pagelayout('maintenance');
-    define('MESSAGE_WINDOW', true);
+    $PAGE->set_popup_notification_allowed(false);
 
     $a->oldversion = "$CFG->release ($CFG->version)";
     $a->newversion = "$release ($version)";
@@ -278,7 +266,7 @@ if (moodle_needs_upgrading()) {
         // means core upgrade or installation was not already done
         if (!$confirmplugins) {
             $PAGE->set_pagelayout('maintenance');
-            define('MESSAGE_WINDOW', true);
+            $PAGE->set_popup_notification_allowed(false);
             $strplugincheck = get_string('plugincheck');
             $PAGE->navbar->add($strplugincheck);
             $PAGE->set_title($strplugincheck);

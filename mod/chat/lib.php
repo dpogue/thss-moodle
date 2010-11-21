@@ -733,7 +733,7 @@ function chat_update_chat_times($chatid=0) {
         if ($event->id = $DB->get_field_select('event', 'id', $cond, $params)) {
             $event->timestart   = $chat->chattime;
             $calendarevent = calendar_event::load($event->id);
-            $calendarevent->update($event);
+            $calendarevent->update($event, false);
         }
     }
 }
@@ -1293,4 +1293,14 @@ function chat_extend_settings_navigation(settings_navigation $settings, navigati
             $chatnode->add(get_string('viewreport', 'chat'), new moodle_url('/mod/chat/report.php', array('id'=>$PAGE->cm->id)));
         }
     }
+}
+
+/**
+ * user logout event handler
+ *
+ * @param object $user full $USER object
+ */
+function chat_user_logout($user) {
+    global $DB;
+    $DB->delete_records('chat_users', array('userid'=>$user->id));
 }

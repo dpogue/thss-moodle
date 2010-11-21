@@ -104,7 +104,7 @@ if (!isset($_SERVER['REMOTE_ADDR']) && isset($_SERVER['argv'][0])) {
 }
 
 // sometimes default PHP settings are borked on shared hosting servers, I wonder why they have to do that??
-@ini_set('precision', 14); // needed for upgrades and gradebook
+ini_set('precision', 14); // needed for upgrades and gradebook
 
 // Scripts may request no debug and error messages in output
 // please note it must be defined before including the config.php script
@@ -113,10 +113,18 @@ if (!defined('NO_DEBUG_DISPLAY')) {
     define('NO_DEBUG_DISPLAY', false);
 }
 
+// Some scripts such as upgrade may want to prevent output buffering
+if (!defined('NO_OUTPUT_BUFFERING')) {
+    define('NO_OUTPUT_BUFFERING', false);
+}
+
 // Servers should define a default timezone in php.ini, but if they don't then make sure something is defined.
 // This is a quick hack.  Ideally we should ask the admin for a value.  See MDL-22625 for more on this.
 if (function_exists('date_default_timezone_set') and function_exists('date_default_timezone_get')) {
-    @date_default_timezone_set(@date_default_timezone_get());
+    $olddebug = error_reporting(0);
+    date_default_timezone_set(date_default_timezone_get());
+    error_reporting($olddebug);
+    unset($olddebug);
 }
 
 // PHPUnit scripts are a special case, for now we treat them as normal CLI scripts,
@@ -154,14 +162,14 @@ if (defined('WEB_CRON_EMULATED_CLI')) {
 // Detect CLI maintenance mode - this is useful when you need to mess with database, such as during upgrades
 if (file_exists("$CFG->dataroot/climaintenance.html")) {
     if (!CLI_SCRIPT) {
-        @header('Content-type: text/html');
+        header('Content-type: text/html');
         /// Headers to make it not cacheable and json
-        @header('Cache-Control: no-store, no-cache, must-revalidate');
-        @header('Cache-Control: post-check=0, pre-check=0', false);
-        @header('Pragma: no-cache');
-        @header('Expires: Mon, 20 Aug 1969 09:23:00 GMT');
-        @header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
-        @header('Accept-Ranges: none');
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('Cache-Control: post-check=0, pre-check=0', false);
+        header('Pragma: no-cache');
+        header('Expires: Mon, 20 Aug 1969 09:23:00 GMT');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+        header('Accept-Ranges: none');
         readfile("$CFG->dataroot/climaintenance.html");
         die;
     } else {
@@ -205,10 +213,10 @@ if (defined('ABORT_AFTER_CONFIG')) {
             error_reporting(0);
         }
         if (empty($CFG->debugdisplay)) {
-            @ini_set('display_errors', '0');
-            @ini_set('log_errors', '1');
+            ini_set('display_errors', '0');
+            ini_set('log_errors', '1');
         } else {
-            @ini_set('display_errors', '1');
+            ini_set('display_errors', '1');
         }
         require_once("$CFG->dirroot/lib/configonlylib.php");
         return;
@@ -336,6 +344,11 @@ $CFG->httpswwwroot = $CFG->wwwroot;
 
 require_once($CFG->libdir .'/setuplib.php');        // Functions that MUST be loaded first
 
+if (NO_OUTPUT_BUFFERING) {
+    // we have to call this always before starting session because it discards headers!
+    disable_output_buffering();
+}
+
 // Increase memory limits if possible
 raise_memory_limit(MEMORY_STANDARD);
 
@@ -461,7 +474,7 @@ try {
     define('SITEID', $SITE->id);
     // And the 'default' course - this will usually get reset later in require_login() etc.
     $COURSE = clone($SITE);
-} catch (dml_read_exception $e) {
+} catch (dml_exception $e) {
     $SITE = null;
     if (empty($CFG->version)) {
         // we are just installing
@@ -506,14 +519,14 @@ if (!isset($CFG->debugdisplay)) {
     // keep it "as is" during installation
 } else if (NO_DEBUG_DISPLAY) {
     // some parts of Moodle cannot display errors and debug at all.
-    @ini_set('display_errors', '0');
-    @ini_set('log_errors', '1');
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
 } else if (empty($CFG->debugdisplay)) {
-    @ini_set('display_errors', '0');
-    @ini_set('log_errors', '1');
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
 } else {
     // This is very problematic in XHTML strict mode!
-    @ini_set('display_errors', '1');
+    ini_set('display_errors', '1');
 }
 
 // detect unsupported upgrade jump as soon as possible - do not change anything, do not use system functions
@@ -570,10 +583,10 @@ if (stristr(PHP_OS, 'win') && !stristr(PHP_OS, 'darwin')) {
 $CFG->os = PHP_OS;
 
 // Configure ampersands in URLs
-@ini_set('arg_separator.output', '&amp;');
+ini_set('arg_separator.output', '&amp;');
 
 // Work around for a PHP bug   see MDL-11237
-@ini_set('pcre.backtrack_limit', 20971520);  // 20 MB
+ini_set('pcre.backtrack_limit', 20971520);  // 20 MB
 
 // Location of standard files
 $CFG->wordlist = $CFG->libdir .'/wordlist.txt';

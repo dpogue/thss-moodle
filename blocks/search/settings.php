@@ -4,14 +4,6 @@ defined('MOODLE_INTERNAL') || die;
 
 if ($ADMIN->fulltree) {
 
-    //Search text
-    $settings->add(new admin_setting_configtext('block_search_text', get_string('configsearchtext', 'block_search'),
-                       get_string('headingofsearchblock', 'block_search'), get_string('searchmoodle', 'block_search'), PARAM_TEXT ));
-
-    //Button Label
-    $settings->add(new admin_setting_configtext('block_search_button', get_string('configbuttonlabel', 'block_search'),
-                       get_string('labelofsearchbutton', 'block_search'), get_string('go', 'block_search'), PARAM_TEXT));
-
     //Enable file indexing (y/n)
     $settings->add(new admin_setting_configcheckbox('block_search_enable_file_indexing', get_string('configenablefileindexing', 'block_search'),
                        get_string('enablefileindexing', 'block_search'), 0, 1, 0));
@@ -42,15 +34,15 @@ if ($ADMIN->fulltree) {
 
     //pdf_to_text_cmd
     $settings->add(new admin_setting_configtext('block_search_pdf_to_text_cmd', get_string('configpdftotextcmd', 'block_search'),
-                       get_string('pdftotextcmd', 'block_search'), $default_pdf_to_text_cmd, PARAM_TEXT, 60));
+                       get_string('pdftotextcmd', 'block_search'), $default_pdf_to_text_cmd, PARAM_RAW, 60));
 
     //word_to_text_cmd
     $settings->add(new admin_setting_configtext('block_search_word_to_text_cmd', get_string('configwordtotextcmd', 'block_search'),
-                       get_string('wordtotextcmd', 'block_search'), $default_word_to_text_cmd, PARAM_TEXT, 60));
+                       get_string('wordtotextcmd', 'block_search'), $default_word_to_text_cmd, PARAM_RAW, 60));
 
     //word_to_text_env
     $settings->add(new admin_setting_configtext('block_search_word_to_text_env', get_string('configwordtotextenv', 'block_search'),
-                       get_string('wordtotextenv', 'block_search'), $default_word_to_text_env, PARAM_PATH, 60));
+                       get_string('wordtotextenv', 'block_search'), $default_word_to_text_env, PARAM_RAW, 60));
 
 
     // modules activations
@@ -75,12 +67,12 @@ if ($ADMIN->fulltree) {
             $propname = 'block_search_'.$type.'_to_text_cmd';
             $settings->add(new admin_setting_configtext($propname, get_string('configtypetotxtcmd', 'block_search'),
                                get_string('cmdtoconverttotextfor', 'block_search', $type), '', PARAM_PATH, 60));
-            
+
             //word_to_text_env
-            $propname = "block_search_'.$type.'_to_text_env";
+            $propname = 'block_search_'.$type.'_to_text_env';
             $settings->add(new admin_setting_configtext($propname, get_string('configtypetotxtenv', 'block_search'),
                                get_string('envforcmdtotextfor', 'block_search', $type), '', PARAM_PATH, 60));
-            
+
         }
     }
 
@@ -101,7 +93,7 @@ if ($ADMIN->fulltree) {
             $found_searchable_modules = 1;
         }
     }
-    
+
     if (!$found_searchable_modules) {
         //header
         $propname = 'block_search_nosearchablemodules';

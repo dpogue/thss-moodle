@@ -2330,6 +2330,7 @@ function require_login($courseorid = NULL, $autologinguest = true, $cm = NULL, $
             }
             $lang = isset($SESSION->lang) ? $SESSION->lang : $CFG->lang;
             complete_user_login($guest, false);
+            $USER->autologinguest = true;
             $SESSION->lang = $lang;
         } else {
             //NOTE: $USER->site check was obsoleted by session test cookie,
@@ -2540,6 +2541,7 @@ function require_login($courseorid = NULL, $autologinguest = true, $cm = NULL, $
                     if (!isset($enrols[$instance->enrol])) {
                         continue;
                     }
+                    // Get a duration for the guestaccess, a timestamp in the future or false.
                     $until = $enrols[$instance->enrol]->try_autoenrol($instance);
                     if ($until !== false) {
                         $USER->enrol['enrolled'][$course->id] = $until;
@@ -2554,6 +2556,7 @@ function require_login($courseorid = NULL, $autologinguest = true, $cm = NULL, $
                         if (!isset($enrols[$instance->enrol])) {
                             continue;
                         }
+                        // Get a duration for the guestaccess, a timestamp in the future or false.
                         $until = $enrols[$instance->enrol]->try_guestaccess($instance);
                         if ($until !== false) {
                             $USER->enrol['tempguest'][$course->id] = $until;
@@ -2628,6 +2631,8 @@ function require_login($courseorid = NULL, $autologinguest = true, $cm = NULL, $
 function require_logout() {
     global $USER;
 
+    $params = $USER;
+
     if (isloggedin()) {
         add_to_log(SITEID, "user", "logout", "view.php?id=$USER->id&course=".SITEID, $USER->id, 0, $USER->id);
 
@@ -2638,7 +2643,9 @@ function require_logout() {
         }
     }
 
+    events_trigger('user_logout', $params);
     session_get_instance()->terminate_current();
+    unset($params);
 }
 
 /**
@@ -3728,7 +3735,7 @@ function authenticate_user_login($username, $password) {
 
             update_internal_user_password($user, $password); // just in case salt or encoding were changed (magic quotes too one day)
 
-            if (!$authplugin->is_internal()) {            // update user record from external DB
+            if ($authplugin->is_synchronised_with_external()) { // update user record from external DB
                 $user = update_user_record($username, get_auth_plugin($user->auth));
             }
         } else {
@@ -3835,12 +3842,11 @@ function complete_user_login($user, $setcookie=true) {
  * Compare password against hash stored in internal user table.
  * If necessary it also updates the stored hash to new format.
  *
- * @global object
- * @param object $user
+ * @param stdClass $user (password property may be updated)
  * @param string $password plain text password
  * @return bool is password valid?
  */
-function validate_internal_user_password(&$user, $password) {
+function validate_internal_user_password($user, $password) {
     global $CFG;
 
     if (!isset($CFG->passwordsaltmain)) {
@@ -3849,13 +3855,22 @@ function validate_internal_user_password(&$user, $password) {
 
     $validated = false;
 
-    if ($user->password == md5($password.$CFG->passwordsaltmain) or $user->password == md5($password)) {
+    if ($user->password === 'not cached') {
+        // internal password is not used at all, it can not validate
+
+    } else if ($user->password === md5($password.$CFG->passwordsaltmain)
+            or $user->password === md5($password)
+            or $user->password === md5(addslashes($password).$CFG->passwordsaltmain)
+            or $user->password === md5(addslashes($password))) {
+        // note: we are intentionally using the addslashes() here because we
+        //       need to accept old password hashes of passwords with magic quotes
         $validated = true;
+
     } else {
         for ($i=1; $i<=20; $i++) { //20 alternative salts should be enough, right?
             $alt = 'passwordsaltalt'.$i;
             if (!empty($CFG->$alt)) {
-                if ($user->password == md5($password.$CFG->$alt)) {
+                if ($user->password === md5($password.$CFG->$alt) or $user->password === md5(addslashes($password).$CFG->$alt)) {
                     $validated = true;
                     break;
                 }
@@ -3874,7 +3889,6 @@ function validate_internal_user_password(&$user, $password) {
 /**
  * Calculate hashed value from password using current hash mechanism.
  *
- * @global object
  * @param string $password
  * @return string password hash
  */
@@ -3891,12 +3905,12 @@ function hash_internal_user_password($password) {
 /**
  * Update password hash in user object.
  *
- * @param object $user
+ * @param stdClass $user (password property may be updated)
  * @param string $password plain text password
  * @return bool always returns true
  */
-function update_internal_user_password(&$user, $password) {
-    global $CFG, $DB;
+function update_internal_user_password($user, $password) {
+    global $DB;
 
     $authplugin = get_auth_plugin($user->auth);
     if ($authplugin->prevent_local_passwords()) {
@@ -4137,6 +4151,7 @@ function delete_course($courseorid, $showfeedback = true) {
  */
 function remove_course_contents($courseid, $showfeedback = true) {
     global $CFG, $DB, $OUTPUT;
+    require_once($CFG->libdir.'/completionlib.php');
     require_once($CFG->libdir.'/questionlib.php');
     require_once($CFG->libdir.'/gradelib.php');
     require_once($CFG->dirroot.'/group/lib.php');
@@ -4329,6 +4344,7 @@ function shift_course_mod_dates($modname, $fields, $timeshift, $courseid) {
 function reset_course_userdata($data) {
     global $CFG, $USER, $DB;
     require_once($CFG->libdir.'/gradelib.php');
+    require_once($CFG->libdir.'/completionlib.php');
     require_once($CFG->dirroot.'/group/lib.php');
 
     $data->courseid = $data->id;
@@ -4775,7 +4791,7 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml='', $a
         require_once($CFG->dirroot.'/mnet/lib.php');
 
         $jumpurl = mnet_get_idp_jump_url($user);
-        $callback = partial('mnet_sso_apply_redirection', $jumpurl);
+        $callback = partial('mnet_sso_apply_indirection', $jumpurl);
 
         $messagetext = preg_replace_callback("%($CFG->wwwroot[^[:space:]]*)%",
                 $callback,
@@ -7175,7 +7191,6 @@ function get_plugin_types($fullpaths=true) {
                       'filter'        => 'filter',
                       'editor'        => 'lib/editor',
                       'format'        => 'course/format',
-                      'import'        => 'course/import',
                       'profilefield'  => 'user/profile/field',
                       'report'        => $CFG->admin.'/report',
                       'coursereport'  => 'course/report', // must be after system reports
@@ -7618,28 +7633,6 @@ function get_browser_version_classes() {
     }
 
     return $classes;
-}
-
-/**
- * This function makes the return value of ini_get consistent if you are
- * setting server directives through the .htaccess file in apache.
- *
- * Current behavior for value set from php.ini On = 1, Off = [blank]
- * Current behavior for value set from .htaccess On = On, Off = Off
- * Contributed by jdell @ unr.edu
- *
- * @todo Finish documenting this function
- *
- * @param string $ini_get_arg The argument to get
- * @return bool True for on false for not
- */
-function ini_get_bool($ini_get_arg) {
-    $temp = ini_get($ini_get_arg);
-
-    if ($temp == '1' or strtolower($temp) == 'on') {
-        return true;
-    }
-    return false;
 }
 
 /**
@@ -9102,7 +9095,7 @@ function moodle_request_shutdown() {
 function message_popup_window() {
     global $USER, $DB, $PAGE, $CFG, $SITE;
 
-    if (defined('MESSAGE_WINDOW') || empty($CFG->messaging)) {
+    if (!$PAGE->get_popup_notification_allowed() || empty($CFG->messaging)) {
         return;
     }
 
@@ -9114,7 +9107,7 @@ function message_popup_window() {
         $USER->message_lastpopup = 0;
     } else if ($USER->message_lastpopup > (time()-120)) {
         //dont run the query to check whether to display a popup if its been run in the last 2 minutes
-        //return;
+        return;
     }
 
     //a quick query to check whether the user has new messages
@@ -9147,10 +9140,14 @@ WHERE m.useridto = :userid AND p.name='popup'";
             $strmessages = get_string('unreadnewmessages', 'message', count($message_users));
         } else {
             $message_users = reset($message_users);
+
+            //show who the message is from if its not a notification
             if (!$message_users->notification) {
-            $strmessages = get_string('unreadnewmessage', 'message', fullname($message_users) );
+                $strmessages = get_string('unreadnewmessage', 'message', fullname($message_users) );
             }
 
+            //try to display the small version of the message
+            $smallmessage = null;
             if (!empty($message_users->smallmessage)) {
                 //display the first 200 chars of the message in the popup
                 $smallmessage = null;
@@ -9159,6 +9156,11 @@ WHERE m.useridto = :userid AND p.name='popup'";
                 } else {
                     $smallmessage = $message_users->smallmessage;
                 }
+            } else if ($message_users->notification) {
+                //its a notification with no smallmessage so just say they have a notification
+                $smallmessage = get_string('unreadnewnotification', 'message');
+            }
+            if (!empty($smallmessage)) {
                 $strmessages .= '<div id="usermessage">'.$smallmessage.'</div>';
             }
         }
@@ -9230,7 +9232,7 @@ function array_is_nested($array) {
  * @return array
  */
 function get_performance_info() {
-    global $CFG, $PERF, $DB;
+    global $CFG, $PERF, $DB, $PAGE;
 
     $info = array();
     $info['html'] = '';         // holds userfriendly HTML representation
@@ -9279,6 +9281,33 @@ function get_performance_info() {
             $info['txt'] .= "$key: $value ";
         }
     }
+
+     $jsmodules = $PAGE->requires->get_loaded_modules();
+     if ($jsmodules) {
+         $yuicount = 0;
+         $othercount = 0;
+         $details = '';
+         foreach ($jsmodules as $module => $backtraces) {
+             if (strpos($module, 'yui') === 0) {
+                 $yuicount += 1;
+             } else {
+                 $othercount += 1;
+             }
+             $details .= "<div class='yui-module'><p>$module</p>";
+             foreach ($backtraces as $backtrace) {
+                 $details .= "<div class='backtrace'>$backtrace</div>";
+             }
+             $details .= '</div>';
+         }
+         $info['html'] .= "<span class='includedyuimodules'>Included YUI modules: $yuicount</span> ";
+         $info['txt'] .= "includedyuimodules: $yuicount ";
+         $info['html'] .= "<span class='includedjsmodules'>Other JavaScript modules: $othercount</span> ";
+         $info['txt'] .= "includedjsmodules: $othercount ";
+         // Slightly odd to output the details in a display: none div. The point
+         // Is that it takes a lot of space, and if you care you can reveal it
+         // using firebug.
+         $info['html'] .= '<div id="yui-module-debug" class="notifytiny">'.$details.'</div>';
+     }
 
     if (!empty($PERF->logwrites)) {
         $info['logwrites'] = $PERF->logwrites;

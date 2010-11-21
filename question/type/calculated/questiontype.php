@@ -24,6 +24,12 @@
 
 class question_calculated_qtype extends default_questiontype {
 
+    public $fileoptionsa = array(
+        'subdirs' => false,
+        'maxfiles' => -1,
+        'maxbytes' => 0,
+    );
+
     // Used by the function custom_generator_tools:
     public $calcgenerateidhasbeenadded = false;
     public $virtualqtype = false;
@@ -55,6 +61,9 @@ class question_calculated_qtype extends default_questiontype {
             $question->options->correctfeedback = '';
             $question->options->partiallycorrectfeedback = '';
             $question->options->incorrectfeedback = '';
+            $question->options->correctfeedbackformat = 0;
+            $question->options->partiallycorrectfeedbackformat = 0;
+            $question->options->incorrectfeedbackformat = 0;
         }
 
         if (!$question->options->answers = $DB->get_records_sql(
@@ -147,17 +156,9 @@ class question_calculated_qtype extends default_questiontype {
         $options->shuffleanswers = $question->shuffleanswers;
 
         foreach (array('correctfeedback', 'partiallycorrectfeedback', 'incorrectfeedback') as $feedbackname) {
-            $feedback = $question->$feedbackname;
-            $options->$feedbackname = trim($feedback['text']);
+            $options->$feedbackname = '';
             $feedbackformat = $feedbackname . 'format';
-            $options->$feedbackformat = trim($feedback['format']);
-            if (isset($feedback['files'])) {
-                foreach ($feedback['files'] as $file) {
-                    $this->import_file($question->context, 'qtype_calculated', $feedbackname, $question->id, $file);
-                }
-            } else {
-                $options->$feedbackname = file_save_draft_area_files($feedback['itemid'], $context->id, 'qtype_calculated', $feedbackname, $question->id, self::$fileoptions, trim($feedback['text']));
-            }
+            $options->$feedbackformat = 0 ;
         }
 
         if ($update) {
@@ -203,7 +204,7 @@ class question_calculated_qtype extends default_questiontype {
 
                 if ($oldanswer = array_shift($oldanswers)) {  // Existing answer, so reuse it
                     $answer->id = $oldanswer->id;
-                    $answer->feedback = file_save_draft_area_files($question->feedback[$key]['itemid'], $context->id, 'question', 'answerfeedback', $oldanswer->id, self::$fileoptions, trim($question->feedback[$key]['text']));
+                    $answer->feedback = file_save_draft_area_files($question->feedback[$key]['itemid'], $context->id, 'question', 'answerfeedback', $oldanswer->id, $this->fileoptionsa, trim($question->feedback[$key]['text']));
                     $DB->update_record("question_answers", $answer);
                 } else { // This is a completely new answer
                     $answer->feedback = trim($question->feedback[$key]['text']);
@@ -213,7 +214,7 @@ class question_calculated_qtype extends default_questiontype {
                             $this->import_file($context, 'question', 'answerfeedback', $answer->id, $file);
                         }
                     } else {
-                        $answer->feedback = file_save_draft_area_files($question->feedback[$key]['itemid'], $context->id, 'question', 'answerfeedback', $answer->id, self::$fileoptions, trim($question->feedback[$key]['text']));
+                        $answer->feedback = file_save_draft_area_files($question->feedback[$key]['itemid'], $context->id, 'question', 'answerfeedback', $answer->id, $this->fileoptionsa , trim($question->feedback[$key]['text']));
                     }
                     $DB->set_field('question_answers', 'feedback', $answer->feedback, array('id'=>$answer->id));
                 }
@@ -744,13 +745,8 @@ class question_calculated_qtype extends default_questiontype {
         }
         return $question;
     }
-    /**
-     * Deletes question from the question-type specific tables
-     *
-     * @return boolean Success/Failure
-     * @param object $question  The question being deleted
-     */
-    function delete_question($questionid) {
+
+    function delete_question($questionid, $contextid) {
         global $DB;
 
         $DB->delete_records("question_calculated", array("question" => $questionid));
@@ -768,13 +764,16 @@ class question_calculated_qtype extends default_questiontype {
             }
         }
         $DB->delete_records("question_datasets", array("question" => $questionid));
-        return true;
+
+        parent::delete_question($questionid, $contextid);
     }
+
     function test_response(&$question, &$state, $answer) {
         $virtualqtype = $this->get_virtual_qtype();
         return $virtualqtype->test_response($question, $state, $answer);
 
     }
+
     function compare_responses(&$question, $state, $teststate) {
 
         $virtualqtype = $this->get_virtual_qtype();
@@ -1768,7 +1767,10 @@ class question_calculated_qtype extends default_questiontype {
                FROM {question_dataset_definitions} d, {question_dataset_items} i, {question_datasets} q
               WHERE q.question = ? AND q.datasetdefinition = d.id AND d.id = i.definition AND i.itemnumber = ?
            ORDER by i.id DESC ", array($question->id, $datasetitem))) {
-            print_error('cannotgetdsfordependent', 'question', '', array($question->id, $datasetitem));
+           $a = new stdClass;
+           $a->id = $question->id;
+           $a->item = $datasetitem ;
+            print_error('cannotgetdsfordependent', 'question', '', $a );
         }
         $dataset = Array();
         foreach($dataitems as $id => $dataitem  ){
@@ -2108,44 +2110,22 @@ class question_calculated_qtype extends default_questiontype {
         return $new_question;
     }
 
-    /**
-     * When move the category of questions, the belonging files should be moved as well
-     * @param object $question, question information
-     * @param object $newcategory, target category information
-     */
-    function move_files($question, $newcategory) {
-        global $DB;
-        parent::move_files($question, $newcategory);
-
+    function move_files($questionid, $oldcontextid, $newcontextid) {
         $fs = get_file_storage();
-        // process files in answer
-        if (!$oldanswers = $DB->get_records('question_answers', array('question' =>  $question->id), 'id ASC')) {
-            $oldanswers = array();
-        }
-        $component = 'question';
-        $filearea = 'answerfeedback';
-        foreach ($oldanswers as $answer) {
-            $files = $fs->get_area_files($question->contextid, $component, $filearea, $answer->id);
-            foreach ($files as $storedfile) {
-                if (!$storedfile->is_directory()) {
-                    $newfile = new stdClass();
-                    $newfile->contextid = (int)$newcategory->contextid;
-                    $fs->create_file_from_storedfile($newfile, $storedfile);
-                    $storedfile->delete();
-                }
-            }
-        }
-        $component = 'qtype_numerical';
-        $filearea = 'instruction';
-        $files = $fs->get_area_files($question->contextid, $component, $filearea, $question->id);
-        foreach ($files as $storedfile) {
-            if (!$storedfile->is_directory()) {
-                $newfile = new stdClass();
-                $newfile->contextid = (int)$newcategory->contextid;
-                $fs->create_file_from_storedfile($newfile, $storedfile);
-                $storedfile->delete();
-            }
-        }
+
+        parent::move_files($questionid, $oldcontextid, $newcontextid);
+        $this->move_files_in_answers($questionid, $oldcontextid, $newcontextid);
+
+        $fs->move_area_files_to_new_context($oldcontextid,
+                $newcontextid, 'qtype_calculated', 'instruction', $questionid);
+    }
+
+    protected function delete_files($questionid, $contextid) {
+        $fs = get_file_storage();
+
+        parent::delete_files($questionid, $contextid);
+        $this->delete_files_in_answers($questionid, $contextid);
+        $fs->delete_area_files($contextid, 'qtype_calculated', 'instruction', $questionid);
     }
 
     function check_file_access($question, $state, $options, $contextid, $component,

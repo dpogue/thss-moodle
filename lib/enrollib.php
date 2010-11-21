@@ -769,6 +769,33 @@ function enrol_try_internal_enrol($courseid, $userid, $roleid = null, $timestart
 }
 
 /**
+ * Is there a chance users might self enrol
+ * @param int $courseid
+ * @return bool
+ */
+function enrol_selfenrol_available($courseid) {
+    $result = false;
+
+    $plugins = enrol_get_plugins(true);
+    $enrolinstances = enrol_get_instances($courseid, true);
+    foreach($enrolinstances as $instance) {
+        if (!isset($plugins[$instance->enrol])) {
+            continue;
+        }
+        if ($instance->enrol === 'guest') {
+            // blacklist known temporary guest plugins
+            continue;
+        }
+        if ($plugins[$instance->enrol]->show_enrolme_link($instance)) {
+            $result = true;
+            break;
+        }
+    }
+
+    return $result;
+}
+
+/**
  * All enrol plugins should be based on this class,
  * this is also the main source of documentation.
  */
@@ -931,6 +958,8 @@ abstract class enrol_plugin {
      * Attempt to automatically enrol current user in course without any interaction,
      * calling code has to make sure the plugin and instance are active.
      *
+     * This should return either a timestamp in the future or false.
+     *
      * @param stdClass $instance course enrol instance
      * @param stdClass $user record
      * @return bool|int false means not enrolled, integer means timeend
@@ -944,6 +973,8 @@ abstract class enrol_plugin {
     /**
      * Attempt to automatically gain temporary guest access to course,
      * calling code has to make sure the plugin and instance are active.
+     *
+     * This should return either a timestamp in the future or false.
      *
      * @param stdClass $instance course enrol instance
      * @param stdClass $user record
