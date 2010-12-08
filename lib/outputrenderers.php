@@ -324,6 +324,10 @@ class core_renderer extends renderer_base {
             $output .= html_writer::empty_tag('link', array('rel' => 'alternate',
                     'type' => $type, 'title' => $alt->title, 'href' => $alt->url));
         }
+        
+        if (!empty($CFG->additionalhtmlhead)) {
+            $output .= "\n".$CFG->additionalhtmlhead;
+        }
 
         return $output;
     }
@@ -334,7 +338,12 @@ class core_renderer extends renderer_base {
      * @return string HTML fragment.
      */
     public function standard_top_of_body_html() {
-        return  $this->page->requires->get_top_of_body_code();
+        global $CFG;
+        $output = $this->page->requires->get_top_of_body_code();
+        if (!empty($CFG->additionalhtmltopofbody)) {
+            $output .= "\n".$CFG->additionalhtmltopofbody;
+        }
+        return $output;
     }
 
     /**
@@ -367,6 +376,9 @@ class core_renderer extends renderer_base {
               <li><a href="http://www.contentquality.com/mynewtester/cynthia.exe?rptmode=0&amp;warnp2n3e=1&amp;url1=' . urlencode(qualified_me()) . '">WCAG 1 (2,3) Check</a></li>
             </ul></div>';
         }
+        if (!empty($CFG->additionalhtmlfooter)) {
+            $output .= "\n".$CFG->additionalhtmlfooter;
+        }
         return $output;
     }
 
@@ -379,7 +391,7 @@ class core_renderer extends renderer_base {
         // This function is normally called from a layout.php file in {@link header()}
         // but some of the content won't be known until later, so we return a placeholder
         // for now. This will be replaced with the real content in {@link footer()}.
-        echo self::END_HTML_TOKEN;
+        return self::END_HTML_TOKEN;
     }
 
     /**
@@ -2351,11 +2363,7 @@ EOD;
      * @return string XHTML navbar
      */
     public function navbar() {
-        //return $this->page->navbar->content();
-
         $items = $this->page->navbar->get_items();
-
-        $count = 0;
 
         $htmlblocks = array();
         // Iterate the navarray and display each node

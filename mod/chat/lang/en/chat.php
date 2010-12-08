@@ -24,7 +24,7 @@
  */
 
 $string['ajax'] = 'Version using Ajax';
-$string['autoscroll'] = 'Auto Scroll';
+$string['autoscroll'] = 'Auto scroll';
 $string['beep'] = 'beep';
 $string['cantlogin'] = 'Could not log in to chat room!!';
 $string['configmethod'] = 'The ajax chat method provide an ajax based chat interface, it contacts server regularly for update. The normal chat method involves the clients regularly contacting the server for updates. It requires no configuration and works everywhere, but it can create a large load on the server with many chatters.  Using a server daemon requires shell access to Unix, but it results in a fast scalable chat environment.';
@@ -116,7 +116,7 @@ $string['studentseereports'] = 'Everyone can view past sessions';
 $string['studentseereports_help'] = 'If set to No, only users have mod/chat:readlog capability are able to see the chat logs';
 $string['talk'] = 'Talk';
 $string['updatemethod'] = 'Update method';
-$string['updaterate'] = 'Update Rate:';
+$string['updaterate'] = 'Update rate:';
 $string['userlist'] = 'User list';
 $string['usingchat'] = 'Using chat';
 $string['usingchat_help'] = 'The chat module contains some features to make chatting a little nicer.

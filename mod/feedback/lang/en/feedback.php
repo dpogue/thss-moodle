@@ -162,6 +162,7 @@ you can associate them with this feedback using map course(s). Multiple courses 
 $string['mappedcourses'] = 'Mapped courses';
 $string['max_args_exceeded'] = 'Max 6 arguments can be handled, too many arguments for';
 $string['maximal'] = 'maximal';
+$string['messageprovider:submission'] = 'Feedback notifications';
 $string['mode'] = 'Mode';
 $string['modulename'] = 'Feedback';
 $string['modulename_help'] = 'The feedback modules enables custom surveys to be created.';
@@ -226,7 +227,7 @@ $string['relateditemsdeleted'] = 'All your user\'s responses for this question w
 $string['required'] = 'Required';
 $string['resetting_data'] = 'Reset feedback responses';
 $string['resetting_feedbacks'] = 'Resetting feedbacks';
-$string['response_nr'] = 'Response Nr.';
+$string['response_nr'] = 'Response number';
 $string['responses'] = 'Responses';
 $string['responsetime'] = 'Responsestime';
 $string['save_as_new_item'] = 'Save as new question';

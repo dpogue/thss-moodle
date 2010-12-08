@@ -536,14 +536,7 @@ class navigation_node implements renderable {
      * @param array $expandable An array by reference to populate with expandable nodes.
      */
     public function find_expandable(array &$expandable) {
-        $isloggedin = (isloggedin() && !isguestuser());
-        if (!$isloggedin && $this->type > self::TYPE_CATEGORY) {
-            return;
-        }
         foreach ($this->children as &$child) {
-            if (!$isloggedin && $child->type > self::TYPE_CATEGORY) {
-                continue;
-            }
             if ($child->nodetype == self::NODETYPE_BRANCH && $child->children->count()==0 && $child->display) {
                 $child->id = 'expandable_branch_'.(count($expandable)+1);
                 $this->add_class('canexpand');
@@ -1291,7 +1284,7 @@ class global_navigation extends navigation_node {
         if (!$categorynode) {
             $category = $cat['category'];
             $url = new moodle_url('/course/category.php', array('id'=>$category->id));
-            $categorynode = $parent->add($category->name, null, self::TYPE_CATEGORY, $category->name, $category->id);
+            $categorynode = $parent->add($category->name, $url, self::TYPE_CATEGORY, $category->name, $category->id);
             if (empty($category->visible)) {
                 if (has_capability('moodle/category:viewhiddencategories', get_system_context())) {
                     $categorynode->hidden = true;
@@ -3447,7 +3440,7 @@ class settings_navigation extends navigation_node {
         }
 
         // Blogs
-        if (!empty($CFG->bloglevel)) {
+        if ($currentuser && !empty($CFG->bloglevel)) {
             $blog = $usersetting->add(get_string('blogs', 'blog'), null, navigation_node::TYPE_CONTAINER, null, 'blogs');
             $blog->add(get_string('preferences', 'blog'), new moodle_url('/blog/preferences.php'), navigation_node::TYPE_SETTING);
             if (!empty($CFG->useexternalblogs) && $CFG->maxexternalblogsperuser > 0 && has_capability('moodle/blog:manageexternal', get_context_instance(CONTEXT_SYSTEM))) {
@@ -3505,37 +3498,52 @@ class settings_navigation extends navigation_node {
         $categorynode = $this->add(print_context_name($this->context));
         $categorynode->force_open();
 
+        if (has_any_capability(array('moodle/category:manage', 'moodle/course:create'), $this->context)) {
+            $url = new moodle_url('/course/category.php', array('id'=>$this->context->instanceid, 'sesskey'=>sesskey()));
+            if ($this->page->user_is_editing()) {
+                $url->param('categoryedit', '0');
+                $editstring = get_string('turneditingoff');
+            } else {
+                $url->param('categoryedit', '1');
+                $editstring = get_string('turneditingon');
+            }
+            $categorynode->add($editstring, $url, self::TYPE_SETTING, null, null, new pix_icon('i/edit', ''));
+        }
+
         if ($this->page->user_is_editing() && has_capability('moodle/category:manage', $this->context)) {
-            $categorynode->add(get_string('editcategorythis'), new moodle_url('/course/editcategory.php', array('id' => $this->context->instanceid)));
-            $categorynode->add(get_string('addsubcategory'), new moodle_url('/course/editcategory.php', array('parent' => $this->context->instanceid)));
+            $editurl = new moodle_url('/course/editcategory.php', array('id' => $this->context->instanceid));
+            $categorynode->add(get_string('editcategorythis'), $editurl, self::TYPE_SETTING, null, 'edit', new pix_icon('i/edit', ''));
+
+            $addsubcaturl = new moodle_url('/course/editcategory.php', array('parent' => $this->context->instanceid));
+            $categorynode->add(get_string('addsubcategory'), $addsubcaturl, self::TYPE_SETTING, null, 'addsubcat', new pix_icon('i/withsubcat', ''));
         }
 
         // Assign local roles
         if (has_capability('moodle/role:assign', $this->context)) {
             $assignurl = new moodle_url('/'.$CFG->admin.'/roles/assign.php', array('contextid'=>$this->context->id));
-            $categorynode->add(get_string('assignroles', 'role'), $assignurl, self::TYPE_SETTING);
+            $categorynode->add(get_string('assignroles', 'role'), $assignurl, self::TYPE_SETTING, null, 'roles', new pix_icon('i/roles', ''));
         }
 
         // Override roles
         if (has_capability('moodle/role:review', $this->context) or count(get_overridable_roles($this->context))>0) {
             $url = new moodle_url('/'.$CFG->admin.'/roles/permissions.php', array('contextid'=>$this->context->id));
-            $categorynode->add(get_string('permissions', 'role'), $url, self::TYPE_SETTING);
+            $categorynode->add(get_string('permissions', 'role'), $url, self::TYPE_SETTING, null, 'permissions', new pix_icon('i/permissions', ''));
         }
         // Check role permissions
         if (has_any_capability(array('moodle/role:assign', 'moodle/role:safeoverride','moodle/role:override', 'moodle/role:assign'), $this->context)) {
             $url = new moodle_url('/'.$CFG->admin.'/roles/check.php', array('contextid'=>$this->context->id));
-            $categorynode->add(get_string('checkpermissions', 'role'), $url, self::TYPE_SETTING);
+            $categorynode->add(get_string('checkpermissions', 'role'), $url, self::TYPE_SETTING, null, 'checkpermissions', new pix_icon('i/checkpermissions', ''));
         }
 
         // Cohorts
         if (has_capability('moodle/cohort:manage', $this->context) or has_capability('moodle/cohort:view', $this->context)) {
-            $categorynode->add(get_string('cohorts', 'cohort'), new moodle_url('/cohort/index.php', array('contextid' => $this->context->id)));
+            $categorynode->add(get_string('cohorts', 'cohort'), new moodle_url('/cohort/index.php', array('contextid' => $this->context->id)), self::TYPE_SETTING, null, 'cohort', new pix_icon('i/cohort', ''));
         }
 
         // Manage filters
         if (has_capability('moodle/filter:manage', $this->context) && count(filter_get_available_in_context($this->context))>0) {
             $url = new moodle_url('/filter/manage.php', array('contextid'=>$this->context->id));
-            $categorynode->add(get_string('filters', 'admin'), $url, self::TYPE_SETTING);
+            $categorynode->add(get_string('filters', 'admin'), $url, self::TYPE_SETTING, null, 'filters', new pix_icon('i/filter', ''));
         }
 
         return $categorynode;
